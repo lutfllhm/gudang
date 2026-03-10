@@ -7,10 +7,10 @@ services:
     container_name: iware-mysql
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${DB_NAME}
-      MYSQL_USER: ${DB_USER}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${DB_NAME:-iware_warehouse}
+      MYSQL_USER: ${DB_USER:-iware}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-iware_password}
       TZ: Asia/Jakarta
     ports:
       - "3306:3306"
@@ -21,20 +21,18 @@ services:
     networks:
       - iware-network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "${DB_USER}", "-p${DB_PASSWORD}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "${DB_USER:-iware}", "-p${DB_PASSWORD:-iware_password}"]
       interval: 10s
       timeout: 5s
       retries: 5
-    labels:
-      - "com.example.description=iWare MySQL Database"
 
-  # Redis Cache (optional, untuk queue dan caching)
+  # Redis Cache
   redis:
     image: redis:7-alpine
     container_name: iware-redis
     restart: always
-    expose:
-      - "6379"
+    ports:
+      - "6379:6379"
     volumes:
       - redis_data:/data
     networks:
@@ -44,8 +42,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    labels:
-      - "com.example.description=iWare Redis Cache"
 
   # Backend API
   backend:
@@ -60,13 +56,13 @@ services:
       redis:
         condition: service_healthy
     environment:
-      NODE_ENV: production
+      NODE_ENV: ${NODE_ENV:-development}
       PORT: 3000
       DB_HOST: mysql
       DB_PORT: 3306
-      DB_NAME: ${DB_NAME}
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME:-iware_warehouse}
+      DB_USER: ${DB_USER:-iware}
+      DB_PASSWORD: ${DB_PASSWORD:-iware_password}
       DB_POOL_LIMIT: 10
       REDIS_HOST: redis
       REDIS_PORT: 6379
@@ -74,16 +70,16 @@ services:
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
       JWT_EXPIRE: 3600
       JWT_REFRESH_EXPIRE: 604800
-      CORS_ORIGIN: ${CORS_ORIGIN}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
       ACCURATE_CLIENT_ID: ${ACCURATE_CLIENT_ID}
       ACCURATE_CLIENT_SECRET: ${ACCURATE_CLIENT_SECRET}
       ACCURATE_REDIRECT_URI: ${ACCURATE_REDIRECT_URI}
-      API_URL: ${API_URL}
-      FRONTEND_URL: ${FRONTEND_URL}
-      LOG_LEVEL: info
+      API_URL: ${API_URL:-http://localhost:3000}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      LOG_LEVEL: ${LOG_LEVEL:-debug}
       TZ: Asia/Jakarta
-    expose:
-      - "3000"
+    ports:
+      - "3000:3000"
     volumes:
       - ./backend/logs:/app/logs
     networks:
@@ -94,8 +90,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-    labels:
-      - "com.example.description=iWare Backend API"
 
   # Frontend Application
   frontend:
@@ -105,18 +99,17 @@ services:
     container_name: iware-frontend
     restart: always
     environment:
+      VITE_API_URL: ${API_URL:-http://localhost:3000}
       TZ: Asia/Jakarta
-    expose:
-      - "80"
+    ports:
+      - "5173:5173"
     networks:
       - iware-network
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5173"]
       interval: 30s
       timeout: 10s
       retries: 3
-    labels:
-      - "com.example.description=iWare Frontend Application"
 
   # Nginx Reverse Proxy & Load Balancer
   nginx:

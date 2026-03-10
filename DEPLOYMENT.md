@@ -123,10 +123,24 @@ sudo ufw status verbose
 
 2. Tunggu 15-30 menit untuk DNS propagation
 
-3. Verify:
+2. Verifikasi pointing. jika belum berhasil Anda akan melihat pesan seperti ini:
+
+```bash
+$ nslookup yourdomain.com
+Server:         127.0.0.53
+Address:        127.0.0.53#53
+
+Non-authoritative answer:
+*** Can't find yourdomain.com: No answer
+```
+
+Artinya DNS belum terpropagasi atau rekam DNS belum disetel. Pastikan Anda telah membuat **A record** pada panel registrar/domain dengan nilai IP VPS Anda dan tunggu 15–30 menit (kadang sampai 24 jam) sebelum mencoba lagi.
+
 ```bash
 nslookup yourdomain.com
-# Seharusnya return IP VPS Anda
+# Seharusnya menampilkan IP VPS Anda seperti:
+# Name: yourdomain.com
+# Address: 203.0.113.45
 ```
 
 ---
@@ -145,6 +159,11 @@ chmod +x scripts/install-docker.sh
 
 # Run installation script (sebagai root)
 sudo bash scripts/install-docker.sh
+
+> 📝 *Catatan:* jika Anda menjalankan ulang skrip dan melihat prompt
+> `File '/usr/share/keyrings/docker-archive-keyring.gpg' exists. Overwrite? (y/N)`
+> cukup ketik `y` lalu tekan Enter. Skrip telah diperbarui agar prompt ini
+> tidak muncul pada versi terbaru.
 ```
 
 ### Metode 2: Manual Installation
@@ -165,6 +184,22 @@ echo \
   $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
 # Install Docker
+
+> ⚠️ **PENTING:** Sebelum menjalankan perintah `apt install` di bawah ini pastikan Anda sudah:
+> 1. Menambahkan **Docker GPG key** dan **repository** (lihat langkah sebelumnya).
+> 2. Menjalankan `sudo apt update` setelah menambahkan repository.
+>
+> Jika tidak, apt tidak akan menemukan paket dan Anda akan melihat pesan seperti:
+>
+> ```text
+> Package docker-ce has no installation candidate
+> Unable to locate package docker-ce-cli
+> Unable to locate package containerd.io
+> Unable to locate package docker-compose-plugin
+> ```
+> (sama seperti screenshot yang Anda tunjukkan).
+> Langkah-langkah di atas juga dicontohkan di `scripts/install-docker.sh`.
+
 sudo apt update
 sudo apt install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 
@@ -541,6 +576,33 @@ docker-compose restart
 docker-compose down
 docker-compose up -d --build
 ```
+
+### Problem 1b: Gagal install paket Docker ("no installation candidate")
+
+Jika Anda menjalankan `sudo apt install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin` dan mendapat error serupa:
+
+```text
+Package 'docker-ce' has no installation candidate
+Unable to locate package docker-ce-cli
+Unable to locate package containerd.io
+Unable to locate package docker-compose-plugin
+```
+
+itu berarti repository Docker belum ditambahkan atau `apt update` belum dijalankan setelah penambahan. Kembali ke bagian **Install Docker & Docker Compose** dan ikuti langkah-langkah penambahan GPG key + repository; atau gunakan script otomatis `scripts/install-docker.sh` yang sudah menangani semua langkah tersebut.
+
+```bash
+# Contoh perbaikan singkat
+sudo apt update
+sudo apt install -y apt-transport-https ca-certificates curl gnupg lsb-release
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" \
+    | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+```
+
+Setelah itu paket harus dapat diinstal tanpa masalah.
+
 
 ### Problem 2: Database connection error
 
