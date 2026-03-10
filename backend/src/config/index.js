@@ -96,17 +96,28 @@ const config = {
 const validateConfig = () => {
   const required = [
     'JWT_SECRET',
-    'DB_PASSWORD',
-    'ACCURATE_APP_KEY',
-    'ACCURATE_CLIENT_ID',
-    'ACCURATE_CLIENT_SECRET',
-    'ACCURATE_SIGNATURE_SECRET'
+    'DB_PASSWORD'
   ];
 
   const missing = required.filter(key => !process.env[key]);
 
   if (missing.length > 0 && config.env === 'production') {
     throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+  }
+
+  // Warn about missing Accurate credentials but don't fail
+  const accurateRequired = [
+    'ACCURATE_APP_KEY',
+    'ACCURATE_CLIENT_ID',
+    'ACCURATE_CLIENT_SECRET',
+    'ACCURATE_SIGNATURE_SECRET'
+  ];
+
+  const missingAccurate = accurateRequired.filter(key => !process.env[key] || process.env[key].startsWith('temporary_'));
+
+  if (missingAccurate.length > 0) {
+    console.warn(`⚠️  Warning: Missing or temporary Accurate credentials: ${missingAccurate.join(', ')}`);
+    console.warn('⚠️  Accurate integration features will not work until configured');
   }
 };
 

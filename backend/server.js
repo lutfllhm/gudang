@@ -85,12 +85,33 @@ app.use(errorHandler);
 // Start server
 const startServer = async () => {
   try {
-    // Test database connection
-    await testConnection();
+    // Test database connection with retry
+    logger.info('Testing database connection...');
+    let dbConnected = false;
+    let retries = 5;
+    
+    while (!dbConnected && retries > 0) {
+      try {
+        await testConnection();
+        dbConnected = true;
+      } catch (error) {
+        retries--;
+        if (retries > 0) {
+          logger.warn(`Database connection failed, retrying... (${retries} attempts left)`);
+          await new Promise(resolve => setTimeout(resolve, 3000));
+        } else {
+          throw error;
+        }
+      }
+    }
 
-    // Initialize sync service
-    const SyncService = require('./src/services/SyncService');
-    await SyncService.startAutoSync();
+    // Initialize sync service (non-blocking)
+    try {
+      const SyncService = require('./src/services/SyncService');
+      await SyncService.startAutoSync();
+    } catch (error) {
+      logger.warn('Failed to start sync service (will continue without it):', error.message);
+    }
 
     // Start listening
     const server = app.listen(config.port, () => {
