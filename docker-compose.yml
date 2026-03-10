@@ -6,6 +6,8 @@ services:
     image: mysql:8.0
     container_name: iware-mysql
     restart: unless-stopped
+    env_file:
+      - .env.production
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${DB_NAME}
@@ -51,6 +53,8 @@ services:
       dockerfile: Dockerfile.backend
     container_name: iware-backend
     restart: unless-stopped
+    env_file:
+      - .env.production
     environment:
       NODE_ENV: production
       PORT: 5000
