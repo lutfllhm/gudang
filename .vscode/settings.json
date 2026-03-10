@@ -1,0 +1,4 @@
+{
+    "javascript.autoClosingTags": true,
+    "postman.settings.dotenv-detection-notification-visibility": false
+}
