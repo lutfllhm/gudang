@@ -51,7 +51,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: iware-backend
-    restart: always
+    restart: unless-stopped
     environment:
       NODE_ENV: production
       PORT: 5000
