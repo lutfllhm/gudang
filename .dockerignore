@@ -1,15 +1,28 @@
-# Node modules
-node_modules
-npm-debug.log
-
-# Environment files
-.env
-.env.local
-.env.*.local
-
 # Git
 .git
 .gitignore
+
+# Documentation
+*.md
+README.md
+DEPLOYMENT.md
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Dependencies
+node_modules
+
+# Build files
+dist
+build
 
 # IDE
 .vscode
@@ -17,29 +30,23 @@ npm-debug.log
 *.swp
 *.swo
 
-# Logs
-logs
-*.log
-
 # OS
 .DS_Store
 Thumbs.db
 
-# Documentation
-*.md
-!README.md
-
 # Docker
+docker-compose*.yml
 Dockerfile
-docker-compose.yml
 .dockerignore
 
-# Test files
-test
-tests
-*.test.js
-*.spec.js
+# Scripts
+scripts
 
-# Build artifacts
-dist
-build
+# Backups
+backups
+
+# Nginx
+nginx
+
+# Accurate docs
+accurate

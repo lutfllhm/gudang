@@ -1,106 +1,52 @@
-# Dependencies
-node_modules/
-yarn.lock
-
-# Environment variables (keep .env.example for reference)
+# Environment variables
 .env
 .env.local
-.env.*.local
 .env.production
-.env.development
-
-# SSL Certificates & Certbot
-certbot/conf/
-certbot/www/
-ssl/
-*.pem
-*.crt
-*.key
+.env.production.local
 
 # Logs
-logs/
+logs
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-backend/logs/
-nginx/logs/
 
-# Build outputs (keep dist for production)
-dist-ssr/
-*.local
+# Dependencies
+node_modules
+package-lock.json
+yarn.lock
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-!.vscode/settings.json
+# Build output
+dist
+build
+
+# IDE
+.vscode
 .idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+*.swp
+*.swo
+*.sublime-*
 
-# OS files
+# OS
+.DS_Store
 Thumbs.db
-.DS_Store
 
-# PM2
-.pm2/
+# Docker volumes
+mysql_data
+redis_data
+
+# Backups
+backups
+*.sql
+*.tar.gz
+
+# SSL certificates
+nginx/ssl/*.pem
+nginx/ssl/*.key
+
+# Nginx logs
+nginx/logs/*.log
 
 # Temporary files
 *.tmp
 *.temp
-.cache/
-
-# Database
-*.sql.backup
-*.db
-
-# Database schema (keep for VPS deployment)
-# backend/database/schema.sql
-
-# Old folders (if not deleted yet)
-backend-old*/
-frontend-old*/
-
-# Backups
-backups/
-*.tar.gz
-*.zip
-# Keep .sql files for schema
-# *.sql
-*.sql.gz
-
-# Docker volumes
-mysql_data/
-redis_data/
-
-# Environment files
-.env.docker
-
-# VPS deployment files (keep these)
-# vps-nginx.conf
-# docker-compose.yml
-# Dockerfile
-
-# Testing
-coverage/
-.nyc_output/
-
-# IDE
-# .vscode/ (keep settings for team)
-.idea/
-*.swp
-*.swo
-*~
-
-# Misc
-.eslintcache
-.stylelintcache
-
-# Accurate documentation
-accurate/
