@@ -1,4 +1,3 @@
-const Queue = require('bull');
 const config = require('../config');
 const logger = require('../utils/logger');
 
