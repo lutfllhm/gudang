@@ -37,7 +37,7 @@ USER nodejs
 EXPOSE 5000
 
 # Health check using wget (more reliable in alpine)
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=10 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:5000/health || exit 1
 
 # Use dumb-init to handle signals properly

@@ -866,3 +866,134 @@ Total: ~25-30 menit
 ---
 
 **Deployment guide complete! Follow step-by-step untuk hasil terbaik.** 🚀
+
+
+---
+
+## 🚀 Quick Deploy (Setelah Setup Awal)
+
+### Deploy dari Local ke VPS
+
+1. **Jalankan script deployment**
+   ```bash
+   bash scripts/deploy-vps.sh
+   ```
+
+### Deploy Manual di VPS
+
+1. **SSH ke VPS**
+   ```bash
+   ssh root@148.230.100.44
+   cd /var/www/gudang
+   ```
+
+2. **Pull latest code**
+   ```bash
+   git pull origin main
+   ```
+
+3. **Stop containers**
+   ```bash
+   docker compose --env-file .env.production down
+   ```
+
+4. **Rebuild images**
+   ```bash
+   docker compose --env-file .env.production build --no-cache
+   ```
+
+5. **Start containers**
+   ```bash
+   docker compose --env-file .env.production up -d
+   ```
+
+6. **Check status (tunggu 2-3 menit)**
+   ```bash
+   docker compose --env-file .env.production ps
+   docker compose --env-file .env.production logs backend
+   ```
+
+### Catatan Penting
+
+- **SELALU gunakan flag `--env-file .env.production`** saat menjalankan docker compose
+- Backend butuh 2-3 menit untuk start (retry database connection + healthcheck)
+- Jika backend restart terus, cek logs: `docker logs iware-backend`
+- Accurate API credentials boleh kosong dulu (akan ada warning tapi app tetap jalan)
+
+---
+
+## 🔧 Troubleshooting Deployment
+
+### Backend Terus Restart
+
+```bash
+# Lihat logs detail
+docker logs iware-backend 2>&1 | tail -100
+
+# Test dengan debug mode
+docker run --rm --env-file /var/www/gudang/.env.production \
+  --network gudang_iware-network \
+  -e DB_HOST=iware-mysql -e REDIS_HOST=iware-redis \
+  gudang-backend node debug-start.js
+```
+
+### Database Connection Failed
+
+```bash
+# Recreate database dengan data baru
+cd /var/www/gudang
+docker compose --env-file .env.production down -v
+docker compose --env-file .env.production up -d
+```
+
+### Check Health Endpoint
+
+```bash
+# Dari dalam VPS
+curl http://localhost:5000/health
+
+# Dari luar (jika port exposed)
+curl http://148.230.100.44:5000/health
+```
+
+### Lihat Semua Container Status
+
+```bash
+docker ps -a
+docker compose --env-file .env.production ps
+```
+
+### Reset Semua (Nuclear Option)
+
+```bash
+cd /var/www/gudang
+docker compose --env-file .env.production down -v
+docker system prune -af
+git pull origin main
+docker compose --env-file .env.production build --no-cache
+docker compose --env-file .env.production up -d
+```
+
+---
+
+## 📝 Useful Commands
+
+```bash
+# View logs
+docker compose --env-file .env.production logs -f backend
+
+# Restart service
+docker compose --env-file .env.production restart backend
+
+# Stop all
+docker compose --env-file .env.production down
+
+# Start all
+docker compose --env-file .env.production up -d
+
+# Check database
+docker exec -it iware-mysql mysql -uroot -p
+
+# Check Redis
+docker exec -it iware-redis redis-cli -a your_redis_password
+```

@@ -88,17 +88,18 @@ const startServer = async () => {
     // Test database connection with retry
     logger.info('Testing database connection...');
     let dbConnected = false;
-    let retries = 5;
+    let retries = 10;
     
     while (!dbConnected && retries > 0) {
       try {
         await testConnection();
         dbConnected = true;
+        logger.info('✅ Database connected successfully');
       } catch (error) {
         retries--;
         if (retries > 0) {
           logger.warn(`Database connection failed, retrying... (${retries} attempts left)`);
-          await new Promise(resolve => setTimeout(resolve, 3000));
+          await new Promise(resolve => setTimeout(resolve, 5000));
         } else {
           throw error;
         }
