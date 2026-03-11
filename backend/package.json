@@ -13,6 +13,7 @@
     "test:connection": "node src/scripts/test-connection.js",
     "test:api": "node src/scripts/test-api.js",
     "test:config": "node src/scripts/test-accurate-config.js",
+    "test:accurate": "node src/scripts/test-accurate-connection.js",
     "verify": "node src/scripts/verify-setup.js",
     "lint": "eslint src/"
   },
