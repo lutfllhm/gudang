@@ -70,7 +70,13 @@ const ItemsPage = () => {
       // Fetch ulang setelah sync selesai
       await fetchItems()
     } catch (error) {
-      toast.error('Sync gagal: ' + (error.response?.data?.message || error.message))
+      const status = error.response?.status
+      const message = error.response?.data?.message || error.message
+      if (status === 412) {
+        toast.error(`Sync gagal: ${message} (silakan Connect/Reconnect Accurate di Pengaturan)`)
+      } else {
+        toast.error('Sync gagal: ' + message)
+      }
     } finally {
       setSyncing(false)
     }

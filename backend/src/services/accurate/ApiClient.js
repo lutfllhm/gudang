@@ -166,7 +166,12 @@ class AccurateApiClient {
     const tokenResult = await TokenManager.getActiveToken(userId);
 
     if (!tokenResult.success) {
-      throw new AppError(tokenResult.message, 401);
+      // Jangan pakai 401 di sini karena 401 dipakai untuk JWT aplikasi di frontend interceptor.
+      // Untuk kasus Accurate belum terkoneksi / butuh reconnect, gunakan 412 (precondition failed).
+      throw new AppError(tokenResult.message, 412, {
+        provider: 'accurate',
+        needsReconnect: Boolean(tokenResult.needsReconnect)
+      });
     }
 
     const timestamp = TokenManager.generateTimestamp();
@@ -188,7 +193,10 @@ class AccurateApiClient {
     const tokenResult = await TokenManager.getActiveToken(userId);
 
     if (!tokenResult.success) {
-      throw new AppError(tokenResult.message, 401);
+      throw new AppError(tokenResult.message, 412, {
+        provider: 'accurate',
+        needsReconnect: Boolean(tokenResult.needsReconnect)
+      });
     }
 
     const host = await this.getHost(tokenResult.token.accessToken);
@@ -259,7 +267,10 @@ class AccurateApiClient {
             // Token will be auto-refreshed by TokenManager
             const tokenResult = await TokenManager.getActiveToken(userId);
             if (!tokenResult.success) {
-              throw new AppError('Token refresh failed', 401);
+              throw new AppError(tokenResult.message || 'Token refresh failed', 412, {
+                provider: 'accurate',
+                needsReconnect: true
+              });
             }
           }
         }

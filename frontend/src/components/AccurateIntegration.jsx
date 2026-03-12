@@ -57,7 +57,8 @@ const AccurateIntegration = () => {
       const authUrl = response.data.data.authUrl
       window.location.href = authUrl
     } catch (error) {
-      toast.error('Failed to get auth URL')
+      const msg = error.response?.data?.message || error.message
+      toast.error('Failed to get auth URL: ' + msg)
     }
   }
 
