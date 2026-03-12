@@ -180,6 +180,10 @@ class ItemService {
 
     } catch (error) {
       logger.error('Items sync failed', { error: error.message });
+      // Preserve underlying operational errors (e.g. 401 token expired / not connected)
+      if (error instanceof AppError) {
+        throw error;
+      }
       throw new AppError('Failed to sync items from Accurate', 500);
     }
   }

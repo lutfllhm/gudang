@@ -4,8 +4,9 @@ const AccurateController = require('../controllers/AccurateController');
 const WebhookController = require('../controllers/WebhookController');
 const { authenticate } = require('../middleware/auth');
 
-// OAuth routes (public)
-router.get('/auth-url', AccurateController.getAuthUrl);
+// OAuth routes
+// Auth URL harus terikat ke user yang sedang login (state=userId)
+router.get('/auth-url', authenticate, AccurateController.getAuthUrl);
 router.get('/callback', AccurateController.handleCallback);
 
 // Webhook routes (public - dipanggil oleh Accurate)

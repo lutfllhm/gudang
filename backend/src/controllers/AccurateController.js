@@ -23,11 +23,15 @@ class AccurateController {
       throw new AppError(`Accurate Online belum dikonfigurasi. Missing: ${missing.join(', ')}`, 400);
     }
 
+    const userId = req.user?.id;
+    const stateParam = userId ? `&state=${encodeURIComponent(String(userId))}` : '';
+
     const authUrl = `${config.accurate.accountUrl}/oauth/authorize?` +
       `client_id=${config.accurate.clientId}` +
       `&redirect_uri=${encodeURIComponent(config.accurate.redirectUri)}` +
       `&response_type=code` +
-      `&scope=${config.accurate.scopes.join(' ')}`;
+      `&scope=${encodeURIComponent(config.accurate.scopes.join(' '))}` +
+      stateParam;
 
     success(res, { authUrl });
   });
@@ -70,8 +74,8 @@ class AccurateController {
 
     const { access_token, refresh_token, expires_in, token_type, scope } = tokenResponse.data;
 
-    // Save token (default to user ID 1 if not authenticated)
-    const userId = state || 1;
+    // Save token (default to user ID 1 if state missing/invalid)
+    const userId = Number.isFinite(Number.parseInt(state, 10)) ? Number.parseInt(state, 10) : 1;
     await TokenManager.saveToken(userId, {
       access_token,
       refresh_token,
