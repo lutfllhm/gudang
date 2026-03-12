@@ -1,52 +1,18 @@
-# Git
 .git
 .gitignore
-
-# Documentation
-*.md
-README.md
-DEPLOYMENT.md
-
-# Environment files
-.env
-.env.*
-!.env.example
-
-# Logs
-logs
-*.log
-npm-debug.log*
-
-# Dependencies
 node_modules
-
-# Build files
-dist
-build
-
-# IDE
+npm-debug.log
+.env
+.env.local
+.env.*.local
+.DS_Store
+*.log
 .vscode
 .idea
-*.swp
-*.swo
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Docker
-docker-compose*.yml
-Dockerfile
-.dockerignore
-
-# Scripts
-scripts
-
-# Backups
-backups
-
-# Nginx
-nginx
-
-# Accurate docs
-accurate
+dist
+build
+test
+coverage
+README.md
+LICENSE
+.github

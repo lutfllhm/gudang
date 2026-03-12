@@ -1,52 +1,67 @@
 # Environment variables
 .env
 .env.local
+.env.*.local
 .env.production
-.env.production.local
 
-# Logs
-logs
-*.log
+# Dependencies
+node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 
-# Dependencies
-node_modules
-package-lock.json
-yarn.lock
+# Distribution
+dist/
+build/
+*.tsbuildinfo
 
-# Build output
-dist
-build
-
-# IDE
-.vscode
-.idea
+# IDE & Editor
+.vscode/
+.idea/
 *.swp
 *.swo
-*.sublime-*
+*~
+.DS_Store
+*.sublime-workspace
+*.sublime-project
+.vs/
+
+# Logs
+logs/
+*.log
+
+# Docker
+docker-compose.override.yml
+.docker/
+
+# Database
+*.sql.backup
+database/backups/
 
 # OS
-.DS_Store
 Thumbs.db
+.AppleDouble
+.LSOverride
 
-# Docker volumes
-mysql_data
-redis_data
+# Git
+.gitignore
 
-# Backups
-backups
-*.sql
-*.tar.gz
+# Project specific
+/backend/.eslintrc.json
+/frontend/vite.config.json
+coverage/
+test-results/
+.turbo/
 
-# SSL certificates
-nginx/ssl/*.pem
-nginx/ssl/*.key
+# CI/CD
+.github/workflows/**/*.log
 
-# Nginx logs
-nginx/logs/*.log
+# Testing
+.nyc_output/
+.mocha.env
 
 # Temporary files
+tmp/
+temp/
 *.tmp
-*.temp

@@ -1,4 +1,4 @@
-# Stage 1: Build
+# Frontend Dockerfile - Multi-stage build
 FROM node:18-alpine AS builder
 
 WORKDIR /app
@@ -9,46 +9,28 @@ COPY package*.json ./
 # Install dependencies
 RUN npm ci
 
-# Copy source files
+# Build React app
 COPY . .
-
-# Build argument for API URL
-ARG VITE_API_URL=https://iwareid.com/api
-ENV VITE_API_URL=$VITE_API_URL
-
-# Build application
 RUN npm run build
 
-# Stage 2: Production with Nginx
+# Production stage - use Nginx
 FROM nginx:alpine
 
-# Install curl for healthcheck
+# Tools for healthcheck
 RUN apk add --no-cache curl
 
-# Copy built files from builder
-COPY --from=builder /app/dist /usr/share/nginx/html
-
-# Copy nginx configuration
+# Copy nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Create non-root user
-RUN addgroup -g 1001 -S nginx-user && \
-    adduser -S nginx-user -u 1001 && \
-    chown -R nginx-user:nginx-user /usr/share/nginx/html && \
-    chown -R nginx-user:nginx-user /var/cache/nginx && \
-    chown -R nginx-user:nginx-user /var/log/nginx && \
-    touch /var/run/nginx.pid && \
-    chown -R nginx-user:nginx-user /var/run/nginx.pid
-
-# Switch to non-root user
-USER nginx-user
+# Copy built app from builder
+COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Expose port
-EXPOSE 80
+EXPOSE 3000
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD curl -f http://localhost:80/ || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+  CMD curl -fsS http://localhost:3000/ >/dev/null || exit 1
 
-# Start nginx
+# Start Nginx
 CMD ["nginx", "-g", "daemon off;"]

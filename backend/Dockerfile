@@ -1,4 +1,4 @@
-# Stage 1: Build
+# Backend Dockerfile - Multi-stage build
 FROM node:18-alpine AS builder
 
 WORKDIR /app
@@ -9,35 +9,36 @@ COPY package*.json ./
 # Install dependencies
 RUN npm ci --only=production
 
-# Stage 2: Production
+# Production stage
 FROM node:18-alpine
 
 WORKDIR /app
 
-# Install dumb-init and wget for health checks
-RUN apk add --no-cache dumb-init wget
+# Install curl for healthcheck
+RUN apk add --no-cache curl
 
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
-
-# Copy dependencies from builder
-COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
+# Copy from builder
+COPY --from=builder /app/node_modules ./node_modules
 
 # Copy application files
-COPY --chown=nodejs:nodejs . .
+COPY server.js ./
+COPY ecosystem.config.js ./
+COPY healthcheck.js ./
+COPY src/ ./src/
+COPY database/ ./database/
 
 # Create logs directory
-RUN mkdir -p logs && chown -R nodejs:nodejs logs
-
-# Switch to non-root user
-USER nodejs
+RUN mkdir -p logs
 
 # Expose port
 EXPOSE 5000
 
-# Use dumb-init to handle signals properly
-ENTRYPOINT ["dumb-init", "--"]
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD node healthcheck.js || exit 1
 
-# Start application
+# Set environment
+ENV NODE_ENV=production
+
+# Start server
 CMD ["node", "server.js"]
