@@ -2,11 +2,27 @@ const axios = require('axios');
 const config = require('../config');
 const TokenManager = require('../services/accurate/TokenManager');
 const { asyncHandler } = require('../middleware/errorHandler');
+const { AppError } = require('../middleware/errorHandler');
 const { success } = require('../utils/response');
 const logger = require('../utils/logger');
 
+function getPrimaryFrontendOrigin() {
+  const origin = config.cors?.origin;
+  if (Array.isArray(origin)) return origin[0];
+  if (typeof origin === 'string') return origin.split(',')[0].trim(); // backward compatibility
+  return 'http://localhost:3000';
+}
+
 class AccurateController {
   static getAuthUrl = asyncHandler(async (req, res) => {
+    const missing = [];
+    if (!config.accurate?.clientId) missing.push('ACCURATE_CLIENT_ID');
+    if (!config.accurate?.redirectUri) missing.push('ACCURATE_REDIRECT_URI');
+    if (!config.accurate?.accountUrl) missing.push('ACCURATE_ACCOUNT_URL');
+    if (missing.length > 0) {
+      throw new AppError(`Accurate Online belum dikonfigurasi. Missing: ${missing.join(', ')}`, 400);
+    }
+
     const authUrl = `${config.accurate.accountUrl}/oauth/authorize?` +
       `client_id=${config.accurate.clientId}` +
       `&redirect_uri=${encodeURIComponent(config.accurate.redirectUri)}` +
@@ -24,6 +40,15 @@ class AccurateController {
         success: false,
         message: 'Authorization code not found'
       });
+    }
+
+    const missing = [];
+    if (!config.accurate?.clientId) missing.push('ACCURATE_CLIENT_ID');
+    if (!config.accurate?.clientSecret) missing.push('ACCURATE_CLIENT_SECRET');
+    if (!config.accurate?.redirectUri) missing.push('ACCURATE_REDIRECT_URI');
+    if (!config.accurate?.accountUrl) missing.push('ACCURATE_ACCOUNT_URL');
+    if (missing.length > 0) {
+      throw new AppError(`Accurate Online belum dikonfigurasi. Missing: ${missing.join(', ')}`, 400);
     }
 
     // Exchange code for token
@@ -56,7 +81,8 @@ class AccurateController {
     });
 
     // Redirect to frontend
-    res.redirect(`${config.cors.origin}/settings?accurate=connected`);
+    const frontendOrigin = getPrimaryFrontendOrigin();
+    res.redirect(`${frontendOrigin}/settings?accurate=connected`);
   });
 
   static refreshToken = asyncHandler(async (req, res) => {

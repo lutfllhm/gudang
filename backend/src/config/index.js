@@ -1,5 +1,16 @@
 require('dotenv').config();
 
+function parseCommaSeparated(value) {
+  if (!value) return null;
+  if (Array.isArray(value)) return value;
+  const parts = String(value)
+    .split(',')
+    .map(v => v.trim())
+    .filter(Boolean);
+  if (parts.length === 0) return null;
+  return parts.length === 1 ? parts[0] : parts;
+}
+
 const config = {
   // Server
   env: process.env.NODE_ENV || 'development',
@@ -62,7 +73,7 @@ const config = {
 
   // CORS
   cors: {
-    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    origin: parseCommaSeparated(process.env.CORS_ORIGIN) || 'http://localhost:3000',
     credentials: process.env.CORS_CREDENTIALS === 'true'
   },
 

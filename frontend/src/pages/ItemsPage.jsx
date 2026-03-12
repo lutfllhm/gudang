@@ -64,9 +64,11 @@ const ItemsPage = () => {
   const handleSync = async () => {
     setSyncing(true)
     try {
-      await api.post('/sync/items')
+      // Jalankan sync items secara langsung (bukan queue) supaya data langsung muncul setelah selesai.
+      await api.post('/items/sync', { pageSize: 100 })
       toast.success('Sync items berhasil')
-      fetchItems()
+      // Fetch ulang setelah sync selesai
+      await fetchItems()
     } catch (error) {
       toast.error('Sync gagal: ' + (error.response?.data?.message || error.message))
     } finally {
