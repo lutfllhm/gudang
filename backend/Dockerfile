@@ -22,7 +22,6 @@ COPY --from=builder /app/node_modules ./node_modules
 
 # Copy application files
 COPY server.js ./
-COPY ecosystem.config.js ./
 COPY healthcheck.js ./
 COPY src/ ./src/
 COPY database/ ./database/
