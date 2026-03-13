@@ -96,41 +96,16 @@ class SalesOrderService {
       let page = 1;
       let hasMore = true;
 
-      // Build filter - default to March 2026 onwards if no dates provided
+      // Untuk saat ini, NONAKTIFKAN filter date di Accurate
+      // karena format filter menyebabkan error "Invalid field value for field 'filter'".
+      // Lebih baik tarik semua data dulu sampai format resmi dari Accurate sudah pasti.
       let filter = null;
-      let effectiveStartDate = startDate;
-      let effectiveEndDate = endDate;
+      const effectiveStartDate = startDate || '2026-03-01';
+      const effectiveEndDate = endDate || new Date().toISOString().split('T')[0];
 
-      // Default behaviour untuk app ini:
-      // - Jika tidak ada tanggal dikirim dari frontend,
-      //   selalu tarik data mulai 1 Maret 2026 sampai hari ini.
-      if (!effectiveStartDate) {
-        effectiveStartDate = '2026-03-01';
-      }
-
-      if (!effectiveEndDate) {
-        const now = new Date();
-        effectiveEndDate = now.toISOString().split('T')[0];
-      }
-
-      // Accurate Online menggunakan format tanggal DD/MM/YYYY untuk filter.
-      const toAccurateDate = (dateStr) => {
-        // Expect input: YYYY-MM-DD
-        const parts = String(dateStr).split('-');
-        if (parts.length !== 3) return dateStr;
-        const [year, month, day] = parts;
-        return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`;
-      };
-
-      const accurateStart = toAccurateDate(effectiveStartDate);
-      const accurateEnd = toAccurateDate(effectiveEndDate);
-
-      filter = `transDate.between("${accurateStart}","${accurateEnd}")`;
-      
-      logger.info('Sync date range', { 
-        effectiveStartDate, 
-        effectiveEndDate, 
-        filter 
+      logger.info('Sync date range (filter disabled, fetch all from Accurate)', { 
+        effectiveStartDate,
+        effectiveEndDate
       });
 
       while (hasMore) {
