@@ -11,7 +11,14 @@ class WebhookController {
    * Endpoint: POST /api/accurate/webhook
    */
   static handleWebhook = asyncHandler(async (req, res) => {
-    const { event, data } = req.body;
+    const body = req.body || {};
+    const event =
+      body.event ||
+      body.eventType ||
+      body.type ||
+      (body.resource && body.action ? `${body.resource}.${body.action}` : undefined);
+
+    const data = body.data || body.eventInfo || body.payload || {};
 
     // Optional: simple shared-secret auth (recommended for public webhook endpoint).
     // If WEBHOOK_SECRET is set, Accurate must send `x-webhook-secret` header.
@@ -43,7 +50,7 @@ class WebhookController {
     // Store webhook log for audit/debugging (do not fail processing on logging issues)
     let webhookLogId = null;
     try {
-      const payload = JSON.stringify(req.body ?? {});
+      const payload = JSON.stringify(body ?? {});
       const insertResult = await query(
         'INSERT INTO webhook_logs (event_type, payload, processed, received_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)',
         [String(event || 'unknown'), payload, false]
@@ -125,16 +132,36 @@ class WebhookController {
   });
 
   /**
+   * Lihat webhook logs (protected)
+   * Endpoint: GET /api/accurate/webhook/logs?limit=50
+   */
+  static getWebhookLogs = asyncHandler(async (req, res) => {
+    const limit = Math.min(parseInt(req.query.limit, 10) || 50, 200);
+    const rows = await query(
+      `SELECT id, event_type, processed, error_message, received_at, processed_at
+       FROM webhook_logs
+       ORDER BY id DESC
+       LIMIT ${limit}`
+    );
+    res.json({
+      success: true,
+      data: rows,
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  /**
    * Handle item created/updated
    */
   static async handleItemEvent(data) {
     try {
       // Sync item spesifik dari Accurate
-      await ItemService.syncSingleItem(data.id);
-      logger.info('Item synced from webhook', { itemId: data.id });
+      const itemId = data?.id ?? data?.itemId ?? data?.item_id;
+      await ItemService.syncSingleItem(itemId);
+      logger.info('Item synced from webhook', { itemId });
     } catch (error) {
       logger.error('Failed to sync item from webhook', { 
-        itemId: data.id, 
+        itemId: data?.id, 
         error: error.message 
       });
       throw error;
@@ -146,11 +173,12 @@ class WebhookController {
    */
   static async handleItemDeleted(data) {
     try {
-      await ItemService.deleteItem(data.id);
-      logger.info('Item deleted from webhook', { itemId: data.id });
+      const itemId = data?.id ?? data?.itemId ?? data?.item_id;
+      await ItemService.deleteItem(itemId);
+      logger.info('Item deleted from webhook', { itemId });
     } catch (error) {
       logger.error('Failed to delete item from webhook', { 
-        itemId: data.id, 
+        itemId: data?.id, 
         error: error.message 
       });
       throw error;
@@ -163,11 +191,12 @@ class WebhookController {
   static async handleSalesOrderEvent(data) {
     try {
       // Sync sales order spesifik dari Accurate
-      await SalesOrderService.syncSingleOrder(data.id);
-      logger.info('Sales order synced from webhook', { orderId: data.id });
+      const orderId = data?.id ?? data?.orderId ?? data?.so_id ?? data?.soId;
+      await SalesOrderService.syncSingleOrder(orderId);
+      logger.info('Sales order synced from webhook', { orderId });
     } catch (error) {
       logger.error('Failed to sync sales order from webhook', { 
-        orderId: data.id, 
+        orderId: data?.id, 
         error: error.message 
       });
       throw error;
@@ -179,11 +208,12 @@ class WebhookController {
    */
   static async handleSalesOrderDeleted(data) {
     try {
-      await SalesOrderService.deleteOrder(data.id);
-      logger.info('Sales order deleted from webhook', { orderId: data.id });
+      const orderId = data?.id ?? data?.orderId ?? data?.so_id ?? data?.soId;
+      await SalesOrderService.deleteOrder(orderId);
+      logger.info('Sales order deleted from webhook', { orderId });
     } catch (error) {
       logger.error('Failed to delete sales order from webhook', { 
-        orderId: data.id, 
+        orderId: data?.id, 
         error: error.message 
       });
       throw error;

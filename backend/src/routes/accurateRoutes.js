@@ -17,6 +17,7 @@ router.use(authenticate);
 
 // Webhook test (protected)
 router.get('/webhook/test', WebhookController.testWebhook);
+router.get('/webhook/logs', WebhookController.getWebhookLogs);
 
 router.get('/status', AccurateController.checkStatus);
 router.post('/refresh-token', AccurateController.refreshToken);
