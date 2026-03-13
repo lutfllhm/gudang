@@ -102,7 +102,7 @@ class QueueService {
 
     // Sync processor
     this.queues.sync.process(async (job) => {
-      const { type, userId } = job.data;
+      const { type, userId, options } = job.data;
       
       logger.info('Processing sync job', { 
         jobId: job.id, 
@@ -115,12 +115,16 @@ class QueueService {
 
       try {
         if (type === 'items') {
-          await ItemService.syncFromAccurate(userId);
+          await ItemService.syncFromAccurate(userId, options || {});
         } else if (type === 'sales-orders' || type === 'sales_orders') {
-          await SalesOrderService.syncFromAccurate(userId);
+          await SalesOrderService.syncFromAccurate(userId, options || {});
         } else if (type === 'full') {
-          await ItemService.syncFromAccurate(userId);
-          await SalesOrderService.syncFromAccurate(userId);
+          await ItemService.syncFromAccurate(userId, options || {});
+          await SalesOrderService.syncFromAccurate(userId, options || {});
+        } else if (type === 'current-month') {
+          await SalesOrderService.syncFromAccurate(userId, options || {});
+        } else if (type === 'from-march-2026') {
+          await SalesOrderService.syncFromAccurate(userId, options || {});
         }
         
         return { success: true, type };
@@ -192,23 +196,38 @@ class QueueService {
    */
   async addSyncJob(type, userId, options = {}) {
     if (!redisAvailable) {
-      logger.warn('Queue not available, executing sync directly');
+      // Jangan block HTTP request (hindari 504 dari reverse proxy).
+      // Jalankan async di background dan return cepat.
+      logger.warn('Queue not available, running sync in background');
       const ItemService = require('./ItemService');
       const SalesOrderService = require('./SalesOrderService');
-      
-      if (type === 'items') {
-        return await ItemService.syncFromAccurate(userId);
-      } else if (type === 'sales-orders' || type === 'sales_orders') {
-        return await SalesOrderService.syncFromAccurate(userId);
-      } else if (type === 'full') {
-        await ItemService.syncFromAccurate(userId);
-        return await SalesOrderService.syncFromAccurate(userId);
-      }
+
+      setImmediate(async () => {
+        try {
+          if (type === 'items') {
+            await ItemService.syncFromAccurate(userId, options);
+          } else if (type === 'sales-orders' || type === 'sales_orders') {
+            await SalesOrderService.syncFromAccurate(userId, options);
+          } else if (type === 'full') {
+            await ItemService.syncFromAccurate(userId, options);
+            await SalesOrderService.syncFromAccurate(userId, options);
+          } else if (type === 'current-month') {
+            await SalesOrderService.syncFromAccurate(userId, options);
+          } else if (type === 'from-march-2026') {
+            await SalesOrderService.syncFromAccurate(userId, options);
+          }
+        } catch (error) {
+          logger.error('Background sync failed', { type, userId, error: error.message });
+        }
+      });
+
+      return { success: true, queued: false, started: true, type };
     }
     
     const job = await this.queues.sync.add({
       type,
-      userId
+      userId,
+      options
     }, {
       ...options,
       jobId: `sync-${type}-${userId}-${Date.now()}`

@@ -47,22 +47,15 @@ class SyncController {
     const userId = req.user.id;
     const { startDate, endDate, forceFullSync } = req.body;
 
-    // If dates provided, sync directly with options
-    if (startDate || endDate || forceFullSync !== undefined) {
-      const SalesOrderService = require('../services/SalesOrderService');
-      
-      const result = await SalesOrderService.syncFromAccurate(userId, {
-        startDate,
-        endDate,
-        forceFullSync: forceFullSync || false
-      });
+    // Always run async via queue/background to avoid 504 timeouts
+    const options = {
+      startDate,
+      endDate,
+      forceFullSync: Boolean(forceFullSync)
+    };
 
-      success(res, result, 'Sales orders synced successfully');
-    } else {
-      // Use queue for default sync
-      const result = await SyncService.triggerManualSync(userId, 'sales-orders');
-      success(res, result, 'Sales orders sync triggered successfully');
-    }
+    const result = await QueueService.addSyncJob('sales-orders', userId, options);
+    success(res, result, 'Sales orders sync started');
   });
 
   /**
@@ -127,7 +120,6 @@ class SyncController {
    */
   static syncCurrentMonth = asyncHandler(async (req, res) => {
     const userId = req.user.id;
-    const SalesOrderService = require('../services/SalesOrderService');
 
     const now = new Date();
     const year = now.getFullYear();
@@ -135,13 +127,13 @@ class SyncController {
     const startDate = `${year}-${month}-01`;
     const endDate = now.toISOString().split('T')[0];
 
-    const result = await SalesOrderService.syncFromAccurate(userId, {
+    const result = await QueueService.addSyncJob('current-month', userId, {
       startDate,
       endDate,
       forceFullSync: false
     });
 
-    success(res, result, `Current month (${year}-${month}) synced successfully`);
+    success(res, result, `Current month (${year}-${month}) sync started`);
   });
 
   /**
@@ -149,18 +141,17 @@ class SyncController {
    */
   static syncFromMarch2026 = asyncHandler(async (req, res) => {
     const userId = req.user.id;
-    const SalesOrderService = require('../services/SalesOrderService');
 
     const now = new Date();
     const endDate = now.toISOString().split('T')[0];
 
-    const result = await SalesOrderService.syncFromAccurate(userId, {
+    const result = await QueueService.addSyncJob('from-march-2026', userId, {
       startDate: '2026-03-01',
       endDate,
       forceFullSync: true
     });
 
-    success(res, result, 'Full sync from March 2026 completed successfully');
+    success(res, result, 'Full sync from March 2026 started');
   });
 }
 
