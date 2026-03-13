@@ -8,8 +8,9 @@ const { AppError } = require('../../middleware/errorHandler');
 class AccurateApiClient {
   constructor() {
     this.accountUrl = config.accurate.accountUrl;
-    this.hostCache = new Map();
-    this.hostCacheTime = new Map();
+    // Cache per user (host + session hasil open-db)
+    this.dbSessionCache = new Map();
+    this.dbSessionCacheTime = new Map();
     
     // Rate limiting sesuai pedoman Accurate Online
     // Maksimal 8 request per detik dan 8 proses paralel
@@ -62,100 +63,103 @@ class AccurateApiClient {
   }
 
   /**
-   * Get dynamic host from API Token
+   * Resolve database id for OAuth token
    */
-  async getHost(accessToken) {
-    // Check cache (30 days)
-    const cached = this.hostCache.get(accessToken);
-    const cachedTime = this.hostCacheTime.get(accessToken);
-
-    if (cached && cachedTime) {
-      const daysSinceCache = (Date.now() - cachedTime) / (1000 * 60 * 60 * 24);
-      if (daysSinceCache < 30) {
-        return cached;
-      }
+  async resolveDatabaseId(accessToken) {
+    if (config.accurate.databaseId) {
+      return config.accurate.databaseId;
     }
 
+    // Jika belum diset di env, coba ambil dari db-list.do
     try {
-      const timestamp = TokenManager.generateTimestamp();
-      const signature = TokenManager.generateSignature(timestamp);
+      const url = `${this.accountUrl}/api/db-list.do`;
+      logger.logAccurateRequest('GET', url);
 
-      logger.logAccurateRequest('POST', `${this.accountUrl}/api/api-token.do`);
+      const response = await axios.get(url, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        timeout: 30000,
+        maxRedirects: 5,
+        validateStatus: (status) => status >= 200 && status < 400
+      });
 
-      const response = await axios.post(
-        `${this.accountUrl}/api/api-token.do`,
-        {},
-        {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'X-Api-Timestamp': timestamp,
-            'X-Api-Signature': signature,
-            'Content-Type': 'application/json'
-          },
-          maxRedirects: 5,
-          timeout: 30000
-        }
+      logger.logAccurateResponse('GET', '/api/db-list.do', response.status, response.data);
+
+      if (!response.data?.s || !Array.isArray(response.data?.d)) {
+        throw new AppError('Invalid db-list response from Accurate', 500);
+      }
+
+      const dbs = response.data.d;
+      if (dbs.length === 1 && dbs[0]?.id) {
+        return dbs[0].id;
+      }
+
+      // Lebih aman: minta admin set DB id kalau lebih dari 1 database
+      throw new AppError(
+        'Accurate punya lebih dari 1 database. Set `ACCURATE_DATABASE_ID` di environment backend (ambil id dari /api/db-list.do).',
+        412,
+        { provider: 'accurate', needsDatabaseSelection: true, databases: dbs.map(d => ({ id: d.id, alias: d.alias })) }
       );
+    } catch (error) {
+      logger.logAccurateError('GET', '/api/db-list.do', error);
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to resolve Accurate database ID', 500);
+    }
+  }
 
-      logger.logAccurateResponse('POST', '/api/api-token.do', response.status);
+  /**
+   * Open DB to obtain host + session for Accurate API calls (OAuth flow)
+   */
+  async getHostAndSession(userId, accessToken) {
+    // Cache (12 jam) supaya tidak open-db setiap request
+    const cached = this.dbSessionCache.get(userId);
+    const cachedTime = this.dbSessionCacheTime.get(userId);
+    if (cached && cachedTime) {
+      const ageHours = (Date.now() - cachedTime) / (1000 * 60 * 60);
+      if (ageHours < 12) return cached;
+    }
 
-      // Extract host from response
-      let host = null;
-      if (response.data.s && response.data.d) {
-        host = response.data.d.database?.host ||
-               response.data.d['data usaha']?.host ||
-               response.data.d.dataUsaha?.host ||
-               response.data.d.host ||
-               response.data.d.session?.host;
+    const dbId = await this.resolveDatabaseId(accessToken);
+
+    try {
+      const url = `${this.accountUrl}/api/open-db.do`;
+      logger.logAccurateRequest('GET', `${url}?id=${encodeURIComponent(String(dbId))}`);
+
+      const response = await axios.get(url, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        params: { id: dbId },
+        timeout: 30000,
+        maxRedirects: 5,
+        validateStatus: (status) => status >= 200 && status < 400
+      });
+
+      logger.logAccurateResponse('GET', '/api/open-db.do', response.status, response.data);
+
+      if (!response.data?.s) {
+        const msg = Array.isArray(response.data?.d) ? response.data.d.join(', ') : 'Open DB failed';
+        throw new AppError(msg, 400);
       }
 
-      if (!host) {
-        logger.error('Host not found in API response, response data:', response.data);
-        throw new AppError('Host not found in API response', 500);
+      let host = response.data.host;
+      const session = response.data.session;
+
+      if (!host || !session) {
+        throw new AppError('Open DB response missing host/session', 500);
       }
 
-      // Ensure host has protocol
       if (!host.startsWith('http://') && !host.startsWith('https://')) {
         host = `https://${host}`;
       }
 
-      // Cache host
-      this.hostCache.set(accessToken, host);
-      this.hostCacheTime.set(accessToken, Date.now());
+      const result = { host, session, databaseId: dbId };
+      this.dbSessionCache.set(userId, result);
+      this.dbSessionCacheTime.set(userId, Date.now());
 
-      logger.info('Host retrieved and cached', { host });
-
-      return host;
+      logger.info('Accurate host/session cached', { userId, host, databaseId: dbId });
+      return result;
     } catch (error) {
-      logger.logAccurateError('POST', '/api/api-token.do', error);
-      
-      // Fallback: try to extract database ID from token and construct default host
-      if (error.response?.status !== 401) {
-        logger.warn('Attempting fallback host construction');
-        try {
-          // Accurate API token format: aat.{base64}.{payload}.{signature}
-          const parts = accessToken.split('.');
-          if (parts.length >= 2) {
-            const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
-            if (payload.d) {
-              // Use database ID to construct host
-              const dbId = payload.d;
-              const fallbackHost = `https://${dbId}.accurate.id`;
-              logger.info('Using fallback host', { fallbackHost, dbId });
-              
-              // Cache fallback host
-              this.hostCache.set(accessToken, fallbackHost);
-              this.hostCacheTime.set(accessToken, Date.now());
-              
-              return fallbackHost;
-            }
-          }
-        } catch (parseError) {
-          logger.error('Failed to parse token for fallback', parseError);
-        }
-      }
-      
-      throw new AppError('Failed to get API host', 500);
+      logger.logAccurateError('GET', '/api/open-db.do', error);
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to open Accurate database (get host/session)', 500);
     }
   }
 
@@ -173,14 +177,11 @@ class AccurateApiClient {
         needsReconnect: Boolean(tokenResult.needsReconnect)
       });
     }
-
-    const timestamp = TokenManager.generateTimestamp();
-    const signature = TokenManager.generateSignature(timestamp);
+    const { session } = await this.getHostAndSession(userId, tokenResult.token.accessToken);
 
     return {
       'Authorization': `Bearer ${tokenResult.token.accessToken}`,
-      'X-Api-Timestamp': timestamp,
-      'X-Api-Signature': signature,
+      'X-Session-ID': session,
       'Content-Type': 'application/json',
       'Accept': 'application/json'
     };
@@ -199,7 +200,7 @@ class AccurateApiClient {
       });
     }
 
-    const host = await this.getHost(tokenResult.token.accessToken);
+    const { host } = await this.getHostAndSession(userId, tokenResult.token.accessToken);
     return `${host}/accurate/api`;
   }
 
@@ -319,8 +320,8 @@ class AccurateApiClient {
    * Clear cache
    */
   clearCache() {
-    this.hostCache.clear();
-    this.hostCacheTime.clear();
+    this.dbSessionCache.clear();
+    this.dbSessionCacheTime.clear();
   }
 }
 
