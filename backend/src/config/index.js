@@ -1,5 +1,10 @@
 require('dotenv').config();
 
+function trimTrailingSlashes(url) {
+  if (!url) return url;
+  return String(url).replace(/\/+$/, '');
+}
+
 function parseCommaSeparated(value) {
   if (!value) return null;
   if (Array.isArray(value)) return value;
@@ -39,8 +44,8 @@ const config = {
 
   // Accurate Online
   accurate: {
-    accountUrl: process.env.ACCURATE_ACCOUNT_URL || 'https://account.accurate.id',
-    apiUrl: process.env.ACCURATE_API_URL || 'https://public-api.accurate.id/api',
+    accountUrl: trimTrailingSlashes(process.env.ACCURATE_ACCOUNT_URL || 'https://account.accurate.id'),
+    apiUrl: trimTrailingSlashes(process.env.ACCURATE_API_URL || 'https://public-api.accurate.id/api'),
     appKey: process.env.ACCURATE_APP_KEY,
     clientId: process.env.ACCURATE_CLIENT_ID,
     clientSecret: process.env.ACCURATE_CLIENT_SECRET,
