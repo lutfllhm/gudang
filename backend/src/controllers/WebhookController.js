@@ -6,6 +6,14 @@ const config = require('../config');
 const { query } = require('../config/database');
 
 class WebhookController {
+  static normalizeEventName(event) {
+    if (!event) return 'unknown';
+    return String(event)
+      .trim()
+      .replace(/-/g, '_')
+      .toLowerCase();
+  }
+
   /**
    * Handle webhook dari Accurate Online
    * Endpoint: POST /api/accurate/webhook
@@ -19,6 +27,7 @@ class WebhookController {
       (body.resource && body.action ? `${body.resource}.${body.action}` : undefined);
 
     const data = body.data || body.eventInfo || body.payload || {};
+    const normalizedEvent = WebhookController.normalizeEventName(event);
 
     // Optional: simple shared-secret auth (recommended for public webhook endpoint).
     // If WEBHOOK_SECRET is set, Accurate must send `x-webhook-secret` header.
@@ -42,7 +51,8 @@ class WebhookController {
     }
     
     logger.info('Webhook received from Accurate', { 
-      event, 
+      event,
+      normalizedEvent,
       dataId: data?.id,
       timestamp: new Date().toISOString()
     });
@@ -62,7 +72,7 @@ class WebhookController {
 
     try {
       // Handle berdasarkan event type
-      switch (event) {
+      switch (normalizedEvent) {
         case 'item.created':
         case 'item.updated':
           await WebhookController.handleItemEvent(data);
@@ -74,15 +84,22 @@ class WebhookController {
           
         case 'sales_order.created':
         case 'sales_order.updated':
+        // tolerate common variants from providers/bridges
+        case 'salesorder.created':
+        case 'salesorder.updated':
+        case 'sales_orders.created':
+        case 'sales_orders.updated':
           await WebhookController.handleSalesOrderEvent(data);
           break;
           
         case 'sales_order.deleted':
+        case 'salesorder.deleted':
+        case 'sales_orders.deleted':
           await WebhookController.handleSalesOrderDeleted(data);
           break;
           
         default:
-          logger.warn('Unknown webhook event', { event });
+          logger.warn('Unknown webhook event', { event, normalizedEvent });
       }
 
       // Mark webhook log processed

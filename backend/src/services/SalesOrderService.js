@@ -5,6 +5,7 @@ const logger = require('../utils/logger');
 const { query } = require('../config/database');
 
 class SalesOrderService {
+  static unmappedAccurateStatuses = new Set();
   /**
    * Get all sales orders with pagination
    */
@@ -246,12 +247,34 @@ class SalesOrderService {
    * Transform Accurate sales order to our format
    */
   static transformAccurateOrder(accurateOrder) {
-    // Map Accurate status to our status
+    // Map Accurate status to our status (robust against different shapes/values)
+    const rawStatus =
+      accurateOrder?.status ??
+      accurateOrder?.statusName ??
+      accurateOrder?.status_code ??
+      accurateOrder?.statusCode ??
+      accurateOrder?.documentStatus ??
+      accurateOrder?.documentStatusName ??
+      accurateOrder?.status?.name ??
+      accurateOrder?.status?.code;
+
+    const normalizedStatus = rawStatus == null ? '' : String(rawStatus).trim().toUpperCase();
+
     let status = 'Menunggu Proses';
-    if (accurateOrder.status === 'CLOSED') {
+    if (['CLOSED', 'CLOSE', 'COMPLETED', 'COMPLETE', 'FINISHED', 'DONE', 'SELESAI', 'TERPROSES'].includes(normalizedStatus)) {
       status = 'Terproses';
-    } else if (accurateOrder.status === 'PARTIAL') {
+    } else if (['PARTIAL', 'PARTIALLY', 'PARTIAL_COMPLETED', 'PARTIAL_COMPLETE', 'SEBAGIAN', 'SEBAGIAN_TERPROSES'].includes(normalizedStatus)) {
       status = 'Sebagian Terproses';
+    } else if (normalizedStatus) {
+      // Keep default "Menunggu Proses" but log unexpected values (once per unique status) for easier debugging
+      if (!SalesOrderService.unmappedAccurateStatuses.has(normalizedStatus)) {
+        SalesOrderService.unmappedAccurateStatuses.add(normalizedStatus);
+        logger.info('Unmapped Accurate sales order status, defaulting to pending', {
+          accurateOrderId: accurateOrder?.id,
+          rawStatus,
+          normalizedStatus
+        });
+      }
     }
 
     // Convert date from DD/MM/YYYY to YYYY-MM-DD
