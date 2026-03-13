@@ -92,7 +92,9 @@ class ItemService {
           // Get items list from Accurate (only IDs)
           const response = await ApiClient.get(userId, '/item/list.do', {
             'sp.page': page,
-            'sp.pageSize': pageSize
+            'sp.pageSize': pageSize,
+            // Minta field yang sering dibutuhkan agar tidak selalu bergantung ke detail.do
+            fields: 'id,no,name,unitName,availableQty,unitPrice,avgCost'
           });
 
           if (!response || !response.d) {
@@ -113,7 +115,8 @@ class ItemService {
             try {
               const detailResponse = await ApiClient.get(userId, '/item/detail.do', { id: item.id });
               if (detailResponse && detailResponse.d) {
-                detailedItems.push(detailResponse.d);
+                // Merge: detail as base, list as fallback (list punya stock/price di beberapa kasus)
+                detailedItems.push({ ...detailResponse.d, ...item });
               }
             } catch (error) {
               logger.warn('Failed to get item detail', { itemId: item.id, error: error.message });
@@ -128,7 +131,37 @@ class ItemService {
           }
 
           // Transform and upsert items
-          const transformedItems = detailedItems.map(item => this.transformAccurateItem(item));
+          const transformedItems = [];
+          for (const item of detailedItems) {
+            const transformed = this.transformAccurateItem(item);
+
+            // Fallback: jika stock tidak ada di response, ambil lewat endpoint khusus stock
+            if (!transformed.stok_tersedia || transformed.stok_tersedia === 0) {
+              try {
+                const stockResp = await ApiClient.get(userId, '/item/get-stock.do', { id: item.id });
+                const stockData = stockResp?.d;
+                // Beberapa bentuk response yang umum: number langsung / object punya availableQty
+                const stockValue =
+                  typeof stockData === 'number' ? stockData :
+                  typeof stockData === 'string' ? Number.parseFloat(stockData) :
+                  Number.parseFloat(
+                    stockData?.availableQty ??
+                    stockData?.availableQuantity ??
+                    stockData?.qty ??
+                    stockData?.stock ??
+                    0
+                  );
+                if (Number.isFinite(stockValue)) {
+                  transformed.stok_tersedia = stockValue;
+                }
+              } catch (error) {
+                // tidak fatal
+                logger.warn('Failed to fetch item stock', { itemId: item.id, error: error.message });
+              }
+            }
+
+            transformedItems.push(transformed);
+          }
           const result = await Item.bulkUpsert(transformedItems);
 
           totalSynced += result.inserted + result.updated;
@@ -192,15 +225,38 @@ class ItemService {
    * Transform Accurate item to our format
    */
   static transformAccurateItem(accurateItem) {
+    const pickNumber = (...candidates) => {
+      for (const v of candidates) {
+        const n = typeof v === 'string' ? Number.parseFloat(v) : Number(v);
+        if (Number.isFinite(n)) return n;
+      }
+      return 0;
+    };
+
     return {
       item_id: String(accurateItem.id || accurateItem.itemId),
       nama_item: accurateItem.name || accurateItem.itemName || '',
       kode_item: accurateItem.no || accurateItem.itemNo || '',
       kategori: accurateItem.itemCategoryName || null,
       satuan: accurateItem.unitName || null,
-      stok_tersedia: parseFloat(accurateItem.availableQty || 0),
-      harga_jual: parseFloat(accurateItem.unitPrice || 0),
-      harga_beli: parseFloat(accurateItem.avgCost || 0),
+      stok_tersedia: pickNumber(
+        accurateItem.availableQty,
+        accurateItem.availableQuantity,
+        accurateItem.qtyAvailable,
+        accurateItem.stock,
+        accurateItem.onHand
+      ),
+      harga_jual: pickNumber(
+        accurateItem.unitPrice,
+        accurateItem.sellPrice,
+        accurateItem.salesPrice,
+        accurateItem.price
+      ),
+      harga_beli: pickNumber(
+        accurateItem.avgCost,
+        accurateItem.cost,
+        accurateItem.purchasePrice
+      ),
       deskripsi: accurateItem.description || null
     };
   }
