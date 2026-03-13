@@ -24,6 +24,28 @@ const SalesOrdersPage = () => {
     fetchOrders()
   }, [pagination.page, search])
 
+  useEffect(() => {
+    // Near realtime: refresh list periodically and when tab becomes active
+    const intervalMs = 30000
+    const intervalId = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        fetchOrders()
+      }
+    }, intervalMs)
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchOrders()
+      }
+    }
+
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () => {
+      clearInterval(intervalId)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+    }
+  }, [pagination.page, pagination.limit, search])
+
   const fetchOrders = async () => {
     try {
       setLoading(true)

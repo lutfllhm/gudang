@@ -157,6 +157,23 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 - **`ACCURATE_SIGNATURE_SECRET`**
 - **`ACCURATE_REDIRECT_URI=https://iwareid.com/api/accurate/callback`**
 
+---
+
+## 6.3 (Opsional) Aktifkan Webhook Accurate untuk near-realtime
+
+Agar perubahan di Accurate (buat/ubah/hapus) bisa cepat tercermin di aplikasi tanpa klik sync manual, aplikasi menyediakan endpoint webhook publik:
+
+- **URL**: `https://iwareid.com/api/accurate/webhook`
+- **Method**: `POST`
+- **Header (disarankan)**: `x-webhook-secret: <WEBHOOK_SECRET>`
+
+Catatan:
+- Endpoint ini **tidak butuh login** (karena dipanggil oleh Accurate), jadi **wajib** kamu pasang `WEBHOOK_SECRET` yang kuat.
+- Server akan mencatat event ke tabel `webhook_logs` dan melakukan sync entity terkait (mis. `sales_order.updated` → `syncSingleOrder`).
+
+Kalau provider webhook kamu tidak bisa mengirim header custom, kamu masih bisa mengirim secret via query string:
+- `https://iwareid.com/api/accurate/webhook?secret=<WEBHOOK_SECRET>`
+
 Penting:
 - Nilai **`ACCURATE_REDIRECT_URI` harus sama persis** dengan yang kamu daftarkan di Accurate Developer Portal.
 - Callback endpoint yang digunakan aplikasi ini adalah **`GET /api/accurate/callback`** (bukan `/auth/callback`).

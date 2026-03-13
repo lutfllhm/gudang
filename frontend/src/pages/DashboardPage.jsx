@@ -24,6 +24,28 @@ const DashboardPage = () => {
     fetchDashboardData()
   }, [])
 
+  useEffect(() => {
+    // Near realtime: refresh dashboard periodically and when tab becomes active
+    const intervalMs = 30000
+    const intervalId = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        fetchDashboardData()
+      }
+    }, intervalMs)
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchDashboardData()
+      }
+    }
+
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () => {
+      clearInterval(intervalId)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+    }
+  }, [])
+
   const fetchDashboardData = async () => {
     try {
       setLoading(true)
