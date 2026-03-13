@@ -26,11 +26,16 @@ class AccurateController {
     const userId = req.user?.id;
     const stateParam = userId ? `&state=${encodeURIComponent(String(userId))}` : '';
 
+    const scopes = Array.isArray(config.accurate?.scopes) ? config.accurate.scopes : [];
+    if (scopes.length === 0) {
+      throw new AppError('Accurate scopes belum dikonfigurasi di server', 500);
+    }
+
     const authUrl = `${config.accurate.accountUrl}/oauth/authorize?` +
       `client_id=${config.accurate.clientId}` +
       `&redirect_uri=${encodeURIComponent(config.accurate.redirectUri)}` +
       `&response_type=code` +
-      `&scope=${encodeURIComponent(config.accurate.scopes.join(' '))}` +
+      `&scope=${encodeURIComponent(scopes.join(' '))}` +
       stateParam;
 
     success(res, { authUrl });
@@ -56,21 +61,46 @@ class AccurateController {
     }
 
     // Exchange code for token
-    const tokenResponse = await axios.post(
-      `${config.accurate.accountUrl}/oauth/token`,
-      new URLSearchParams({
-        grant_type: 'authorization_code',
-        client_id: config.accurate.clientId,
-        client_secret: config.accurate.clientSecret,
-        code: code,
-        redirect_uri: config.accurate.redirectUri
-      }),
-      {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
+    let tokenResponse;
+    try {
+      tokenResponse = await axios.post(
+        `${config.accurate.accountUrl}/oauth/token`,
+        new URLSearchParams({
+          grant_type: 'authorization_code',
+          client_id: config.accurate.clientId,
+          client_secret: config.accurate.clientSecret,
+          code: code,
+          redirect_uri: config.accurate.redirectUri
+        }),
+        {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          timeout: 20000
         }
-      }
-    );
+      );
+    } catch (error) {
+      // Make this operational so production doesn't mask the root cause.
+      const status = error.response?.status;
+      const data = error.response?.data;
+      const accurateMsg =
+        data?.error_description ||
+        data?.error ||
+        data?.message ||
+        (typeof data === 'string' ? data : null);
+
+      logger.error('Accurate OAuth token exchange failed', {
+        status,
+        data,
+        redirectUri: config.accurate.redirectUri
+      });
+
+      const hint = 'Pastikan ACCURATE_CLIENT_ID/SECRET benar dan ACCURATE_REDIRECT_URI sama persis dengan yang didaftarkan di Accurate (callback: /api/accurate/callback).';
+      throw new AppError(
+        `Gagal konek ke Accurate. ${accurateMsg ? `Detail: ${accurateMsg}. ` : ''}${hint}`,
+        400
+      );
+    }
 
     const { access_token, refresh_token, expires_in, token_type, scope } = tokenResponse.data;
 
