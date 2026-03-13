@@ -63,12 +63,6 @@ const errorHandler = (err, req, res, next) => {
     message = 'Referenced resource not found';
   }
 
-  // Don't leak error details in production
-  if (process.env.NODE_ENV === 'production' && !err.isOperational) {
-    message = 'Something went wrong';
-    errors = null;
-  }
-
   // Send error response
   res.status(statusCode).json({
     success: false,
