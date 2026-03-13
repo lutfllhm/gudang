@@ -101,7 +101,7 @@ class SalesOrderService {
       let effectiveStartDate = startDate;
       let effectiveEndDate = endDate;
 
-      // Default behaviour for this app:
+      // Default behaviour untuk app ini:
       // - Jika tidak ada tanggal dikirim dari frontend,
       //   selalu tarik data mulai 1 Maret 2026 sampai hari ini.
       if (!effectiveStartDate) {
@@ -113,7 +113,19 @@ class SalesOrderService {
         effectiveEndDate = now.toISOString().split('T')[0];
       }
 
-      filter = `transDate.between("${effectiveStartDate}","${effectiveEndDate}")`;
+      // Accurate Online menggunakan format tanggal DD/MM/YYYY untuk filter.
+      const toAccurateDate = (dateStr) => {
+        // Expect input: YYYY-MM-DD
+        const parts = String(dateStr).split('-');
+        if (parts.length !== 3) return dateStr;
+        const [year, month, day] = parts;
+        return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`;
+      };
+
+      const accurateStart = toAccurateDate(effectiveStartDate);
+      const accurateEnd = toAccurateDate(effectiveEndDate);
+
+      filter = `transDate.between("${accurateStart}","${accurateEnd}")`;
       
       logger.info('Sync date range', { 
         effectiveStartDate, 
