@@ -109,12 +109,13 @@ class SalesOrder {
     );
     const total = countResult[0].total;
 
-    // Get sales orders
+    // Get sales orders - use string interpolation for LIMIT/OFFSET
+    // to avoid MySQL2 parameter binding issues with pagination values
     const orders = await query(
       `SELECT * FROM sales_orders ${whereClause}
        ORDER BY ${sortBy} ${sortOrder}
-       LIMIT ? OFFSET ?`,
-      [...params, parseInt(limit), parseInt(offset)]
+       LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}`,
+      params
     );
 
     // Transform orders to API format
