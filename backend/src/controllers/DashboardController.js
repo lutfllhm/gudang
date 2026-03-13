@@ -6,14 +6,82 @@ const { query } = require('../config/database');
 
 class DashboardController {
   static getStats = asyncHandler(async (req, res) => {
-    const [itemStats, orderStats] = await Promise.all([
+    const today = new Date();
+    const endDate = today.toISOString().split('T')[0];
+    const startDate7d = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    const [
+      itemStatsRaw,
+      salesOrderStatsRaw,
+      itemsInStockRows,
+      salesOrdersThisMonthRows,
+      salesChartRaw,
+      recentOrdersPaged,
+      syncConfigRows,
+      activeTokenRows
+    ] = await Promise.all([
       ItemService.getStats(),
-      SalesOrderService.getStats()
+      SalesOrderService.getStats(),
+      query('SELECT COUNT(*) as inStock FROM items WHERE is_active = 1 AND stok_tersedia > 0'),
+      query(
+        `SELECT COUNT(*) as thisMonth
+         FROM sales_orders
+         WHERE is_active = 1
+           AND YEAR(tanggal_so) = YEAR(CURDATE())
+           AND MONTH(tanggal_so) = MONTH(CURDATE())`
+      ),
+      SalesOrderService.getSalesByDateRange(startDate7d, endDate),
+      SalesOrderService.getAll({ page: 1, limit: 5, sortBy: 'tanggal_so', sortOrder: 'desc' }),
+      query('SELECT * FROM sync_config WHERE id = 1'),
+      query(
+        'SELECT id FROM accurate_tokens WHERE is_active = 1 AND expires_at > NOW() ORDER BY id DESC LIMIT 1'
+      )
     ]);
 
+    const items = {
+      total: Number(itemStatsRaw?.total_items || 0),
+      inStock: Number(itemsInStockRows?.[0]?.inStock || 0),
+      totalStock: Number(itemStatsRaw?.total_stock || 0),
+      outOfStock: Number(itemStatsRaw?.out_of_stock || 0),
+      lowStock: Number(itemStatsRaw?.low_stock || 0),
+      totalCategories: Number(itemStatsRaw?.total_categories || 0)
+    };
+
+    const salesOrders = {
+      total: Number(salesOrderStatsRaw?.total_orders || 0),
+      thisMonth: Number(salesOrdersThisMonthRows?.[0]?.thisMonth || 0),
+      totalRevenue: Number(salesOrderStatsRaw?.total_sales || 0),
+      pending: Number(salesOrderStatsRaw?.pending || 0),
+      partial: Number(salesOrderStatsRaw?.partial || 0),
+      completed: Number(salesOrderStatsRaw?.completed || 0),
+      averageOrderValue: Number(salesOrderStatsRaw?.average_order_value || 0)
+    };
+
+    const salesChart = Array.isArray(salesChartRaw)
+      ? salesChartRaw.map((row) => ({
+          date: row.date,
+          total: Number(row.total_sales || 0),
+          count: Number(row.order_count || 0)
+        }))
+      : [];
+
+    const syncConfig = syncConfigRows?.[0];
+    const lastSync =
+      syncConfig?.last_sync_sales_orders ||
+      syncConfig?.last_sync_items ||
+      null;
+
+    const accurateStatus = {
+      connected: (activeTokenRows?.length || 0) > 0,
+      lastSync
+    };
+
     const stats = {
-      items: itemStats,
-      orders: orderStats
+      items,
+      salesOrders,
+      salesChart,
+      recentOrders: recentOrdersPaged?.orders || [],
+      accurateStatus
     };
 
     success(res, stats);
