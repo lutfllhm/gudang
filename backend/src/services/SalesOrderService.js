@@ -101,31 +101,16 @@ class SalesOrderService {
       let effectiveStartDate = startDate;
       let effectiveEndDate = endDate;
 
+      // Default behaviour for this app:
+      // - Jika tidak ada tanggal dikirim dari frontend,
+      //   selalu tarik data mulai 1 Maret 2026 sampai hari ini.
       if (!effectiveStartDate) {
-        // Default: start from March 2026
         effectiveStartDate = '2026-03-01';
       }
 
       if (!effectiveEndDate) {
-        // Default: end at current date
         const now = new Date();
         effectiveEndDate = now.toISOString().split('T')[0];
-      }
-
-      // If it's a new month, only sync current month
-      const now = new Date();
-      const currentMonth = now.getMonth() + 1; // 1-12
-      const currentYear = now.getFullYear();
-      
-      // Check if we should only sync current month (for monthly updates)
-      if (!forceFullSync && !startDate && !endDate) {
-        // Only sync current month
-        effectiveStartDate = `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`;
-        effectiveEndDate = now.toISOString().split('T')[0];
-        logger.info('Monthly sync mode: syncing current month only', { 
-          effectiveStartDate, 
-          effectiveEndDate 
-        });
       }
 
       filter = `transDate.between("${effectiveStartDate}","${effectiveEndDate}")`;
