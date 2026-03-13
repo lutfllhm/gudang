@@ -166,18 +166,22 @@ class TokenManager {
     try {
       logger.info('Refreshing token', { userId });
 
+      const basicAuth = Buffer
+        .from(`${config.accurate.clientId}:${config.accurate.clientSecret}`)
+        .toString('base64');
+
       const response = await axios.post(
         `${this.accountUrl}/oauth/token`,
         new URLSearchParams({
           grant_type: 'refresh_token',
-          client_id: config.accurate.clientId,
-          client_secret: config.accurate.clientSecret,
           refresh_token: refreshToken
         }),
         {
           headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-          }
+            'Content-Type': 'application/x-www-form-urlencoded',
+            Authorization: `Basic ${basicAuth}`
+          },
+          timeout: 20000
         }
       );
 

@@ -60,21 +60,24 @@ class AccurateController {
       throw new AppError(`Accurate Online belum dikonfigurasi. Missing: ${missing.join(', ')}`, 400);
     }
 
-    // Exchange code for token
+    // Exchange code for token (Accurate requires HTTP Basic Auth header)
     let tokenResponse;
     try {
+      const basicAuth = Buffer
+        .from(`${config.accurate.clientId}:${config.accurate.clientSecret}`)
+        .toString('base64');
+
       tokenResponse = await axios.post(
         `${config.accurate.accountUrl}/oauth/token`,
         new URLSearchParams({
           grant_type: 'authorization_code',
-          client_id: config.accurate.clientId,
-          client_secret: config.accurate.clientSecret,
           code: code,
           redirect_uri: config.accurate.redirectUri
         }),
         {
           headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
+            'Content-Type': 'application/x-www-form-urlencoded',
+            Authorization: `Basic ${basicAuth}`
           },
           timeout: 20000
         }
