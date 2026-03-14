@@ -31,7 +31,7 @@ class User {
       'SELECT id, nama, email, role, foto_profil, status, last_login, created_at FROM users WHERE id = ?',
       [id]
     );
-    return users[0] || null;
+    return toPlainUser(users[0]) || null;
   }
 
   /**
@@ -39,10 +39,14 @@ class User {
    */
   static async findByEmail(email) {
     const users = await query(
-      'SELECT * FROM users WHERE email = ?',
+      'SELECT id, nama, email, role, foto_profil, status, last_login, created_at, password FROM users WHERE email = ?',
       [email]
     );
-    return users[0] || null;
+    const row = users[0];
+    if (!row) return null;
+    const plain = toPlainUser(row);
+    if (row.password !== undefined) plain.password = row.password;
+    return plain;
   }
 
   /**

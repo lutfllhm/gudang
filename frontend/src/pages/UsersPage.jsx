@@ -40,26 +40,29 @@ const UsersPage = () => {
       } else {
         setUsers([])
       }
-    } catch (error) {
-      // Handle specific error cases
-      if (error.response?.status === 401) {
+    } catch (err) {
+      const status = err.response?.status
+      const serverMessage = err.response?.data?.message
+
+      if (status === 401) {
         setError({
           type: 'auth',
           message: 'Sesi Anda telah berakhir. Silakan login kembali untuk melanjutkan.'
         })
         toast.error('Sesi Anda telah berakhir')
-      } else if (error.response?.status === 403) {
+      } else if (status === 403) {
         setError({
           type: 'permission',
-          message: 'Anda tidak memiliki akses untuk melihat data pengguna.'
+          message: serverMessage || 'Anda tidak memiliki akses untuk melihat data pengguna. Hanya admin dan superadmin yang dapat mengakses halaman ini.'
         })
-        toast.error('Akses ditolak')
-      } else if (error.response?.status !== 429) {
+        toast.error(serverMessage || 'Akses ditolak')
+      } else if (status !== 429) {
+        const message = serverMessage || (err.code === 'ERR_NETWORK' ? 'Tidak dapat terhubung ke server. Periksa koneksi atau pastikan backend berjalan.' : 'Gagal memuat data pengguna. Silakan coba lagi.')
         setError({
           type: 'general',
-          message: 'Gagal memuat data pengguna. Silakan coba lagi.'
+          message
         })
-        toast.error('Gagal memuat data pengguna')
+        toast.error(serverMessage || 'Gagal memuat data pengguna')
       }
       setUsers([])
     } finally {
