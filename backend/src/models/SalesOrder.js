@@ -233,8 +233,11 @@ class SalesOrder {
       throw new AppError('Sales order not found', 404);
     }
 
-    // Terima 3 status sesuai Accurate: Menunggu Diproses, Sebagian Terproses, Terproses
-    const validStatuses = ['Menunggu Diproses', 'Sebagian Terproses', 'Terproses', 'Menunggu Proses', 'Dipesan', 'Diproses', 'Selesai'];
+    // Terima status sesuai Accurate (persis atau varian)
+    const validStatuses = [
+      'Menunggu Diproses', 'Menunggu diproses', 'Sebagian Terproses', 'Sebagian terproses', 'Terproses',
+      'Menunggu Proses', 'Dipesan', 'Diproses', 'Selesai'
+    ];
     if (!validStatuses.includes(status)) {
       throw new AppError('Invalid status', 400);
     }
@@ -288,8 +291,8 @@ class SalesOrder {
       SELECT 
         COUNT(*) as total_orders,
         SUM(total_amount) as total_sales,
-        SUM(CASE WHEN status IN ('Menunggu Proses', 'Menunggu Diproses', 'Dipesan') THEN 1 ELSE 0 END) as pending,
-        SUM(CASE WHEN status IN ('Sebagian Terproses', 'Diproses') THEN 1 ELSE 0 END) as partial,
+        SUM(CASE WHEN status IN ('Menunggu Proses', 'Menunggu Diproses', 'Menunggu diproses', 'Dipesan') THEN 1 ELSE 0 END) as pending,
+        SUM(CASE WHEN status IN ('Sebagian Terproses', 'Sebagian terproses', 'Diproses') THEN 1 ELSE 0 END) as partial,
         SUM(CASE WHEN status IN ('Terproses', 'Selesai') THEN 1 ELSE 0 END) as completed,
         AVG(total_amount) as average_order_value
       FROM sales_orders
@@ -344,7 +347,7 @@ class SalesOrder {
   static async getPendingOrders(limit = 20) {
     const orders = await query(
       `SELECT * FROM sales_orders 
-       WHERE is_active = 1 AND status IN ('Menunggu Proses', 'Menunggu Diproses', 'Dipesan')
+       WHERE is_active = 1 AND status IN ('Menunggu Proses', 'Menunggu Diproses', 'Menunggu diproses', 'Dipesan')
        ORDER BY tanggal_so DESC
        LIMIT ?`,
       [limit]

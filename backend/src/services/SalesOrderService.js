@@ -245,10 +245,10 @@ class SalesOrderService {
 
   /**
    * Transform Accurate sales order to our format.
-   * Status disamakan dengan Accurate Online: Menunggu Diproses, Sebagian Terproses, Terproses.
+   * Status diambil persis dari Accurate Online agar tampilan sama (Menunggu diproses, Sebagian terproses, Terproses).
    */
   static transformAccurateOrder(accurateOrder) {
-    // Ambil status dari berbagai kemungkinan field response API Accurate (termasuk object)
+    // Ambil status dari semua kemungkinan field response API Accurate
     const docStatus = accurateOrder?.documentStatus;
     const statusObj = accurateOrder?.status;
     const rawStatus =
@@ -256,25 +256,34 @@ class SalesOrderService {
       accurateOrder?.documentStatusName ??
       (typeof statusObj === 'object' && statusObj !== null ? (statusObj.name ?? statusObj.code ?? statusObj) : statusObj) ??
       accurateOrder?.statusName ??
+      accurateOrder?.status_label ??
+      accurateOrder?.state ??
       accurateOrder?.status_code ??
       accurateOrder?.statusCode;
 
-    const normalizedStatus = rawStatus == null ? '' : String(rawStatus).trim().toUpperCase();
+    const rawStr = rawStatus == null ? '' : String(rawStatus).trim();
+    const normalizedStatus = rawStr.toUpperCase();
 
-    // Map ke 3 status Accurate: Menunggu Diproses, Sebagian Terproses, Terproses
-    let status = 'Menunggu Diproses';
-    if (['CLOSED', 'CLOSE', 'COMPLETED', 'COMPLETE', 'FINISHED', 'DONE', 'SELESAI', 'TERPROSES'].includes(normalizedStatus)) {
-      status = 'Terproses';
-    } else if (['PARTIAL', 'PARTIALLY', 'PARTIAL_COMPLETED', 'PARTIAL_COMPLETE', 'SEBAGIAN', 'SEBAGIAN_TERPROSES', 'DIPROSES', 'IN PROGRESS', 'IN_PROGRESS', 'PROCESSING'].includes(normalizedStatus)) {
-      status = 'Sebagian Terproses';
-    } else if (['DIPESAN', 'OPEN', 'OPENED', 'PENDING', 'MENUNGGU', 'MENUNGGU PROSES', 'MENUNGGU DIPROSES', 'NEW', 'DRAFT'].includes(normalizedStatus)) {
-      status = 'Menunggu Diproses';
-    } else if (normalizedStatus) {
+    // Gunakan teks persis dari Accurate jika sudah salah satu dari 3 status; kalau tidak, map lalu pakai label baku
+    const completedSet = ['CLOSED', 'CLOSE', 'COMPLETED', 'COMPLETE', 'FINISHED', 'DONE', 'SELESAI', 'TERPROSES'];
+    const partialSet = ['PARTIAL', 'PARTIALLY', 'PARTIAL_COMPLETED', 'PARTIAL_COMPLETE', 'SEBAGIAN', 'SEBAGIAN_TERPROSES', 'DIPROSES', 'IN PROGRESS', 'IN_PROGRESS', 'PROCESSING'];
+    const pendingSet = ['DIPESAN', 'OPEN', 'OPENED', 'PENDING', 'MENUNGGU', 'MENUNGGU PROSES', 'MENUNGGU DIPROSES', 'NEW', 'DRAFT'];
+
+    let status = 'Menunggu diproses';
+    if (completedSet.includes(normalizedStatus)) {
+      status = rawStr || 'Terproses';
+    } else if (partialSet.includes(normalizedStatus)) {
+      status = rawStr || 'Sebagian terproses';
+    } else if (pendingSet.includes(normalizedStatus)) {
+      status = rawStr || 'Menunggu diproses';
+    } else if (rawStr) {
+      // Nilai dari Accurate yang tidak kita kenal: simpan apa adanya agar aplikasi ikut Accurate
+      status = rawStr;
       if (!SalesOrderService.unmappedAccurateStatuses.has(normalizedStatus)) {
         SalesOrderService.unmappedAccurateStatuses.add(normalizedStatus);
-        logger.info('Unmapped Accurate sales order status, defaulting to Menunggu Diproses', {
+        logger.info('Accurate sales order status (ditampilkan as-is)', {
           accurateOrderId: accurateOrder?.id,
-          rawStatus,
+          rawStatus: rawStr,
           normalizedStatus
         });
       }
