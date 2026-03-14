@@ -53,8 +53,10 @@ class User {
    * Get all users with pagination
    */
   static async findAll({ page = 1, limit = 20, search = '', role = null, status = null }) {
-    const offset = (page - 1) * limit;
-    
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.max(1, Math.min(100, parseInt(limit, 10) || 20));
+    const offset = (pageNum - 1) * limitNum;
+
     let whereConditions = [];
     let params = [];
 
@@ -73,7 +75,7 @@ class User {
       params.push(status);
     }
 
-    const whereClause = whereConditions.length > 0 
+    const whereClause = whereConditions.length > 0
       ? 'WHERE ' + whereConditions.join(' AND ')
       : '';
 
@@ -84,13 +86,13 @@ class User {
     );
     const total = Number(countResult?.[0]?.total ?? 0);
 
-    // Get users
+    // MySQL 8.0.22+ rejects LIMIT/OFFSET as number params in prepared stmt - pass as string
     const rows = await query(
-      `SELECT id, nama, email, role, foto_profil, status, last_login, created_at 
+      `SELECT id, nama, email, role, foto_profil, status, last_login, created_at
        FROM users ${whereClause}
        ORDER BY created_at DESC
        LIMIT ? OFFSET ?`,
-      [...params, limit, offset]
+      [...params, String(limitNum), String(offset)]
     );
 
     const users = Array.isArray(rows) ? rows.map(toPlainUser).filter(Boolean) : [];
@@ -98,10 +100,10 @@ class User {
     return {
       users,
       pagination: {
-        page,
-        limit,
+        page: pageNum,
+        limit: limitNum,
         total,
-        totalPages: Math.ceil(total / limit) || 1
+        totalPages: Math.ceil(total / limitNum) || 1
       }
     };
   }
