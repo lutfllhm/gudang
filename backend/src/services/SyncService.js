@@ -237,16 +237,12 @@ class SyncService {
   }
 
   /**
-   * Manual sync trigger
+   * Manual sync trigger (selalu antre ke queue, tidak blokir dengan isRunning)
    */
   async triggerManualSync(userId, type = 'full') {
-    if (this.isRunning) {
-      throw new Error('Sync already in progress');
-    }
-
     logger.info('Manual sync triggered', { userId, type });
 
-    // Add to queue for async processing
+    // Add to queue for async processing (queue akan proses satu per satu)
     await QueueService.addSyncJob(type, userId);
 
     return { success: true, message: 'Sync job queued' };

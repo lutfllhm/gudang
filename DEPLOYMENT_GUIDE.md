@@ -196,19 +196,27 @@ docker compose logs -f frontend
 
 ### 6.4 (Opsional) Migrasi status Sales Order agar sama dengan Accurate
 
-Agar status pesanan penjualan di aplikasi mengikuti Accurate Online (Dipesan, Diproses, Selesai), jika database sudah berjalan dengan schema lama, jalankan sekali:
+Agar status pesanan penjualan di aplikasi mengikuti Accurate Online (Dipesan, Diproses, Selesai), jika database sudah berjalan dengan schema lama, jalankan sekali.
+
+**Cara 1 – perintah langsung (tanpa redirect file, disarankan):**
 
 ```bash
-docker compose exec db mysql -u"${DB_USER:-iware}" -p"${DB_PASSWORD}" "${DB_NAME:-iware_warehouse}" < backend/database/migrate-sales-order-status.sql
+docker compose exec db mysql -u"${DB_USER:-iware}" -p"${DB_PASSWORD}" "${DB_NAME:-iware_warehouse}" -e "ALTER TABLE sales_orders MODIFY COLUMN status VARCHAR(100) DEFAULT 'Dipesan';"
+```
+
+Ganti user/password/database jika perlu, atau isi manual:
+
+```bash
+docker compose exec db mysql -uiware -pKATA_SANDI_ANDA iware_warehouse -e "ALTER TABLE sales_orders MODIFY COLUMN status VARCHAR(100) DEFAULT 'Dipesan';"
+```
+
+**Cara 2 – dari file (pakai `-T` agar tidak error TTY):**
+
+```bash
+docker compose exec -T db mysql -u"${DB_USER:-iware}" -p"${DB_PASSWORD}" "${DB_NAME:-iware_warehouse}" < backend/database/migrate-sales-order-status.sql
 ```
 
 (Catatan: service database di `docker-compose.yml` ini bernama **`db`**, bukan `mysql`.)
-
-Atau dari host (sesuaikan user/password/database):
-
-```bash
-mysql -u root -p iware_warehouse < backend/database/migrate-sales-order-status.sql
-```
 
 Setelah itu jalankan sync Sales Order dari aplikasi agar data ter-update dari Accurate.
 
@@ -256,6 +264,9 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 120s;
+        proxy_read_timeout 120s;
     }
 }
 ```

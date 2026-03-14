@@ -55,8 +55,8 @@ const DashboardPage = () => {
     setSyncing(true)
     try {
       await api.post('/sync/items')
-      toast.success('Sync items berhasil')
-      fetchDashboardData()
+      toast.success('Sync dimulai di background. Data akan ter-update dalam beberapa saat.')
+      setTimeout(() => fetchDashboardData(), 3000)
     } catch (error) {
       toast.error('Sync gagal: ' + (error.response?.data?.message || error.message))
     } finally {

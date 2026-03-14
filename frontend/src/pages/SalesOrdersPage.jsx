@@ -64,18 +64,16 @@ const SalesOrdersPage = () => {
   const handleSync = async () => {
     setSyncing(true)
     try {
-      // Panggil endpoint sync langsung ke modul sales orders,
-      // sekaligus paksa range tanggal dari 1 Maret 2026 sampai hari ini
       const today = new Date().toISOString().split('T')[0]
       await api.post('/sales-orders/sync', {
         startDate: '2026-03-01',
         endDate: today,
         forceFullSync: true
       })
-      toast.success('Sync sales orders berhasil')
-      await fetchOrders()
+      toast.success('Sync sales orders dimulai di background. Refresh halaman nanti untuk melihat hasil.')
+      // Refresh daftar setelah beberapa detik (sync berjalan di background)
+      setTimeout(() => fetchOrders(), 3000)
     } catch (error) {
-      console.error('[SalesOrdersPage] Sync failed:', error)
       toast.error('Sync gagal: ' + (error.response?.data?.message || error.message))
     } finally {
       setSyncing(false)

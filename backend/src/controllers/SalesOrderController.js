@@ -1,4 +1,5 @@
 const SalesOrderService = require('../services/SalesOrderService');
+const QueueService = require('../services/QueueService');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { success, paginated } = require('../utils/response');
 
@@ -58,14 +59,19 @@ class SalesOrderController {
   static syncFromAccurate = asyncHandler(async (req, res) => {
     const { pageSize, startDate, endDate, forceFullSync } = req.body;
 
-    const result = await SalesOrderService.syncFromAccurate(req.user.id, {
+    // Jalankan sync di background (queue) agar tidak timeout 504
+    const options = {
       pageSize: parseInt(pageSize) || 100,
       startDate,
       endDate,
       forceFullSync: forceFullSync === true
-    });
+    };
+    const result = await QueueService.addSyncJob('sales-orders', req.user.id, options);
 
-    success(res, result, 'Sales orders synced successfully');
+    success(res, {
+      started: true,
+      message: 'Sales orders sync dimulai di background. Refresh halaman nanti untuk melihat hasil.'
+    }, 'Sales orders sync started');
   });
 }
 
