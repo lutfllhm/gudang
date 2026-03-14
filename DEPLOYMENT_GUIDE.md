@@ -199,8 +199,10 @@ docker compose logs -f frontend
 Agar status pesanan penjualan di aplikasi mengikuti Accurate Online (Dipesan, Diproses, Selesai), jika database sudah berjalan dengan schema lama, jalankan sekali:
 
 ```bash
-docker compose exec mysql mysql -u"$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" < backend/database/migrate-sales-order-status.sql
+docker compose exec db mysql -u"${DB_USER:-iware}" -p"${DB_PASSWORD}" "${DB_NAME:-iware_warehouse}" < backend/database/migrate-sales-order-status.sql
 ```
+
+(Catatan: service database di `docker-compose.yml` ini bernama **`db`**, bukan `mysql`.)
 
 Atau dari host (sesuaikan user/password/database):
 
