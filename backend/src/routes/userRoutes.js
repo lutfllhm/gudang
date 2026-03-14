@@ -7,8 +7,14 @@ const { validationMiddleware, schemas } = require('../utils/validator');
 // All routes require authentication
 router.use(authenticate);
 
-// Get all users (admin & superadmin)
-router.get('/', UserController.getAll);
+// Get all users (admin & superadmin only)
+router.get('/', authorize('admin', 'superadmin'), UserController.getAll);
+
+// Get user stats (must be before /:id to avoid matching "stats" as id)
+router.get('/stats/summary',
+  authorize('superadmin'),
+  UserController.getStats
+);
 
 // Get user by ID
 router.get('/:id', UserController.getById);
@@ -31,12 +37,6 @@ router.put('/:id',
 router.delete('/:id',
   authorize('superadmin'),
   UserController.delete
-);
-
-// Get user stats (superadmin only)
-router.get('/stats/summary',
-  authorize('superadmin'),
-  UserController.getStats
 );
 
 module.exports = router;

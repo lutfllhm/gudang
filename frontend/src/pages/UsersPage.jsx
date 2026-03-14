@@ -23,7 +23,6 @@ const UsersPage = () => {
   })
 
   useEffect(() => {
-    console.log('[UsersPage] Component mounted, fetching users...')
     fetchUsers()
   }, [])
 
@@ -31,20 +30,17 @@ const UsersPage = () => {
     try {
       setLoading(true)
       setError(null)
-      console.log('[UsersPage] Fetching users...')
       const response = await api.get('/users')
-      console.log('[UsersPage] Users response:', response.data)
-      
-      // Response format: { success, message, data: [...users], pagination }
-      if (response.data && response.data.success) {
-        setUsers(response.data.data || [])
+      const res = response?.data
+
+      // Backend returns { success, message, data: [...users], pagination }
+      if (res && res.success !== false) {
+        const list = Array.isArray(res.data) ? res.data : []
+        setUsers(list)
       } else {
-        console.error('[UsersPage] Unexpected response structure:', response.data)
         setUsers([])
       }
     } catch (error) {
-      console.error('[UsersPage] Failed to fetch users:', error)
-      
       // Handle specific error cases
       if (error.response?.status === 401) {
         setError({

@@ -22,13 +22,8 @@ const SchedulePage = () => {
 
   useEffect(() => {
     fetchOrders()
-    const interval = setInterval(fetchOrders, 30000) // Refresh every 30 seconds
     const timeInterval = setInterval(() => setCurrentTime(new Date()), 1000)
-    
-    return () => {
-      clearInterval(interval)
-      clearInterval(timeInterval)
-    }
+    return () => clearInterval(timeInterval)
   }, [])
 
   const fetchOrders = async () => {

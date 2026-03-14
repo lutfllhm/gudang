@@ -54,12 +54,12 @@ class User {
       ? 'WHERE ' + whereConditions.join(' AND ')
       : '';
 
-    // Get total count
+    // Get total count (Number() avoids BigInt serialization issues in JSON)
     const countResult = await query(
       `SELECT COUNT(*) as total FROM users ${whereClause}`,
       params
     );
-    const total = countResult[0].total;
+    const total = Number(countResult?.[0]?.total ?? 0);
 
     // Get users
     const users = await query(
@@ -71,12 +71,12 @@ class User {
     );
 
     return {
-      users,
+      users: Array.isArray(users) ? users : [],
       pagination: {
         page,
         limit,
         total,
-        totalPages: Math.ceil(total / limit)
+        totalPages: Math.ceil(total / limit) || 1
       }
     };
   }
