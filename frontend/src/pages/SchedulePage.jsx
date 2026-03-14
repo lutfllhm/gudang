@@ -40,11 +40,11 @@ const SchedulePage = () => {
         const fetchedOrders = response.data.data.salesOrders || []
         setOrders(fetchedOrders)
         
-        // Calculate stats (dukung status Accurate: Dipesan, Diproses, Selesai + legacy)
+        // Calculate stats (3 status Accurate: Menunggu Diproses, Sebagian Terproses, Terproses)
         const s = (st) => (fetchedOrders.filter(o => (o.status || '').toLowerCase() === st).length)
         const completed = s('completed') + s('terproses') + s('selesai')
         const processing = s('processing') + s('sebagian terproses') + s('diproses')
-        const pending = s('pending') + s('menunggu proses') + s('dipesan')
+        const pending = s('pending') + s('menunggu proses') + s('menunggu diproses') + s('dipesan')
         const totalRevenue = fetchedOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0)
         
         setStats({
@@ -74,16 +74,16 @@ const SchedulePage = () => {
 
   const getStatusBadgeClass = (status) => {
     const statusLower = (status || '').toLowerCase()
-    // Selesai / Terproses (Completed) = Hijau Neon
+    // Terproses (Completed) = Hijau Neon
     if (['completed', 'terproses', 'selesai'].includes(statusLower)) {
       return 'bg-emerald-500/20 text-emerald-400 border-emerald-400/60 shadow-[0_0_25px_rgba(16,185,129,0.6)] animate-neon-pulse-green'
     }
-    // Diproses / Processing = Kuning Neon
+    // Sebagian Terproses = Kuning Neon
     if (['processing', 'sebagian terproses', 'diproses'].includes(statusLower)) {
       return 'bg-yellow-500/20 text-yellow-400 border-yellow-400/60 shadow-[0_0_25px_rgba(234,179,8,0.6)] animate-neon-pulse-yellow'
     }
-    // Dipesan / Pending = Merah Neon
-    if (['pending', 'belum terproses', 'menunggu proses', 'dipesan'].includes(statusLower)) {
+    // Menunggu Diproses / Pending = Merah Neon
+    if (['pending', 'belum terproses', 'menunggu proses', 'menunggu diproses', 'dipesan'].includes(statusLower)) {
       return 'bg-red-500/20 text-red-400 border-red-400/60 shadow-[0_0_25px_rgba(239,68,68,0.6)] animate-neon-pulse-red'
     }
     if (statusLower === 'cancelled' || statusLower === 'batal') {

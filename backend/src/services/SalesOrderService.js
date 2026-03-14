@@ -245,7 +245,7 @@ class SalesOrderService {
 
   /**
    * Transform Accurate sales order to our format.
-   * Status disamakan dengan Accurate Online: Dipesan, Diproses, Selesai.
+   * Status disamakan dengan Accurate Online: Menunggu Diproses, Sebagian Terproses, Terproses.
    */
   static transformAccurateOrder(accurateOrder) {
     // Ambil status dari berbagai kemungkinan field response API Accurate (termasuk object)
@@ -261,18 +261,18 @@ class SalesOrderService {
 
     const normalizedStatus = rawStatus == null ? '' : String(rawStatus).trim().toUpperCase();
 
-    // Map ke label yang sama dengan Accurate Online Indonesia: Dipesan, Diproses, Selesai
-    let status = 'Dipesan';
+    // Map ke 3 status Accurate: Menunggu Diproses, Sebagian Terproses, Terproses
+    let status = 'Menunggu Diproses';
     if (['CLOSED', 'CLOSE', 'COMPLETED', 'COMPLETE', 'FINISHED', 'DONE', 'SELESAI', 'TERPROSES'].includes(normalizedStatus)) {
-      status = 'Selesai';
+      status = 'Terproses';
     } else if (['PARTIAL', 'PARTIALLY', 'PARTIAL_COMPLETED', 'PARTIAL_COMPLETE', 'SEBAGIAN', 'SEBAGIAN_TERPROSES', 'DIPROSES', 'IN PROGRESS', 'IN_PROGRESS', 'PROCESSING'].includes(normalizedStatus)) {
-      status = 'Diproses';
-    } else if (['DIPESAN', 'OPEN', 'OPENED', 'PENDING', 'MENUNGGU', 'MENUNGGU PROSES', 'NEW', 'DRAFT'].includes(normalizedStatus)) {
-      status = 'Dipesan';
+      status = 'Sebagian Terproses';
+    } else if (['DIPESAN', 'OPEN', 'OPENED', 'PENDING', 'MENUNGGU', 'MENUNGGU PROSES', 'MENUNGGU DIPROSES', 'NEW', 'DRAFT'].includes(normalizedStatus)) {
+      status = 'Menunggu Diproses';
     } else if (normalizedStatus) {
       if (!SalesOrderService.unmappedAccurateStatuses.has(normalizedStatus)) {
         SalesOrderService.unmappedAccurateStatuses.add(normalizedStatus);
-        logger.info('Unmapped Accurate sales order status, defaulting to Dipesan', {
+        logger.info('Unmapped Accurate sales order status, defaulting to Menunggu Diproses', {
           accurateOrderId: accurateOrder?.id,
           rawStatus,
           normalizedStatus

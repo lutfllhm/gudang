@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS sales_orders (
   customer_id VARCHAR(50),
   nama_pelanggan VARCHAR(255) NOT NULL,
   keterangan TEXT,
-  status VARCHAR(100) DEFAULT 'Dipesan' COMMENT 'Sama dengan Accurate: Dipesan, Diproses, Selesai',
+  status VARCHAR(100) DEFAULT 'Menunggu Diproses' COMMENT 'Sama dengan Accurate: Menunggu Diproses, Sebagian Terproses, Terproses',
   total_amount DECIMAL(15,2) DEFAULT 0,
   currency VARCHAR(10) DEFAULT 'IDR',
   is_active BOOLEAN DEFAULT TRUE,

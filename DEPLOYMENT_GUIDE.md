@@ -196,18 +196,18 @@ docker compose logs -f frontend
 
 ### 6.4 (Opsional) Migrasi status Sales Order agar sama dengan Accurate
 
-Agar status pesanan penjualan di aplikasi mengikuti Accurate Online (Dipesan, Diproses, Selesai), jika database sudah berjalan dengan schema lama, jalankan sekali.
+Agar status pesanan penjualan di aplikasi mengikuti Accurate Online (**Menunggu Diproses**, **Sebagian Terproses**, **Terproses**), jika database sudah berjalan dengan schema lama, jalankan sekali.
 
 **Cara 1 – perintah langsung (tanpa redirect file, disarankan):**
 
 ```bash
-docker compose exec db mysql -u"${DB_USER:-iware}" -p"${DB_PASSWORD}" "${DB_NAME:-iware_warehouse}" -e "ALTER TABLE sales_orders MODIFY COLUMN status VARCHAR(100) DEFAULT 'Dipesan';"
+docker compose exec db mysql -u"${DB_USER:-iware}" -p"${DB_PASSWORD}" "${DB_NAME:-iware_warehouse}" -e "ALTER TABLE sales_orders MODIFY COLUMN status VARCHAR(100) DEFAULT 'Menunggu Diproses';"
 ```
 
-Ganti user/password/database jika perlu, atau isi manual:
+Ganti user/password/database jika perlu. Opsional: ubah data lama (mis. Dipesan) ke "Menunggu Diproses":
 
 ```bash
-docker compose exec db mysql -uiware -pKATA_SANDI_ANDA iware_warehouse -e "ALTER TABLE sales_orders MODIFY COLUMN status VARCHAR(100) DEFAULT 'Dipesan';"
+docker compose exec db mysql -uiware -pKATA_SANDI_ANDA iware_warehouse -e "UPDATE sales_orders SET status = 'Menunggu Diproses' WHERE status = 'Dipesan';"
 ```
 
 **Cara 2 – dari file (pakai `-T` agar tidak error TTY):**

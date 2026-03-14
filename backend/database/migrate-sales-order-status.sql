@@ -1,14 +1,13 @@
--- Migration: Samakan status Sales Order dengan Accurate Online (Dipesan, Diproses, Selesai)
+-- Migration: Status Sales Order = Accurate (Menunggu Diproses, Sebagian Terproses, Terproses)
 -- Jalankan sekali: mysql -u user -p database < migrate-sales-order-status.sql
 
--- Ubah kolom status agar bisa menyimpan nilai dari Accurate (Dipesan, Diproses, Selesai)
 ALTER TABLE sales_orders
-  MODIFY COLUMN status VARCHAR(100) DEFAULT 'Dipesan';
+  MODIFY COLUMN status VARCHAR(100) DEFAULT 'Menunggu Diproses';
 
--- Opsional: update data lama ke label baru (setelah sync, semua akan ikut Accurate)
+-- Opsional: ubah data lama ke 3 status Accurate (jalankan setelah ALTER di atas)
 -- UPDATE sales_orders SET status = CASE
---   WHEN status = 'Menunggu Proses' THEN 'Dipesan'
---   WHEN status = 'Sebagian Terproses' THEN 'Diproses'
---   WHEN status = 'Terproses' THEN 'Selesai'
+--   WHEN status IN ('Menunggu Proses', 'Dipesan') THEN 'Menunggu Diproses'
+--   WHEN status IN ('Sebagian Terproses', 'Diproses') THEN 'Sebagian Terproses'
+--   WHEN status IN ('Terproses', 'Selesai') THEN 'Terproses'
 --   ELSE status
--- END WHERE status IN ('Menunggu Proses', 'Sebagian Terproses', 'Terproses');
+-- END;

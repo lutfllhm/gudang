@@ -60,6 +60,7 @@ export const getStatusColor = (status) => {
     dipesan: 'warning',
     menunggu: 'warning',
     'menunggu proses': 'warning',
+    'menunggu diproses': 'warning',
     proses: 'warning',
     diproses: 'info',
     processing: 'info',
