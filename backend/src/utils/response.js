@@ -42,15 +42,17 @@ const error = (res, message = 'Error', statusCode = 500, errors = null) => {
  * @param {string} message - Success message
  */
 const paginated = (res, data, pagination, message = 'Success') => {
+  const total = Number(pagination.total ?? 0);
+  const limit = Number(pagination.limit) || 20;
   return res.status(200).json({
     success: true,
     message,
     data,
     pagination: {
-      page: pagination.page,
-      limit: pagination.limit,
-      total: pagination.total,
-      totalPages: Math.ceil(pagination.total / pagination.limit)
+      page: Number(pagination.page) || 1,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit) || 1
     },
     timestamp: new Date().toISOString()
   });

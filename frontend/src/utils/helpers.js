@@ -53,11 +53,17 @@ export const getStatusColor = (status) => {
     active: 'success',
     completed: 'success',
     selesai: 'success',
+    terproses: 'success',
     nonaktif: 'danger',
     inactive: 'danger',
     pending: 'warning',
+    dipesan: 'warning',
+    menunggu: 'warning',
+    'menunggu proses': 'warning',
     proses: 'warning',
+    diproses: 'info',
     processing: 'info',
+    'sebagian terproses': 'info',
     cancelled: 'danger',
     batal: 'danger'
   }

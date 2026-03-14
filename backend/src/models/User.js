@@ -3,6 +3,25 @@ const bcrypt = require('bcryptjs');
 const { AppError } = require('../middleware/errorHandler');
 const logger = require('../utils/logger');
 
+/**
+ * Convert a user row to a JSON-safe plain object (avoids BigInt/Date serialization errors in res.json())
+ */
+function toPlainUser(row) {
+  if (!row) return null;
+  const toNum = (v) => (v != null && typeof v === 'bigint') ? Number(v) : (v != null ? Number(v) : v);
+  const toStr = (v) => (v instanceof Date) ? v.toISOString() : (v != null ? String(v) : null);
+  return {
+    id: toNum(row.id),
+    nama: row.nama ?? '',
+    email: row.email ?? '',
+    role: row.role ?? '',
+    foto_profil: row.foto_profil ?? null,
+    status: row.status ?? '',
+    last_login: row.last_login != null ? toStr(row.last_login instanceof Date ? row.last_login : new Date(row.last_login)) : null,
+    created_at: row.created_at != null ? toStr(row.created_at instanceof Date ? row.created_at : new Date(row.created_at)) : null
+  };
+}
+
 class User {
   /**
    * Find user by ID
@@ -62,7 +81,7 @@ class User {
     const total = Number(countResult?.[0]?.total ?? 0);
 
     // Get users
-    const users = await query(
+    const rows = await query(
       `SELECT id, nama, email, role, foto_profil, status, last_login, created_at 
        FROM users ${whereClause}
        ORDER BY created_at DESC
@@ -70,8 +89,10 @@ class User {
       [...params, limit, offset]
     );
 
+    const users = Array.isArray(rows) ? rows.map(toPlainUser).filter(Boolean) : [];
+
     return {
-      users: Array.isArray(users) ? users : [],
+      users,
       pagination: {
         page,
         limit,

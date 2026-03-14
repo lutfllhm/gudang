@@ -194,6 +194,22 @@ docker compose logs -f backend
 docker compose logs -f frontend
 ```
 
+### 6.4 (Opsional) Migrasi status Sales Order agar sama dengan Accurate
+
+Agar status pesanan penjualan di aplikasi mengikuti Accurate Online (Dipesan, Diproses, Selesai), jika database sudah berjalan dengan schema lama, jalankan sekali:
+
+```bash
+docker compose exec mysql mysql -u"$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" < backend/database/migrate-sales-order-status.sql
+```
+
+Atau dari host (sesuaikan user/password/database):
+
+```bash
+mysql -u root -p iware_warehouse < backend/database/migrate-sales-order-status.sql
+```
+
+Setelah itu jalankan sync Sales Order dari aplikasi agar data ter-update dari Accurate.
+
 ---
 
 ## 7) Nginx di host + SSL (Let's Encrypt)

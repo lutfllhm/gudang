@@ -40,10 +40,11 @@ const SchedulePage = () => {
         const fetchedOrders = response.data.data.salesOrders || []
         setOrders(fetchedOrders)
         
-        // Calculate stats
-        const completed = fetchedOrders.filter(o => o.status?.toLowerCase() === 'completed').length
-        const processing = fetchedOrders.filter(o => o.status?.toLowerCase() === 'processing').length
-        const pending = fetchedOrders.filter(o => o.status?.toLowerCase() === 'pending').length
+        // Calculate stats (dukung status Accurate: Dipesan, Diproses, Selesai + legacy)
+        const s = (st) => (fetchedOrders.filter(o => (o.status || '').toLowerCase() === st).length)
+        const completed = s('completed') + s('terproses') + s('selesai')
+        const processing = s('processing') + s('sebagian terproses') + s('diproses')
+        const pending = s('pending') + s('menunggu proses') + s('dipesan')
         const totalRevenue = fetchedOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0)
         
         setStats({
@@ -72,29 +73,22 @@ const SchedulePage = () => {
   }
 
   const getStatusBadgeClass = (status) => {
-    const statusLower = status?.toLowerCase()
-    
-    // Terproses (Completed) = Hijau Neon
-    if (statusLower === 'completed' || statusLower === 'terproses') {
+    const statusLower = (status || '').toLowerCase()
+    // Selesai / Terproses (Completed) = Hijau Neon
+    if (['completed', 'terproses', 'selesai'].includes(statusLower)) {
       return 'bg-emerald-500/20 text-emerald-400 border-emerald-400/60 shadow-[0_0_25px_rgba(16,185,129,0.6)] animate-neon-pulse-green'
     }
-    
-    // Sebagian Terproses (Processing) = Kuning Neon
-    if (statusLower === 'processing' || statusLower === 'sebagian terproses') {
+    // Diproses / Processing = Kuning Neon
+    if (['processing', 'sebagian terproses', 'diproses'].includes(statusLower)) {
       return 'bg-yellow-500/20 text-yellow-400 border-yellow-400/60 shadow-[0_0_25px_rgba(234,179,8,0.6)] animate-neon-pulse-yellow'
     }
-    
-    // Belum Terproses (Pending) = Merah Neon
-    if (statusLower === 'pending' || statusLower === 'belum terproses') {
+    // Dipesan / Pending = Merah Neon
+    if (['pending', 'belum terproses', 'menunggu proses', 'dipesan'].includes(statusLower)) {
       return 'bg-red-500/20 text-red-400 border-red-400/60 shadow-[0_0_25px_rgba(239,68,68,0.6)] animate-neon-pulse-red'
     }
-    
-    // Cancelled = Abu-abu
-    if (statusLower === 'cancelled') {
+    if (statusLower === 'cancelled' || statusLower === 'batal') {
       return 'bg-slate-500/20 text-slate-400 border-slate-400/60 shadow-[0_0_20px_rgba(148,163,184,0.4)]'
     }
-    
-    // Default = Biru Neon
     return 'bg-sky-500/20 text-sky-400 border-sky-400/60 shadow-[0_0_25px_rgba(14,165,233,0.6)] animate-neon-pulse-blue'
   }
 

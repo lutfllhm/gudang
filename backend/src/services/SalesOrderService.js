@@ -244,32 +244,35 @@ class SalesOrderService {
   }
 
   /**
-   * Transform Accurate sales order to our format
+   * Transform Accurate sales order to our format.
+   * Status disamakan dengan Accurate Online: Dipesan, Diproses, Selesai.
    */
   static transformAccurateOrder(accurateOrder) {
-    // Map Accurate status to our status (robust against different shapes/values)
+    // Ambil status dari berbagai kemungkinan field response API Accurate (termasuk object)
+    const docStatus = accurateOrder?.documentStatus;
+    const statusObj = accurateOrder?.status;
     const rawStatus =
-      accurateOrder?.status ??
+      (typeof docStatus === 'object' && docStatus !== null ? (docStatus.name ?? docStatus.code ?? docStatus) : docStatus) ??
+      accurateOrder?.documentStatusName ??
+      (typeof statusObj === 'object' && statusObj !== null ? (statusObj.name ?? statusObj.code ?? statusObj) : statusObj) ??
       accurateOrder?.statusName ??
       accurateOrder?.status_code ??
-      accurateOrder?.statusCode ??
-      accurateOrder?.documentStatus ??
-      accurateOrder?.documentStatusName ??
-      accurateOrder?.status?.name ??
-      accurateOrder?.status?.code;
+      accurateOrder?.statusCode;
 
     const normalizedStatus = rawStatus == null ? '' : String(rawStatus).trim().toUpperCase();
 
-    let status = 'Menunggu Proses';
+    // Map ke label yang sama dengan Accurate Online Indonesia: Dipesan, Diproses, Selesai
+    let status = 'Dipesan';
     if (['CLOSED', 'CLOSE', 'COMPLETED', 'COMPLETE', 'FINISHED', 'DONE', 'SELESAI', 'TERPROSES'].includes(normalizedStatus)) {
-      status = 'Terproses';
-    } else if (['PARTIAL', 'PARTIALLY', 'PARTIAL_COMPLETED', 'PARTIAL_COMPLETE', 'SEBAGIAN', 'SEBAGIAN_TERPROSES'].includes(normalizedStatus)) {
-      status = 'Sebagian Terproses';
+      status = 'Selesai';
+    } else if (['PARTIAL', 'PARTIALLY', 'PARTIAL_COMPLETED', 'PARTIAL_COMPLETE', 'SEBAGIAN', 'SEBAGIAN_TERPROSES', 'DIPROSES', 'IN PROGRESS', 'IN_PROGRESS', 'PROCESSING'].includes(normalizedStatus)) {
+      status = 'Diproses';
+    } else if (['DIPESAN', 'OPEN', 'OPENED', 'PENDING', 'MENUNGGU', 'MENUNGGU PROSES', 'NEW', 'DRAFT'].includes(normalizedStatus)) {
+      status = 'Dipesan';
     } else if (normalizedStatus) {
-      // Keep default "Menunggu Proses" but log unexpected values (once per unique status) for easier debugging
       if (!SalesOrderService.unmappedAccurateStatuses.has(normalizedStatus)) {
         SalesOrderService.unmappedAccurateStatuses.add(normalizedStatus);
-        logger.info('Unmapped Accurate sales order status, defaulting to pending', {
+        logger.info('Unmapped Accurate sales order status, defaulting to Dipesan', {
           accurateOrderId: accurateOrder?.id,
           rawStatus,
           normalizedStatus
