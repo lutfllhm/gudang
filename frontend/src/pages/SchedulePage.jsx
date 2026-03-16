@@ -546,7 +546,7 @@ const SchedulePage = () => {
               </AnimatePresence>
             )}
           </div>
-        </motion.div>
+        </motion.section>
 
         {/* Status bar */}
         <footer className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-3 py-3 px-4 rounded-lg bg-slate-800/40 border border-slate-700/40">
