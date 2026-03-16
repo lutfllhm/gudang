@@ -70,7 +70,7 @@ const SchedulePage = () => {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
-  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [isFullscreen, setIsFullscreen] = useState(true)
   const [currentTime, setCurrentTime] = useState(new Date())
   const [month, setMonth] = useState(() => toYyyyMm(new Date()))
   const [filterStatus, setFilterStatus] = useState('all')
@@ -281,7 +281,7 @@ const SchedulePage = () => {
         }}
       />
 
-      <div className="relative z-10 min-h-screen flex flex-col p-6 sm:p-8 lg:p-10 max-w-[1920px] mx-auto">
+      <div className="relative z-10 min-h-screen flex flex-col p-6 sm:p-8 lg:p-10 w-full">
         {/* Top bar */}
         <header className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">

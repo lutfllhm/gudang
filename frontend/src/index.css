@@ -18,6 +18,10 @@
   * {
     @apply border-gray-200;
   }
+  html {
+    /* Adaptive UI scaling across common PC resolutions */
+    font-size: clamp(14px, 0.35vw + 12px, 18px);
+  }
   body {
     @apply bg-gray-50 text-gray-900 antialiased;
     font-family: 'Inter', sans-serif;

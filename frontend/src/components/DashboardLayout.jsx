@@ -206,7 +206,7 @@ const DashboardLayout = ({ children }) => {
         </header>
 
         {/* Page content */}
-        <main className="p-4 sm:p-6 lg:p-8">{children}</main>
+        <main className="p-4 sm:p-6 lg:p-8 2xl:p-10">{children}</main>
       </div>
     </div>
   )
