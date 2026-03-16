@@ -625,7 +625,7 @@ const SchedulePage = () => {
         }
         .running-vertical {
           will-change: transform;
-          animation: vertical-marquee 40s linear infinite;
+          animation: vertical-marquee 120s linear infinite;
         }
         .running-vertical:hover {
           animation-play-state: paused;

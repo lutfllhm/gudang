@@ -177,14 +177,15 @@ const SalesOrdersPage = () => {
                           {formatCurrency(order.totalAmount)}
                         </td>
                         <td className="px-6 py-5 text-center">
-                          <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider badge-${getStatusColor(order.status || 'completed')}`}>
-                            {order.status === 'completed'
-                              ? 'Terproses'
-                              : order.status === 'processing'
-                                ? 'Sebagian Terproses'
-                                : !order.status || order.status === 'pending'
-                                  ? 'Menunggu proses'
-                                  : order.status}
+                          <span
+                            className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold tracking-wider badge-${getStatusColor(order.status || 'menunggu diproses')}`}
+                          >
+                            {(() => {
+                              const s = (order.status || '').toLowerCase()
+                              if (s === 'terproses' || s === 'completed' || s === 'selesai') return 'Terproses'
+                              if (s === 'sebagian terproses' || s === 'processing' || s === 'diproses') return 'Sebagian terproses'
+                              return 'Menunggu diproses'
+                            })()}
                           </span>
                         </td>
                       </tr>
