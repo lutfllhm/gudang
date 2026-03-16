@@ -43,6 +43,7 @@ const SchedulePage = () => {
   usePageTitle('Schedule SO')
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [currentTime, setCurrentTime] = useState(new Date())
   const [filterStatus, setFilterStatus] = useState('all')
@@ -56,15 +57,19 @@ const SchedulePage = () => {
     totalRevenue: 0,
   })
 
-  const fetchOrders = useCallback(async () => {
+  const fetchOrders = useCallback(async ({ silent = false } = {}) => {
     try {
-      setLoading(true)
+      if (silent) setRefreshing(true)
+      else setLoading(true)
       const response = await api.get('/sales-orders', {
         params: { page: 1, limit: 20 },
       })
 
-      if (response.data?.data) {
-        const fetchedOrders = response.data.data.salesOrders || []
+      // Backend returns: { success, message, data: [...], pagination: {...} }
+      if (response.data?.success) {
+        const fetchedOrders = Array.isArray(response.data.data)
+          ? response.data.data
+          : []
         setOrders(fetchedOrders)
 
         const s = (st) =>
@@ -92,11 +97,15 @@ const SchedulePage = () => {
           pending,
           totalRevenue,
         })
+      } else {
+        // Keep previous data on unexpected response to avoid flashing
+        console.error('[SchedulePage] Unexpected response structure:', response.data)
       }
     } catch (error) {
       console.error('[SchedulePage] Failed to fetch orders:', error)
     } finally {
-      setLoading(false)
+      if (silent) setRefreshing(false)
+      else setLoading(false)
     }
   }, [])
 
@@ -107,7 +116,7 @@ const SchedulePage = () => {
   }, [fetchOrders])
 
   useEffect(() => {
-    const refreshInterval = setInterval(fetchOrders, AUTO_REFRESH_MS)
+    const refreshInterval = setInterval(() => fetchOrders({ silent: true }), AUTO_REFRESH_MS)
     return () => clearInterval(refreshInterval)
   }, [fetchOrders])
 
@@ -236,13 +245,13 @@ const SchedulePage = () => {
           </div>
           <div className="flex items-center gap-2">
             <motion.button
-              onClick={fetchOrders}
+              onClick={() => fetchOrders({ silent: true })}
               disabled={loading}
               className="p-2.5 rounded-lg bg-slate-800/80 border border-slate-600/50 text-slate-300 hover:bg-slate-700/80 hover:border-slate-500/50 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:ring-offset-2 focus:ring-offset-slate-950 disabled:opacity-60"
               whileTap={{ scale: 0.97 }}
             >
               <RefreshCw
-                className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`}
+                className={`w-5 h-5 ${(loading || refreshing) ? 'animate-spin' : ''}`}
               />
             </motion.button>
             <motion.button
@@ -412,6 +421,12 @@ const SchedulePage = () => {
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">Sort</span>
+            {refreshing && (
+              <span className="text-xs text-slate-500 flex items-center gap-2">
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-cyan-400/80 animate-pulse" />
+                Syncing…
+              </span>
+            )}
             <select
               value={`${sortBy}-${sortDir}`}
               onChange={(e) => {
