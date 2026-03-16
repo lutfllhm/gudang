@@ -178,7 +178,13 @@ const SalesOrdersPage = () => {
                         </td>
                         <td className="px-6 py-5 text-center">
                           <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider badge-${getStatusColor(order.status || 'completed')}`}>
-                            {order.status || 'Menunggu diproses'}
+                            {order.status === 'completed'
+                              ? 'Terproses'
+                              : order.status === 'processing'
+                                ? 'Sebagian Terproses'
+                                : !order.status || order.status === 'pending'
+                                  ? 'Menunggu proses'
+                                  : order.status}
                           </span>
                         </td>
                       </tr>

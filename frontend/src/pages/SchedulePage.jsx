@@ -651,6 +651,7 @@ const SchedulePage = () => {
         .animate-neon-pulse-yellow { animation: neon-pulse-yellow 2.5s ease-in-out infinite; }
         .animate-neon-pulse-red { animation: neon-pulse-red 2.5s ease-in-out infinite; }
         .animate-neon-pulse-blue { animation: neon-pulse-blue 2.5s ease-in-out infinite; }
+        .running-vertical { animation-duration: 80s; }
         .schedule-scrollbar::-webkit-scrollbar { width: 8px; }
         .schedule-scrollbar::-webkit-scrollbar-track { background: rgb(15 23 42); border-radius: 4px; }
         .schedule-scrollbar::-webkit-scrollbar-thumb { background: rgb(51 65 85); border-radius: 4px; }
