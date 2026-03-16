@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import DashboardLayout from '../components/DashboardLayout'
 import usePageTitle from '../hooks/usePageTitle'
@@ -65,6 +66,7 @@ const getOrderStatusGroup = (order) => {
 
 const SchedulePage = () => {
   usePageTitle('Schedule SO')
+  const navigate = useNavigate()
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -294,6 +296,13 @@ const SchedulePage = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <motion.button
+              onClick={() => navigate(-1)}
+              className="hidden sm:inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800/80 border border-slate-600/50 text-slate-200 text-sm hover:bg-slate-700/80 hover:border-slate-500/50 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:ring-offset-2 focus:ring-offset-slate-950"
+              whileTap={{ scale: 0.97 }}
+            >
+              Kembali
+            </motion.button>
             <motion.button
               onClick={() => fetchOrders({ silent: true })}
               disabled={loading}
@@ -525,7 +534,7 @@ const SchedulePage = () => {
             ))}
           </div>
 
-          <div className="divide-y divide-slate-700/40 max-h-[calc(100vh-520px)] min-h-[300px] overflow-hidden relative">
+          <div className="divide-y divide-slate-700/40 max-h-[calc(100vh-420px)] min-h-[400px] overflow-hidden relative">
             {loading ? (
               <div className="py-24 flex flex-col items-center justify-center gap-4">
                 <RefreshCw className="w-10 h-10 text-slate-500 animate-spin" />

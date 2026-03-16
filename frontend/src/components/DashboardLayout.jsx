@@ -95,6 +95,24 @@ const DashboardLayout = ({ children }) => {
               const active = isActive(item.href)
 
               return (
+                item.name === 'Schedule' ? (
+                  <button
+                    key={item.name}
+                    type="button"
+                    onClick={() => {
+                      window.open(item.href, '_blank')
+                      closeSidebar()
+                    }}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group ${
+                      active
+                        ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg scale-105'
+                        : 'text-gray-700 hover:bg-gradient-to-r hover:from-red-50 hover:to-purple-50 hover:scale-105'
+                    }`}
+                  >
+                    <Icon className={`w-5 h-5 ${active ? '' : 'group-hover:scale-110 transition-transform'}`} />
+                    <span className="font-semibold">{item.name}</span>
+                  </button>
+                ) : (
                   <Link
                     key={item.name}
                     to={item.href}
@@ -108,6 +126,7 @@ const DashboardLayout = ({ children }) => {
                     <Icon className={`w-5 h-5 ${active ? '' : 'group-hover:scale-110 transition-transform'}`} />
                     <span className="font-semibold">{item.name}</span>
                   </Link>
+                )
               )
             })}
           </nav>
