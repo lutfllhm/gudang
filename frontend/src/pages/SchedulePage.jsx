@@ -24,11 +24,26 @@ import {
 } from 'lucide-react'
 
 const AUTO_REFRESH_MS = 30000
+const DEFAULT_LIMIT = 200
 
 const STATUS_GROUP = {
   completed: ['completed', 'terproses', 'selesai'],
   processing: ['processing', 'sebagian terproses', 'diproses'],
   pending: ['pending', 'belum terproses', 'menunggu proses', 'menunggu diproses', 'dipesan'],
+}
+
+const toYyyyMm = (d) => {
+  const yyyy = d.getFullYear()
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  return `${yyyy}-${mm}`
+}
+
+const getMonthRange = (yyyyMm) => {
+  const [y, m] = String(yyyyMm).split('-').map((v) => parseInt(v, 10))
+  const start = new Date(y, (m || 1) - 1, 1)
+  const end = new Date(y, (m || 1), 0)
+  const toIsoDate = (dt) => dt.toISOString().slice(0, 10)
+  return { startDate: toIsoDate(start), endDate: toIsoDate(end) }
 }
 
 const getOrderStatusGroup = (order) => {
@@ -46,6 +61,7 @@ const SchedulePage = () => {
   const [refreshing, setRefreshing] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [currentTime, setCurrentTime] = useState(new Date())
+  const [month, setMonth] = useState(() => toYyyyMm(new Date()))
   const [filterStatus, setFilterStatus] = useState('all')
   const [sortBy, setSortBy] = useState('time')
   const [sortDir, setSortDir] = useState('desc')
@@ -61,8 +77,9 @@ const SchedulePage = () => {
     try {
       if (silent) setRefreshing(true)
       else setLoading(true)
+      const { startDate, endDate } = getMonthRange(month)
       const response = await api.get('/sales-orders', {
-        params: { page: 1, limit: 20 },
+        params: { page: 1, limit: DEFAULT_LIMIT, startDate, endDate },
       })
 
       // Backend returns: { success, message, data: [...], pagination: {...} }
@@ -107,7 +124,7 @@ const SchedulePage = () => {
       if (silent) setRefreshing(false)
       else setLoading(false)
     }
-  }, [])
+  }, [month])
 
   useEffect(() => {
     fetchOrders()
@@ -214,7 +231,7 @@ const SchedulePage = () => {
     { key: 'status', label: 'Status', icon: Activity, span: 'col-span-2' },
   ]
 
-  const ScheduleContent = () => (
+  const renderScheduleContent = () => (
     <div
       className={`${
         isFullscreen ? 'min-h-screen' : ''
@@ -420,6 +437,13 @@ const SchedulePage = () => {
             ))}
           </div>
           <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">Month</span>
+            <input
+              type="month"
+              value={month}
+              onChange={(e) => setMonth(e.target.value)}
+              className="bg-slate-800/80 border border-slate-600/50 rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50"
+            />
             <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">Sort</span>
             {refreshing && (
               <span className="text-xs text-slate-500 flex items-center gap-2">
@@ -445,6 +469,42 @@ const SchedulePage = () => {
               <option value="status-asc">Status (A–Z)</option>
               <option value="status-desc">Status (Z–A)</option>
             </select>
+          </div>
+        </div>
+
+        {/* Running text (bottom -> top) */}
+        <div className="mb-4 rounded-lg border border-slate-700/40 bg-slate-900/30 overflow-hidden">
+          <div className="px-4 py-2 border-b border-slate-700/40 flex items-center justify-between">
+            <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+              Live Feed
+            </span>
+            <span className="text-xs text-slate-500">
+              {month}
+            </span>
+          </div>
+          <div className="h-16 overflow-hidden relative">
+            <div className="running-vertical absolute inset-x-0 bottom-0">
+              {[...filteredAndSortedOrders.slice(0, 12), ...filteredAndSortedOrders.slice(0, 12)].map((o, idx) => (
+                <div
+                  key={`${o.id || o.transNumber || 'row'}-${idx}`}
+                  className="px-4 py-1.5 text-sm text-slate-400 flex items-center justify-between gap-3"
+                >
+                  <span className="truncate">
+                    <span className="text-slate-300 font-medium">{o.transNumber}</span>{' '}
+                    <span className="text-slate-500">·</span>{' '}
+                    <span className="text-slate-400">{o.customerName}</span>
+                  </span>
+                  <span className="shrink-0 text-xs text-slate-500 font-mono tabular-nums">
+                    {formatTime(o.transDate)}
+                  </span>
+                </div>
+              ))}
+              {filteredAndSortedOrders.length === 0 && (
+                <div className="px-4 py-6 text-sm text-slate-500">
+                  No activity
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -583,6 +643,18 @@ const SchedulePage = () => {
       </div>
 
       <style>{`
+        @keyframes vertical-marquee {
+          0% { transform: translateY(100%); }
+          100% { transform: translateY(-100%); }
+        }
+        .running-vertical {
+          will-change: transform;
+          animation: vertical-marquee 18s linear infinite;
+        }
+        .running-vertical:hover {
+          animation-play-state: paused;
+        }
+
         @keyframes neon-pulse-green {
           0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.2); }
           50% { box-shadow: 0 0 0 3px rgba(16,185,129,0.15); }
@@ -611,10 +683,10 @@ const SchedulePage = () => {
     </div>
   )
 
-  if (isFullscreen) return <ScheduleContent />
+  if (isFullscreen) return renderScheduleContent()
   return (
     <DashboardLayout>
-      <ScheduleContent />
+      {renderScheduleContent()}
     </DashboardLayout>
   )
 }
