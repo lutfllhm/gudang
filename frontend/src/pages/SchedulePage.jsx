@@ -472,41 +472,6 @@ const SchedulePage = () => {
           </div>
         </div>
 
-        {/* Running text (bottom -> top) */}
-        <div className="mb-4 rounded-lg border border-slate-700/40 bg-slate-900/30 overflow-hidden">
-          <div className="px-4 py-2 border-b border-slate-700/40 flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-              Live Feed
-            </span>
-            <span className="text-xs text-slate-500">
-              {month}
-            </span>
-          </div>
-          <div className="h-16 overflow-hidden relative">
-            <div className="running-vertical absolute inset-x-0 bottom-0">
-              {[...filteredAndSortedOrders.slice(0, 12), ...filteredAndSortedOrders.slice(0, 12)].map((o, idx) => (
-                <div
-                  key={`${o.id || o.transNumber || 'row'}-${idx}`}
-                  className="px-4 py-1.5 text-sm text-slate-400 flex items-center justify-between gap-3"
-                >
-                  <span className="truncate">
-                    <span className="text-slate-300 font-medium">{o.transNumber}</span>{' '}
-                    <span className="text-slate-500">·</span>{' '}
-                    <span className="text-slate-400">{o.customerName}</span>
-                  </span>
-                  <span className="shrink-0 text-xs text-slate-500 font-mono tabular-nums">
-                    {formatTime(o.transDate)}
-                  </span>
-                </div>
-              ))}
-              {filteredAndSortedOrders.length === 0 && (
-                <div className="px-4 py-6 text-sm text-slate-500">
-                  No activity
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
 
         {/* Table */}
         <motion.section
@@ -527,7 +492,7 @@ const SchedulePage = () => {
             ))}
           </div>
 
-          <div className="divide-y divide-slate-700/40 max-h-[calc(100vh-520px)] min-h-[300px] overflow-y-auto schedule-scrollbar">
+          <div className="divide-y divide-slate-700/40 max-h-[calc(100vh-520px)] min-h-[300px] overflow-hidden relative">
             {loading ? (
               <div className="py-24 flex flex-col items-center justify-center gap-4">
                 <RefreshCw className="w-10 h-10 text-slate-500 animate-spin" />
@@ -555,20 +520,12 @@ const SchedulePage = () => {
                 </p>
               </motion.div>
             ) : (
-              <AnimatePresence mode="popLayout">
-                {filteredAndSortedOrders.map((order, index) => {
+              <div className="running-vertical absolute inset-x-0 bottom-0">
+                {[...filteredAndSortedOrders, ...filteredAndSortedOrders].map((order, index) => {
                   const statusConfig = getStatusConfig(order.status)
                   return (
-                    <motion.div
-                      key={order.id}
-                      layout
-                      initial={{ opacity: 0, x: -8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0 }}
-                      transition={{
-                        duration: 0.35,
-                        delay: index * 0.03,
-                      }}
+                    <div
+                      key={`${order.id || order.transNumber || 'row'}-${index}`}
                       className={`grid grid-cols-12 gap-4 px-6 lg:px-8 py-4 lg:py-4 hover:bg-slate-800/40 transition-colors border-l-2 border-transparent hover:border-cyan-500/40 ${
                         index % 2 === 1 ? 'bg-slate-800/20' : ''
                       }`}
@@ -605,20 +562,16 @@ const SchedulePage = () => {
                         )}
                       </div>
                       <div className="col-span-2 flex items-center justify-center">
-                        <motion.span
+                        <span
                           className={`inline-flex items-center justify-center min-w-[88px] px-3 py-1.5 rounded-md border text-[10px] font-semibold uppercase tracking-wider ${statusConfig.className} ${statusConfig.glow}`}
-                          layout
-                          initial={false}
-                          animate={{ opacity: 1 }}
-                          transition={{ duration: 0.3 }}
                         >
                           {order.status || '—'}
-                        </motion.span>
+                        </span>
                       </div>
-                    </motion.div>
+                    </div>
                   )
                 })}
-              </AnimatePresence>
+              </div>
             )}
           </div>
         </motion.section>
