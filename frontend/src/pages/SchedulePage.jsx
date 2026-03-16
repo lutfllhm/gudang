@@ -644,8 +644,8 @@ const SchedulePage = () => {
         }
         .running-vertical {
           will-change: transform;
-          /* perlambat jauh supaya sekitar 30–40px/detik atau lebih lambat */
-          animation: vertical-marquee 300s linear infinite;
+          /* diperlambat lagi supaya teks sangat mudah dibaca */
+          animation: vertical-marquee 480s linear infinite;
         }
         .running-vertical:hover {
           animation-play-state: paused;
