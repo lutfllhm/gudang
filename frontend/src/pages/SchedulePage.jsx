@@ -190,6 +190,29 @@ const SchedulePage = () => {
     }
   }
 
+  const formatStatusLabel = (status) => {
+    const s = (status || '').toLowerCase()
+    if (s === 'completed' || s === 'selesai' || s === 'terproses') {
+      return 'Terproses'
+    }
+    if (s === 'processing' || s === 'sebagian terproses' || s === 'diproses') {
+      return 'Sebagian Terproses'
+    }
+    if (
+      s === 'pending' ||
+      s === 'belum terproses' ||
+      s === 'menunggu proses' ||
+      s === 'menunggu diproses' ||
+      s === 'dipesan'
+    ) {
+      return 'Menunggu proses'
+    }
+    if (s === 'cancelled' || s === 'batal') {
+      return 'Batal'
+    }
+    return status || '—'
+  }
+
   const formatTime = (date) => {
     return new Date(date).toLocaleTimeString('id-ID', {
       hour: '2-digit',
@@ -565,7 +588,7 @@ const SchedulePage = () => {
                         <span
                           className={`inline-flex items-center justify-center min-w-[88px] px-3 py-1.5 rounded-md border text-[10px] font-semibold uppercase tracking-wider ${statusConfig.className} ${statusConfig.glow}`}
                         >
-                          {order.status || '—'}
+                          {formatStatusLabel(order.status)}
                         </span>
                       </div>
                     </div>
@@ -602,7 +625,7 @@ const SchedulePage = () => {
         }
         .running-vertical {
           will-change: transform;
-          animation: vertical-marquee 18s linear infinite;
+          animation: vertical-marquee 40s linear infinite;
         }
         .running-vertical:hover {
           animation-play-state: paused;
