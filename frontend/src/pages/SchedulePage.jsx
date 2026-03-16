@@ -27,10 +27,18 @@ const AUTO_REFRESH_MS = 30000
 const DEFAULT_LIMIT = 200
 
 const STATUS_GROUP = {
-  // disamakan dengan Accurate + status dari app (QUEUE/PROCEED)
+  // disamakan dengan Accurate + status dari app (QUEUE/PROCEED/WATING)
   completed: ['completed', 'terproses', 'selesai', 'proceed'],
   processing: ['processing', 'sebagian terproses', 'diproses'],
-  pending: ['pending', 'belum terproses', 'menunggu proses', 'menunggu diproses', 'dipesan', 'queue'],
+  pending: [
+    'pending',
+    'belum terproses',
+    'menunggu proses',
+    'menunggu diproses',
+    'dipesan',
+    'queue',
+    'waiting',
+  ],
 }
 
 const toYyyyMm = (d) => {
@@ -169,6 +177,7 @@ const SchedulePage = () => {
         'menunggu diproses',
         'dipesan',
         'queue',
+        'waiting',
       ].includes(s)
     ) {
       return {
@@ -203,7 +212,8 @@ const SchedulePage = () => {
       s === 'menunggu proses' ||
       s === 'menunggu diproses' ||
       s === 'dipesan' ||
-      s === 'queue'
+      s === 'queue' ||
+      s === 'waiting'
     ) {
       return 'Menunggu diproses'
     }

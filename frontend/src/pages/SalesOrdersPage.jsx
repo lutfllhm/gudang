@@ -7,12 +7,27 @@ import { formatCurrency, formatDate, debounce, getStatusColor } from '../utils/h
 import { Search, RefreshCw, ShoppingCart } from 'lucide-react'
 import toast from 'react-hot-toast'
 
+const toYyyyMm = (d) => {
+  const yyyy = d.getFullYear()
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  return `${yyyy}-${mm}`
+}
+
+const getMonthRange = (yyyyMm) => {
+  const [y, m] = String(yyyyMm).split('-').map((v) => parseInt(v, 10))
+  const start = new Date(y, (m || 1) - 1, 1)
+  const end = new Date(y, (m || 1), 0)
+  const toIsoDate = (dt) => dt.toISOString().slice(0, 10)
+  return { startDate: toIsoDate(start), endDate: toIsoDate(end) }
+}
+
 const SalesOrdersPage = () => {
   usePageTitle('Sales Orders')
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
   const [search, setSearch] = useState('')
+  const [month, setMonth] = useState(() => toYyyyMm(new Date()))
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 20,
@@ -22,17 +37,20 @@ const SalesOrdersPage = () => {
 
   useEffect(() => {
     fetchOrders()
-  }, [pagination.page, search])
+  }, [pagination.page, search, month])
 
   const fetchOrders = async () => {
     try {
       setLoading(true)
-      console.log('[SalesOrdersPage] Fetching orders...', { page: pagination.page, limit: pagination.limit, search })
+      const { startDate, endDate } = getMonthRange(month)
+      console.log('[SalesOrdersPage] Fetching orders...', { page: pagination.page, limit: pagination.limit, search, month, startDate, endDate })
       const response = await api.get('/sales-orders', {
         params: {
           page: pagination.page,
           limit: pagination.limit,
-          search
+          search,
+          startDate,
+          endDate,
         }
       })
       console.log('[SalesOrdersPage] Orders fetched:', response.data)
@@ -85,6 +103,11 @@ const SalesOrdersPage = () => {
     setPagination({ ...pagination, page: 1 })
   }, 500)
 
+  const handleMonthChange = (value) => {
+    setMonth(value)
+    setPagination({ ...pagination, page: 1 })
+  }
+
   return (
     <DashboardLayout>
       <div className="space-y-8 animate-fade-in">
@@ -104,8 +127,8 @@ const SalesOrdersPage = () => {
           </button>
         </div>
 
-        {/* Search */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-all duration-300">
+        {/* Search + Month Filter */}
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-all duration-300 space-y-4">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
@@ -113,6 +136,15 @@ const SalesOrdersPage = () => {
               placeholder="Cari berdasarkan nomor order atau nama customer..."
               onChange={(e) => handleSearchChange(e.target.value)}
               className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all bg-gray-50 hover:bg-white"
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-3 text-sm">
+            <span className="font-semibold text-gray-600">Bulan</span>
+            <input
+              type="month"
+              value={month}
+              onChange={(e) => handleMonthChange(e.target.value)}
+              className="border-2 border-gray-200 rounded-xl px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent bg-gray-50 hover:bg-white"
             />
           </div>
         </div>
