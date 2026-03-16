@@ -90,19 +90,16 @@ const SchedulePage = () => {
           : []
         setOrders(fetchedOrders)
 
-        const s = (st) =>
-          fetchedOrders.filter(
-            (o) => (o.status || '').toLowerCase() === st
-          ).length
-        const completed =
-          s('completed') + s('terproses') + s('selesai')
-        const processing =
-          s('processing') + s('sebagian terproses') + s('diproses')
-        const pending =
-          s('pending') +
-          s('menunggu proses') +
-          s('menunggu diproses') +
-          s('dipesan')
+        const counter = fetchedOrders.reduce(
+          (acc, o) => {
+            const group = getOrderStatusGroup(o)
+            if (group === 'completed') acc.completed += 1
+            else if (group === 'processing') acc.processing += 1
+            else if (group === 'pending') acc.pending += 1
+            return acc
+          },
+          { completed: 0, processing: 0, pending: 0 }
+        )
         const totalRevenue = fetchedOrders.reduce(
           (sum, o) => sum + (o.totalAmount || 0),
           0
@@ -110,9 +107,9 @@ const SchedulePage = () => {
 
         setStats({
           total: fetchedOrders.length,
-          completed,
-          processing,
-          pending,
+          completed: counter.completed,
+          processing: counter.processing,
+          pending: counter.pending,
           totalRevenue,
         })
       } else {
@@ -444,10 +441,10 @@ const SchedulePage = () => {
             <Filter className="w-4 h-4 text-slate-500 shrink-0" />
             <span className="text-xs font-medium text-slate-500 uppercase tracking-wider mr-2">Status</span>
             {[
-              { value: 'all', label: 'All' },
-              { value: 'completed', label: 'Completed' },
-              { value: 'processing', label: 'Processing' },
-              { value: 'pending', label: 'Pending' },
+              { value: 'all', label: 'Semua' },
+              { value: 'completed', label: 'Terproses' },
+              { value: 'processing', label: 'Sebagian terproses' },
+              { value: 'pending', label: 'Menunggu diproses' },
             ].map((opt) => (
               <button
                 key={opt.value}
