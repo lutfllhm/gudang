@@ -27,9 +27,10 @@ const AUTO_REFRESH_MS = 30000
 const DEFAULT_LIMIT = 200
 
 const STATUS_GROUP = {
-  completed: ['completed', 'terproses', 'selesai'],
+  // disamakan dengan Accurate + status dari app (QUEUE/PROCEED)
+  completed: ['completed', 'terproses', 'selesai', 'proceed'],
   processing: ['processing', 'sebagian terproses', 'diproses'],
-  pending: ['pending', 'belum terproses', 'menunggu proses', 'menunggu diproses', 'dipesan'],
+  pending: ['pending', 'belum terproses', 'menunggu proses', 'menunggu diproses', 'dipesan', 'queue'],
 }
 
 const toYyyyMm = (d) => {
@@ -149,7 +150,7 @@ const SchedulePage = () => {
 
   const getStatusConfig = (status) => {
     const s = (status || '').toLowerCase()
-    if (['completed', 'terproses', 'selesai'].includes(s)) {
+    if (['completed', 'terproses', 'selesai', 'proceed'].includes(s)) {
       return {
         className:
           'bg-emerald-500/15 text-emerald-400 border-emerald-400/40',
@@ -170,6 +171,7 @@ const SchedulePage = () => {
         'menunggu proses',
         'menunggu diproses',
         'dipesan',
+        'queue',
       ].includes(s)
     ) {
       return {
@@ -192,7 +194,7 @@ const SchedulePage = () => {
 
   const formatStatusLabel = (status) => {
     const s = (status || '').toLowerCase()
-    if (s === 'completed' || s === 'selesai' || s === 'terproses') {
+    if (s === 'completed' || s === 'selesai' || s === 'terproses' || s === 'proceed') {
       return 'Terproses'
     }
     if (s === 'processing' || s === 'sebagian terproses' || s === 'diproses') {
@@ -203,9 +205,10 @@ const SchedulePage = () => {
       s === 'belum terproses' ||
       s === 'menunggu proses' ||
       s === 'menunggu diproses' ||
-      s === 'dipesan'
+      s === 'dipesan' ||
+      s === 'queue'
     ) {
-      return 'Menunggu proses'
+      return 'Menunggu diproses'
     }
     if (s === 'cancelled' || s === 'batal') {
       return 'Batal'
@@ -652,7 +655,6 @@ const SchedulePage = () => {
         .animate-neon-pulse-yellow { animation: neon-pulse-yellow 2.5s ease-in-out infinite; }
         .animate-neon-pulse-red { animation: neon-pulse-red 2.5s ease-in-out infinite; }
         .animate-neon-pulse-blue { animation: neon-pulse-blue 2.5s ease-in-out infinite; }
-        .running-vertical { animation-duration: 80s; }
         .schedule-scrollbar::-webkit-scrollbar { width: 8px; }
         .schedule-scrollbar::-webkit-scrollbar-track { background: rgb(15 23 42); border-radius: 4px; }
         .schedule-scrollbar::-webkit-scrollbar-thumb { background: rgb(51 65 85); border-radius: 4px; }

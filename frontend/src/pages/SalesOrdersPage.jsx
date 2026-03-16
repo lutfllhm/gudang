@@ -182,8 +182,13 @@ const SalesOrdersPage = () => {
                           >
                             {(() => {
                               const s = (order.status || '').toLowerCase()
-                              if (s === 'terproses' || s === 'completed' || s === 'selesai') return 'Terproses'
-                              if (s === 'sebagian terproses' || s === 'processing' || s === 'diproses') return 'Sebagian terproses'
+                              if (s === 'terproses' || s === 'completed' || s === 'selesai' || s === 'proceed') {
+                                return 'Terproses'
+                              }
+                              if (s === 'sebagian terproses' || s === 'processing' || s === 'diproses') {
+                                return 'Sebagian terproses'
+                              }
+                              // termasuk queue dan status lain dianggap menunggu diproses
                               return 'Menunggu diproses'
                             })()}
                           </span>
