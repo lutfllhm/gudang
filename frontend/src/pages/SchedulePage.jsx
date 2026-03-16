@@ -358,21 +358,21 @@ const SchedulePage = () => {
             },
             {
               key: 'completed',
-              label: 'Completed',
+              label: 'Terproses',
               value: stats.completed,
               icon: CheckCircle2,
               accent: 'emerald',
             },
             {
               key: 'processing',
-              label: 'Processing',
+              label: 'Sebagian terproses',
               value: stats.processing,
               icon: Activity,
               accent: 'amber',
             },
             {
               key: 'pending',
-              label: 'Pending',
+              label: 'Menunggu diproses',
               value: stats.pending,
               icon: AlertCircle,
               accent: 'red',
@@ -625,7 +625,8 @@ const SchedulePage = () => {
         }
         .running-vertical {
           will-change: transform;
-          animation: vertical-marquee 120s linear infinite;
+          /* perlambat jauh supaya sekitar 30–40px/detik atau lebih lambat */
+          animation: vertical-marquee 300s linear infinite;
         }
         .running-vertical:hover {
           animation-play-state: paused;
