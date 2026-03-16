@@ -1,10 +1,43 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import DashboardLayout from '../components/DashboardLayout'
 import usePageTitle from '../hooks/usePageTitle'
 import Logo from '../components/Logo'
 import api from '../utils/api'
 import { formatCurrency, formatDate } from '../utils/helpers'
-import { Maximize2, Minimize2, RefreshCw, Clock, Plane, Package, DollarSign, Activity, CheckCircle2, AlertCircle } from 'lucide-react'
+import AnimatedCounter from '../components/AnimatedCounter'
+import {
+  Maximize2,
+  Minimize2,
+  RefreshCw,
+  Clock,
+  Package,
+  CheckCircle2,
+  AlertCircle,
+  Activity,
+  Warehouse,
+  Calendar,
+  User,
+  FileText,
+  ClipboardList,
+  Filter,
+} from 'lucide-react'
+
+const AUTO_REFRESH_MS = 30000
+
+const STATUS_GROUP = {
+  completed: ['completed', 'terproses', 'selesai'],
+  processing: ['processing', 'sebagian terproses', 'diproses'],
+  pending: ['pending', 'belum terproses', 'menunggu proses', 'menunggu diproses', 'dipesan'],
+}
+
+const getOrderStatusGroup = (order) => {
+  const s = (order?.status || '').toLowerCase()
+  if (STATUS_GROUP.completed.some((x) => x === s)) return 'completed'
+  if (STATUS_GROUP.processing.some((x) => x === s)) return 'processing'
+  if (STATUS_GROUP.pending.some((x) => x === s)) return 'pending'
+  return 'other'
+}
 
 const SchedulePage = () => {
   usePageTitle('Schedule SO')
@@ -12,47 +45,52 @@ const SchedulePage = () => {
   const [loading, setLoading] = useState(true)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [currentTime, setCurrentTime] = useState(new Date())
+  const [filterStatus, setFilterStatus] = useState('all')
+  const [sortBy, setSortBy] = useState('time')
+  const [sortDir, setSortDir] = useState('desc')
   const [stats, setStats] = useState({
     total: 0,
     completed: 0,
     processing: 0,
     pending: 0,
-    totalRevenue: 0
+    totalRevenue: 0,
   })
 
-  useEffect(() => {
-    fetchOrders()
-    const timeInterval = setInterval(() => setCurrentTime(new Date()), 1000)
-    return () => clearInterval(timeInterval)
-  }, [])
-
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     try {
       setLoading(true)
       const response = await api.get('/sales-orders', {
-        params: {
-          page: 1,
-          limit: 20
-        }
+        params: { page: 1, limit: 20 },
       })
-      
-      if (response.data && response.data.data) {
+
+      if (response.data?.data) {
         const fetchedOrders = response.data.data.salesOrders || []
         setOrders(fetchedOrders)
-        
-        // Calculate stats (3 status Accurate: Menunggu Diproses, Sebagian Terproses, Terproses)
-        const s = (st) => (fetchedOrders.filter(o => (o.status || '').toLowerCase() === st).length)
-        const completed = s('completed') + s('terproses') + s('selesai')
-        const processing = s('processing') + s('sebagian terproses') + s('diproses')
-        const pending = s('pending') + s('menunggu proses') + s('menunggu diproses') + s('dipesan')
-        const totalRevenue = fetchedOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0)
-        
+
+        const s = (st) =>
+          fetchedOrders.filter(
+            (o) => (o.status || '').toLowerCase() === st
+          ).length
+        const completed =
+          s('completed') + s('terproses') + s('selesai')
+        const processing =
+          s('processing') + s('sebagian terproses') + s('diproses')
+        const pending =
+          s('pending') +
+          s('menunggu proses') +
+          s('menunggu diproses') +
+          s('dipesan')
+        const totalRevenue = fetchedOrders.reduce(
+          (sum, o) => sum + (o.totalAmount || 0),
+          0
+        )
+
         setStats({
           total: fetchedOrders.length,
           completed,
           processing,
           pending,
-          totalRevenue
+          totalRevenue,
         })
       }
     } catch (error) {
@@ -60,7 +98,18 @@ const SchedulePage = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    fetchOrders()
+    const timeInterval = setInterval(() => setCurrentTime(new Date()), 1000)
+    return () => clearInterval(timeInterval)
+  }, [fetchOrders])
+
+  useEffect(() => {
+    const refreshInterval = setInterval(fetchOrders, AUTO_REFRESH_MS)
+    return () => clearInterval(refreshInterval)
+  }, [fetchOrders])
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -72,592 +121,482 @@ const SchedulePage = () => {
     }
   }
 
-  const getStatusBadgeClass = (status) => {
-    const statusLower = (status || '').toLowerCase()
-    // Terproses (Completed) = Hijau Neon
-    if (['completed', 'terproses', 'selesai'].includes(statusLower)) {
-      return 'bg-emerald-500/20 text-emerald-400 border-emerald-400/60 shadow-[0_0_25px_rgba(16,185,129,0.6)] animate-neon-pulse-green'
+  const getStatusConfig = (status) => {
+    const s = (status || '').toLowerCase()
+    if (['completed', 'terproses', 'selesai'].includes(s)) {
+      return {
+        className:
+          'bg-emerald-500/15 text-emerald-400 border-emerald-400/40',
+        glow: 'animate-neon-pulse-green',
+      }
     }
-    // Sebagian Terproses = Kuning Neon
-    if (['processing', 'sebagian terproses', 'diproses'].includes(statusLower)) {
-      return 'bg-yellow-500/20 text-yellow-400 border-yellow-400/60 shadow-[0_0_25px_rgba(234,179,8,0.6)] animate-neon-pulse-yellow'
+    if (['processing', 'sebagian terproses', 'diproses'].includes(s)) {
+      return {
+        className:
+          'bg-amber-500/15 text-amber-400 border-amber-400/40',
+        glow: 'animate-neon-pulse-yellow',
+      }
     }
-    // Menunggu Diproses / Pending = Merah Neon
-    if (['pending', 'belum terproses', 'menunggu proses', 'menunggu diproses', 'dipesan'].includes(statusLower)) {
-      return 'bg-red-500/20 text-red-400 border-red-400/60 shadow-[0_0_25px_rgba(239,68,68,0.6)] animate-neon-pulse-red'
+    if (
+      [
+        'pending',
+        'belum terproses',
+        'menunggu proses',
+        'menunggu diproses',
+        'dipesan',
+      ].includes(s)
+    ) {
+      return {
+        className:
+          'bg-red-500/15 text-red-400 border-red-400/40',
+        glow: 'animate-neon-pulse-red',
+      }
     }
-    if (statusLower === 'cancelled' || statusLower === 'batal') {
-      return 'bg-slate-500/20 text-slate-400 border-slate-400/60 shadow-[0_0_20px_rgba(148,163,184,0.4)]'
+    if (s === 'cancelled' || s === 'batal') {
+      return {
+        className: 'bg-slate-500/15 text-slate-400 border-slate-400/40',
+        glow: '',
+      }
     }
-    return 'bg-sky-500/20 text-sky-400 border-sky-400/60 shadow-[0_0_25px_rgba(14,165,233,0.6)] animate-neon-pulse-blue'
+    return {
+      className: 'bg-cyan-500/15 text-cyan-400 border-cyan-400/40',
+      glow: 'animate-neon-pulse-blue',
+    }
   }
 
   const formatTime = (date) => {
-    return new Date(date).toLocaleTimeString('id-ID', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return new Date(date).toLocaleTimeString('id-ID', {
+      hour: '2-digit',
+      minute: '2-digit',
     })
   }
 
+  const filteredAndSortedOrders = useMemo(() => {
+    let list = orders.filter((o) => {
+      if (filterStatus === 'all') return true
+      return getOrderStatusGroup(o) === filterStatus
+    })
+    const dir = sortDir === 'asc' ? 1 : -1
+    list = [...list].sort((a, b) => {
+      const tA = new Date(a.transDate).getTime()
+      const tB = new Date(b.transDate).getTime()
+      switch (sortBy) {
+        case 'time':
+          return (tA - tB) * dir
+        case 'so':
+          return ((a.transNumber || '').localeCompare(b.transNumber || '')) * dir
+        case 'date':
+          return (tA - tB) * dir
+        case 'status':
+          return (getOrderStatusGroup(a).localeCompare(getOrderStatusGroup(b))) * dir
+        default:
+          return (tA - tB) * dir
+      }
+    })
+    return list
+  }, [orders, filterStatus, sortBy, sortDir])
+
+  const tableColumns = [
+    { key: 'time', label: 'Time', icon: Clock, span: 'col-span-1' },
+    { key: 'so', label: 'SO Number', icon: FileText, span: 'col-span-2' },
+    { key: 'date', label: 'Date', icon: Calendar, span: 'col-span-2' },
+    { key: 'customer', label: 'Customer', icon: User, span: 'col-span-3' },
+    { key: 'description', label: 'Description', icon: ClipboardList, span: 'col-span-2' },
+    { key: 'status', label: 'Status', icon: Activity, span: 'col-span-2' },
+  ]
+
   const ScheduleContent = () => (
-    <div className={`${isFullscreen ? 'min-h-screen' : ''} bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden`}>
-      {/* Animated Background Pattern */}
-      <div className="absolute inset-0 opacity-5">
-        <div className="absolute inset-0" style={{
-          backgroundImage: `
-            radial-gradient(circle at 2px 2px, rgba(6, 182, 212, 0.15) 1px, transparent 0)
-          `,
-          backgroundSize: '48px 48px',
-          animation: 'backgroundMove 60s linear infinite'
-        }} />
-      </div>
+    <div
+      className={`${
+        isFullscreen ? 'min-h-screen' : ''
+      } bg-slate-950 relative overflow-hidden`}
+    >
+      {/* Subtle noise texture for depth */}
+      <div
+        className="absolute inset-0 opacity-[0.02]"
+        style={{
+          backgroundImage: `radial-gradient(circle at 1px 1px, rgb(148 163 184) 1px, transparent 0)`,
+          backgroundSize: '24px 24px',
+        }}
+      />
 
-      {/* Elegant Gradient Overlays */}
-      <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent" />
-      <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent" />
-      
-      {/* Subtle Glow Orbs */}
-      <div className="absolute top-20 right-20 w-96 h-96 bg-cyan-500/5 rounded-full blur-[120px] animate-float" />
-      <div className="absolute bottom-20 left-20 w-96 h-96 bg-emerald-500/5 rounded-full blur-[120px] animate-float-delayed" />
-
-      <div className="relative z-10 min-h-screen flex flex-col p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto">
-        {/* Top Control Bar */}
-        <div className="flex items-center justify-between mb-6">
+      <div className="relative z-10 min-h-screen flex flex-col p-6 sm:p-8 lg:p-10 max-w-[1920px] mx-auto">
+        {/* Top bar */}
+        <header className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
-            <div className="relative">
-              <Logo variant="neon" size="md" className="rounded-lg" />
-              <div className="absolute -inset-1 bg-cyan-500/10 rounded-lg blur-lg" />
-            </div>
-            <div className="hidden sm:block">
-              <div className="text-cyan-400 text-[10px] font-bold tracking-[0.25em] uppercase">Warehouse Management</div>
-              <div className="text-slate-400 text-[10px] font-mono mt-0.5">Real-Time Monitoring System</div>
+            <Logo variant="neon" size="md" className="rounded-lg" />
+            <div className="hidden sm:block border-l border-slate-600/60 pl-4">
+              <div className="text-slate-400 text-xs font-semibold tracking-wider uppercase">
+                Warehouse Control
+              </div>
+              <div className="text-slate-500 text-[11px] mt-0.5">
+                Schedule &amp; Operations
+              </div>
             </div>
           </div>
-
           <div className="flex items-center gap-2">
-            <button
+            <motion.button
               onClick={fetchOrders}
               disabled={loading}
-              className="p-2.5 bg-slate-800/60 border border-cyan-400/20 rounded-lg hover:border-cyan-400/40 hover:bg-slate-800/80 transition-all backdrop-blur-sm group"
+              className="p-2.5 rounded-lg bg-slate-800/80 border border-slate-600/50 text-slate-300 hover:bg-slate-700/80 hover:border-slate-500/50 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:ring-offset-2 focus:ring-offset-slate-950 disabled:opacity-60"
+              whileTap={{ scale: 0.97 }}
             >
-              <RefreshCw className={`w-4 h-4 text-cyan-400 ${loading ? 'animate-spin' : 'group-hover:rotate-180'} transition-transform duration-500`} />
-            </button>
-            <button
+              <RefreshCw
+                className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`}
+              />
+            </motion.button>
+            <motion.button
               onClick={toggleFullscreen}
-              className="p-2.5 bg-slate-800/60 border border-emerald-400/20 rounded-lg hover:border-emerald-400/40 hover:bg-slate-800/80 transition-all backdrop-blur-sm"
+              className="p-2.5 rounded-lg bg-slate-800/80 border border-slate-600/50 text-slate-300 hover:bg-slate-700/80 hover:border-slate-500/50 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:ring-offset-2 focus:ring-offset-slate-950"
+              whileTap={{ scale: 0.97 }}
             >
               {isFullscreen ? (
-                <Minimize2 className="w-4 h-4 text-emerald-400" />
+                <Minimize2 className="w-5 h-5" />
               ) : (
-                <Maximize2 className="w-4 h-4 text-emerald-400" />
+                <Maximize2 className="w-5 h-5" />
               )}
-            </button>
+            </motion.button>
           </div>
-        </div>
+        </header>
 
-        {/* Main Header - Airport Departure Board Style */}
-        <div className="bg-gradient-to-r from-slate-900/80 via-slate-800/80 to-slate-900/80 backdrop-blur-xl rounded-2xl border border-cyan-400/20 p-6 sm:p-8 mb-6 shadow-[0_0_60px_rgba(6,182,212,0.15)] relative overflow-hidden">
-          {/* Top Neon Line */}
-          <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-400/80 to-transparent" />
-          
-          {/* Corner Accents */}
-          <div className="absolute top-0 left-0 w-16 h-16 border-t-2 border-l-2 border-cyan-400/30 rounded-tl-2xl" />
-          <div className="absolute bottom-0 right-0 w-16 h-16 border-b-2 border-r-2 border-emerald-400/30 rounded-br-2xl" />
-          
-          <div className="flex flex-col lg:flex-row items-center justify-between gap-6 relative z-10">
-            {/* Title Section */}
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <div className="p-3 bg-gradient-to-br from-cyan-500/20 to-emerald-500/20 rounded-xl border border-cyan-400/40 shadow-[0_0_30px_rgba(6,182,212,0.3)]">
-                  <Plane className="w-8 h-8 text-cyan-300 drop-shadow-[0_0_15px_rgba(6,182,212,0.8)]" />
-                </div>
-              </div>
-              <div>
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-[0.05em] uppercase leading-none">
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-cyan-400 to-emerald-300 drop-shadow-[0_0_30px_rgba(6,182,212,0.6)]">
-                    SCHEDULE BOARD
-                  </span>
-                </h1>
-                <p className="text-xs sm:text-sm font-bold text-emerald-300/80 mt-2 tracking-[0.25em] uppercase">
-                  Gudang iWare - Real-Time Display
-                </p>
-              </div>
-            </div>
-
-            {/* Digital Clock Section */}
-            <div className="text-center lg:text-right">
-              <div className="relative inline-block">
-                <div className="text-4xl sm:text-5xl lg:text-6xl font-black font-mono text-cyan-300 tracking-[0.15em] drop-shadow-[0_0_25px_rgba(6,182,212,0.8)] tabular-nums">
-                  {currentTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                </div>
-              </div>
-              <div className="text-xs text-emerald-300/70 font-mono mt-2 tracking-[0.25em] uppercase">
-                {currentTime.toLocaleDateString('id-ID', { 
-                  weekday: 'long',
-                  day: '2-digit',
-                  month: 'short',
-                  year: 'numeric'
-                }).toUpperCase()}
-              </div>
-            </div>
+        {/* Hero: Title + Clock */}
+        <motion.section
+          className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 mb-8 pb-8 border-b border-slate-700/60"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35 }}
+        >
+          <div>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white">
+              Schedule Board
+            </h1>
+            <p className="mt-2 text-slate-400 text-sm font-medium tracking-wide flex items-center gap-2">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-50" />
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+              </span>
+              Live
+            </p>
           </div>
-          
-          {/* Bottom Neon Line */}
-          <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-emerald-400/80 to-transparent" />
-        </div>
-
-        {/* Stats Bar - Professional Neon Style */}
-        <div className="relative bg-gradient-to-r from-slate-900/70 via-slate-800/70 to-slate-900/70 backdrop-blur-xl rounded-xl border border-cyan-400/20 overflow-hidden shadow-[0_0_40px_rgba(6,182,212,0.1)] mb-6">
-          {/* Top Neon Line */}
-          <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent" />
-          
-          {/* Stats Container */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 p-5">
-            {/* Total SO - Cyan */}
-            <div className="flex items-center gap-3 p-4 bg-slate-800/40 rounded-lg border border-cyan-400/20 hover:border-cyan-400/40 transition-all group">
-              <div className="p-2.5 bg-cyan-500/10 rounded-lg border border-cyan-400/30 shadow-[0_0_15px_rgba(6,182,212,0.2)] group-hover:shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-all">
-                <Package className="w-5 h-5 text-cyan-400 drop-shadow-[0_0_10px_rgba(6,182,212,0.6)]" />
-              </div>
-              <div className="flex-1">
-                <div className="text-[10px] text-cyan-400/70 font-bold tracking-[0.15em] uppercase">
-                  Total SO
-                </div>
-                <div className="text-2xl font-black text-cyan-300 font-mono tabular-nums drop-shadow-[0_0_15px_rgba(6,182,212,0.6)] mt-0.5">
-                  {stats.total}
-                </div>
-              </div>
-            </div>
-
-            {/* Completed - Green */}
-            <div className="flex items-center gap-3 p-4 bg-slate-800/40 rounded-lg border border-emerald-400/20 hover:border-emerald-400/40 transition-all group">
-              <div className="p-2.5 bg-emerald-500/10 rounded-lg border border-emerald-400/30 shadow-[0_0_15px_rgba(16,185,129,0.2)] group-hover:shadow-[0_0_20px_rgba(16,185,129,0.4)] transition-all">
-                <CheckCircle2 className="w-5 h-5 text-emerald-400 drop-shadow-[0_0_10px_rgba(16,185,129,0.6)]" />
-              </div>
-              <div className="flex-1">
-                <div className="text-[10px] text-emerald-400/70 font-bold tracking-[0.15em] uppercase">
-                  Completed
-                </div>
-                <div className="text-2xl font-black text-emerald-300 font-mono tabular-nums drop-shadow-[0_0_15px_rgba(16,185,129,0.6)] mt-0.5">
-                  {stats.completed}
-                </div>
-              </div>
-            </div>
-
-            {/* Processing - Yellow */}
-            <div className="flex items-center gap-3 p-4 bg-slate-800/40 rounded-lg border border-yellow-400/20 hover:border-yellow-400/40 transition-all group">
-              <div className="p-2.5 bg-yellow-500/10 rounded-lg border border-yellow-400/30 shadow-[0_0_15px_rgba(234,179,8,0.2)] group-hover:shadow-[0_0_20px_rgba(234,179,8,0.4)] transition-all">
-                <Activity className="w-5 h-5 text-yellow-400 drop-shadow-[0_0_10px_rgba(234,179,8,0.6)]" />
-              </div>
-              <div className="flex-1">
-                <div className="text-[10px] text-yellow-400/70 font-bold tracking-[0.15em] uppercase">
-                  Processing
-                </div>
-                <div className="text-2xl font-black text-yellow-300 font-mono tabular-nums drop-shadow-[0_0_15px_rgba(234,179,8,0.6)] mt-0.5">
-                  {stats.processing}
-                </div>
-              </div>
-            </div>
-
-            {/* Pending - Red */}
-            <div className="flex items-center gap-3 p-4 bg-slate-800/40 rounded-lg border border-red-400/20 hover:border-red-400/40 transition-all group">
-              <div className="p-2.5 bg-red-500/10 rounded-lg border border-red-400/30 shadow-[0_0_15px_rgba(239,68,68,0.2)] group-hover:shadow-[0_0_20px_rgba(239,68,68,0.4)] transition-all">
-                <AlertCircle className="w-5 h-5 text-red-400 drop-shadow-[0_0_10px_rgba(239,68,68,0.6)]" />
-              </div>
-              <div className="flex-1">
-                <div className="text-[10px] text-red-400/70 font-bold tracking-[0.15em] uppercase">
-                  Pending
-                </div>
-                <div className="text-2xl font-black text-red-300 font-mono tabular-nums drop-shadow-[0_0_15px_rgba(239,68,68,0.6)] mt-0.5">
-                  {stats.pending}
-                </div>
-              </div>
-            </div>
+          <div className="flex flex-col items-start lg:items-end">
+            <span className="text-4xl sm:text-5xl lg:text-6xl font-mono font-semibold tabular-nums text-slate-100 tracking-tight">
+              {currentTime.toLocaleTimeString('id-ID', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+              })}
+            </span>
+            <span className="text-slate-500 text-sm mt-1">
+              {currentTime.toLocaleDateString('id-ID', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+              })}
+            </span>
           </div>
-          
-          {/* Bottom Neon Line */}
-          <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent" />
-        </div>
+        </motion.section>
 
-        {/* Departure Board Table */}
-        <div className="flex-1 bg-slate-900/50 backdrop-blur-xl rounded-xl border border-cyan-400/20 overflow-hidden shadow-[0_0_50px_rgba(6,182,212,0.1)]">
-          {/* Table Header */}
-          <div className="bg-gradient-to-r from-slate-900/90 via-slate-800/90 to-slate-900/90 border-b border-cyan-400/20">
-            <div className="grid grid-cols-12 gap-4 px-6 py-4">
-              <div className="col-span-1 text-[10px] font-black text-cyan-300 tracking-[0.2em] uppercase flex items-center gap-2">
-                <Clock className="w-3.5 h-3.5" />
-                <span>Waktu</span>
-              </div>
-              <div className="col-span-2 text-[10px] font-black text-cyan-300 tracking-[0.2em] uppercase">
-                Nomor SO
-              </div>
-              <div className="col-span-2 text-[10px] font-black text-cyan-300 tracking-[0.2em] uppercase">
-                Tanggal
-              </div>
-              <div className="col-span-3 text-[10px] font-black text-cyan-300 tracking-[0.2em] uppercase">
-                Pelanggan
-              </div>
-              <div className="col-span-2 text-[10px] font-black text-cyan-300 tracking-[0.2em] uppercase text-right">
-                Keterangan
-              </div>
-              <div className="col-span-2 text-[10px] font-black text-cyan-300 tracking-[0.2em] uppercase text-center">
-                Status
-              </div>
-            </div>
-          </div>
-
-          {/* Table Body */}
-          <div className="divide-y divide-cyan-400/10 max-h-[calc(100vh-500px)] overflow-y-auto airport-scrollbar">
-            {loading ? (
-              <div className="py-24 text-center">
-                <div className="relative inline-block mb-6">
-                  <RefreshCw className="w-16 h-16 text-cyan-400 animate-spin drop-shadow-[0_0_25px_rgba(6,182,212,0.6)]" />
-                </div>
-                <p className="text-cyan-300 font-mono text-lg tracking-[0.25em] uppercase animate-pulse">
-                  Loading Schedule...
-                </p>
-              </div>
-            ) : orders.length === 0 ? (
-              <div className="py-24 text-center">
-                <div className="relative inline-block mb-6">
-                  <Plane className="w-20 h-20 text-slate-600" />
-                </div>
-                <p className="text-slate-400 font-mono text-xl tracking-[0.25em] uppercase">
-                  No Orders Scheduled
-                </p>
-                <p className="text-slate-600 font-mono text-sm mt-2">
-                  Menunggu sales order baru...
-                </p>
-              </div>
-            ) : (
-              orders.map((order, index) => (
+        {/* Stats */}
+        <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {[
+            {
+              key: 'total',
+              label: 'Total SO',
+              value: stats.total,
+              icon: Package,
+              accent: 'cyan',
+            },
+            {
+              key: 'completed',
+              label: 'Completed',
+              value: stats.completed,
+              icon: CheckCircle2,
+              accent: 'emerald',
+            },
+            {
+              key: 'processing',
+              label: 'Processing',
+              value: stats.processing,
+              icon: Activity,
+              accent: 'amber',
+            },
+            {
+              key: 'pending',
+              label: 'Pending',
+              value: stats.pending,
+              icon: AlertCircle,
+              accent: 'red',
+            },
+          ].map((stat) => (
+            <motion.div
+              key={stat.key}
+              className="relative rounded-xl bg-slate-800/60 border border-slate-700/50 overflow-hidden group"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div
+                className={`absolute top-0 left-0 right-0 h-0.5 bg-${stat.accent}-500/60`}
+                style={{
+                  backgroundColor:
+                    stat.accent === 'cyan'
+                      ? 'rgba(6, 182, 212, 0.6)'
+                      : stat.accent === 'emerald'
+                        ? 'rgba(16, 185, 129, 0.6)'
+                        : stat.accent === 'amber'
+                          ? 'rgba(245, 158, 11, 0.6)'
+                          : 'rgba(239, 68, 68, 0.6)',
+                }}
+              />
+              <div className="p-5 flex items-center gap-4">
                 <div
-                  key={order.id}
-                  className="grid grid-cols-12 gap-4 px-6 py-5 hover:bg-cyan-400/5 transition-all duration-300 group border-l-2 border-transparent hover:border-cyan-400/60 animate-flip-in"
-                  style={{ animationDelay: `${index * 0.05}s` }}
+                  className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center ${
+                    stat.accent === 'cyan'
+                      ? 'bg-cyan-500/10 text-cyan-400'
+                      : stat.accent === 'emerald'
+                        ? 'bg-emerald-500/10 text-emerald-400'
+                        : stat.accent === 'amber'
+                          ? 'bg-amber-500/10 text-amber-400'
+                          : 'bg-red-500/10 text-red-400'
+                  }`}
                 >
-                  {/* Waktu */}
-                  <div className="col-span-1 flex items-center">
-                    <div className="text-lg font-black text-cyan-300 font-mono tabular-nums drop-shadow-[0_0_12px_rgba(6,182,212,0.6)]">
-                      {formatTime(order.transDate)}
-                    </div>
+                  <stat.icon className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">
+                    {stat.label}
                   </div>
-
-                  {/* Nomor SO */}
-                  <div className="col-span-2 flex items-center">
-                    <div className="text-base font-black text-white font-mono tracking-wide group-hover:text-cyan-300 transition-colors">
-                      {order.transNumber}
-                    </div>
-                  </div>
-
-                  {/* Tanggal */}
-                  <div className="col-span-2 flex items-center">
-                    <div className="text-sm text-slate-300 font-mono tabular-nums group-hover:text-white transition-colors">
-                      {formatDate(order.transDate)}
-                    </div>
-                  </div>
-
-                  {/* Pelanggan */}
-                  <div className="col-span-3 flex items-center">
-                    <div className="w-full">
-                      <div className="text-sm font-bold text-slate-200 group-hover:text-white transition-colors truncate">
-                        {order.customerName}
-                      </div>
-                      {order.description && (
-                        <div className="text-xs text-slate-500 font-mono mt-0.5 truncate">
-                          {order.description}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Keterangan (Amount) */}
-                  <div className="col-span-2 flex items-center justify-end">
-                    <div className="text-base font-black text-emerald-300 font-mono tabular-nums drop-shadow-[0_0_12px_rgba(16,185,129,0.6)]">
-                      {formatCurrency(order.totalAmount)}
-                    </div>
-                  </div>
-
-                  {/* Status */}
-                  <div className="col-span-2 flex items-center justify-center">
-                    <div className={`px-4 py-2 border-2 rounded-lg font-black text-[10px] tracking-[0.15em] uppercase backdrop-blur-sm transition-all duration-300 group-hover:scale-105 ${getStatusBadgeClass(order.status || 'completed')}`}>
-                      <span className="drop-shadow-[0_0_8px_currentColor]">
-                        {order.status || 'COMPLETED'}
-                      </span>
-                    </div>
+                  <div
+                    className={`text-2xl font-bold tabular-nums mt-0.5 ${
+                      stat.accent === 'cyan'
+                        ? 'text-cyan-300'
+                        : stat.accent === 'emerald'
+                          ? 'text-emerald-300'
+                          : stat.accent === 'amber'
+                            ? 'text-amber-300'
+                            : 'text-red-300'
+                    }`}
+                  >
+                    <AnimatedCounter value={stat.value} duration={0.4} />
                   </div>
                 </div>
-              ))
+              </div>
+            </motion.div>
+          ))}
+        </section>
+
+        {/* Filter & Sort */}
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Filter className="w-4 h-4 text-slate-500 shrink-0" />
+            <span className="text-xs font-medium text-slate-500 uppercase tracking-wider mr-2">Status</span>
+            {[
+              { value: 'all', label: 'All' },
+              { value: 'completed', label: 'Completed' },
+              { value: 'processing', label: 'Processing' },
+              { value: 'pending', label: 'Pending' },
+            ].map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setFilterStatus(opt.value)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  filterStatus === opt.value
+                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/40'
+                    : 'bg-slate-800/60 text-slate-400 border border-slate-600/50 hover:bg-slate-700/60 hover:text-slate-300'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">Sort</span>
+            <select
+              value={`${sortBy}-${sortDir}`}
+              onChange={(e) => {
+                const [field, dir] = e.target.value.split('-')
+                setSortBy(field)
+                setSortDir(dir)
+              }}
+              className="bg-slate-800/80 border border-slate-600/50 rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50"
+            >
+              <option value="time-desc">Time (newest)</option>
+              <option value="time-asc">Time (oldest)</option>
+              <option value="so-asc">SO Number (A–Z)</option>
+              <option value="so-desc">SO Number (Z–A)</option>
+              <option value="date-desc">Date (newest)</option>
+              <option value="date-asc">Date (oldest)</option>
+              <option value="status-asc">Status (A–Z)</option>
+              <option value="status-desc">Status (Z–A)</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Table */}
+        <motion.section
+          className="flex-1 rounded-xl border border-slate-700/50 bg-slate-900/30 overflow-hidden shadow-xl shadow-black/20"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3, delay: 0.05 }}
+        >
+          <div className="sticky top-0 z-20 grid grid-cols-12 gap-4 px-6 lg:px-8 py-4 bg-slate-800/90 border-b border-slate-700/60 backdrop-blur-sm">
+            {tableColumns.map((col) => (
+              <div
+                key={col.key}
+                className={`${col.span} flex items-center gap-2 text-[11px] font-semibold text-slate-400 uppercase tracking-wider`}
+              >
+                <col.icon className="w-3.5 h-3.5 shrink-0 text-slate-500" />
+                {col.label}
+              </div>
+            ))}
+          </div>
+
+          <div className="divide-y divide-slate-700/40 max-h-[calc(100vh-520px)] min-h-[300px] overflow-y-auto schedule-scrollbar">
+            {loading ? (
+              <div className="py-24 flex flex-col items-center justify-center gap-4">
+                <RefreshCw className="w-10 h-10 text-slate-500 animate-spin" />
+                <p className="text-slate-500 text-sm font-medium">
+                  Loading schedule…
+                </p>
+              </div>
+            ) : filteredAndSortedOrders.length === 0 ? (
+              <motion.div
+                className="py-24 text-center"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.4 }}
+              >
+                <Warehouse className="w-14 h-14 text-slate-600 mx-auto mb-4" />
+                <p className="text-slate-400 font-medium text-lg">
+                  {orders.length === 0
+                    ? 'No orders scheduled'
+                    : 'No orders match this filter'}
+                </p>
+                <p className="text-slate-500 text-sm mt-1">
+                  {orders.length === 0
+                    ? 'New sales orders will appear here when added.'
+                    : 'Try another status filter.'}
+                </p>
+              </motion.div>
+            ) : (
+              <AnimatePresence mode="popLayout">
+                {filteredAndSortedOrders.map((order, index) => {
+                  const statusConfig = getStatusConfig(order.status)
+                  return (
+                    <motion.div
+                      key={order.id}
+                      layout
+                      initial={{ opacity: 0, x: -8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0 }}
+                      transition={{
+                        duration: 0.35,
+                        delay: index * 0.03,
+                      }}
+                      className={`grid grid-cols-12 gap-4 px-6 lg:px-8 py-4 lg:py-4 hover:bg-slate-800/40 transition-colors border-l-2 border-transparent hover:border-cyan-500/40 ${
+                        index % 2 === 1 ? 'bg-slate-800/20' : ''
+                      }`}
+                    >
+                      <div className="col-span-1 flex items-center min-w-0">
+                        <span className="text-sm font-mono font-medium text-slate-300 tabular-nums">
+                          {formatTime(order.transDate)}
+                        </span>
+                      </div>
+                      <div className="col-span-2 flex items-center min-w-0">
+                        <span className="text-sm font-medium text-slate-100 truncate" title={order.transNumber}>
+                          {order.transNumber}
+                        </span>
+                      </div>
+                      <div className="col-span-2 flex items-center min-w-0">
+                        <span className="text-sm text-slate-400 font-mono tabular-nums">
+                          {formatDate(order.transDate)}
+                        </span>
+                      </div>
+                      <div className="col-span-3 flex items-center min-w-0">
+                        <span className="text-sm text-slate-200 truncate block" title={order.customerName}>
+                          {order.customerName}
+                        </span>
+                      </div>
+                      <div className="col-span-2 flex items-center min-w-0">
+                        {order.description ? (
+                          <span className="text-sm text-slate-400 truncate block" title={order.description}>
+                            {order.description}
+                          </span>
+                        ) : (
+                          <span className="text-sm font-mono text-slate-300">
+                            {formatCurrency(order.totalAmount)}
+                          </span>
+                        )}
+                      </div>
+                      <div className="col-span-2 flex items-center justify-center">
+                        <motion.span
+                          className={`inline-flex items-center justify-center min-w-[88px] px-3 py-1.5 rounded-md border text-[10px] font-semibold uppercase tracking-wider ${statusConfig.className} ${statusConfig.glow}`}
+                          layout
+                          initial={false}
+                          animate={{ opacity: 1 }}
+                          transition={{ duration: 0.3 }}
+                        >
+                          {order.status || '—'}
+                        </motion.span>
+                      </div>
+                    </motion.div>
+                  )
+                })}
+              </AnimatePresence>
             )}
           </div>
-        </div>
+        </motion.div>
 
-        {/* Footer */}
-        <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-slate-400 font-mono">
-              <div className="relative flex items-center">
-                <div className="w-2 h-2 bg-emerald-400 rounded-full animate-ping absolute" />
-                <div className="w-2 h-2 bg-emerald-400 rounded-full" />
-              </div>
-              <span className="tracking-wider">SYSTEM ONLINE</span>
-            </div>
-            <div className="w-px h-4 bg-slate-600" />
-            <div className="text-slate-500 font-mono tracking-wider">
-              AUTO-REFRESH: 30s
-            </div>
+        {/* Status bar */}
+        <footer className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-3 py-3 px-4 rounded-lg bg-slate-800/40 border border-slate-700/40">
+          <div className="flex items-center gap-4 text-sm">
+            <span className="flex items-center gap-2 text-slate-400">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
+                <span className="relative rounded-full h-1.5 w-1.5 bg-emerald-500" />
+              </span>
+              System online
+            </span>
+            <span className="text-slate-500">·</span>
+            <span className="text-slate-500">Auto refresh 30s</span>
           </div>
-          <div className="text-slate-500 font-mono tracking-wider">
-            <span className="text-cyan-400 font-bold">iware</span> Warehouse Management © 2026
-          </div>
-        </div>
+          <span className="text-slate-500 text-sm">
+            iWare · Warehouse Management
+          </span>
+        </footer>
       </div>
 
-      {/* Custom Styles - Airport Neon Theme */}
       <style>{`
-        @keyframes backgroundMove {
-          0% { transform: translateY(0) translateX(0); }
-          100% { transform: translateY(48px) translateX(48px); }
-        }
-
-        @keyframes shimmer-line {
-          0% { transform: translateX(-100%); }
-          100% { transform: translateX(100%); }
-        }
-
-        @keyframes border-flow {
-          0% { transform: translateX(-100%); opacity: 0; }
-          50% { opacity: 1; }
-          100% { transform: translateX(100%); opacity: 0; }
-        }
-
-        @keyframes border-flow-reverse {
-          0% { transform: translateX(100%); opacity: 0; }
-          50% { opacity: 1; }
-          100% { transform: translateX(-100%); opacity: 0; }
-        }
-
-        @keyframes border-flow-vertical {
-          0% { transform: translateY(-100%); opacity: 0; }
-          50% { opacity: 1; }
-          100% { transform: translateY(100%); opacity: 0; }
-        }
-
-        @keyframes border-flow-vertical-reverse {
-          0% { transform: translateY(100%); opacity: 0; }
-          50% { opacity: 1; }
-          100% { transform: translateY(-100%); opacity: 0; }
-        }
-
-        @keyframes float {
-          0%, 100% { transform: translateY(0) scale(1); }
-          50% { transform: translateY(-20px) scale(1.05); }
-        }
-
-        @keyframes float-delayed {
-          0%, 100% { transform: translateY(0) scale(1); }
-          50% { transform: translateY(20px) scale(1.05); }
-        }
-
-        @keyframes flip-in {
-          from {
-            opacity: 0;
-            transform: perspective(1000px) rotateX(-15deg) translateY(-20px);
-          }
-          to {
-            opacity: 1;
-            transform: perspective(1000px) rotateX(0) translateY(0);
-          }
-        }
-
-        @keyframes pulse-slow {
-          0%, 100% { opacity: 0.4; }
-          50% { opacity: 0.8; }
-        }
-
-        @keyframes ticker-seamless {
-          0% { transform: translateX(0%); }
-          100% { transform: translateX(-33.333%); }
-        }
-
-        @keyframes ticker-continuous {
-          from { transform: translateX(0); }
-          to { transform: translateX(-33.333%); }
-        }
-
-        @keyframes digital-flicker {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.98; }
-        }
-
-        @keyframes text-glow {
-          0%, 100% { 
-            filter: drop-shadow(0 0 40px rgba(6,182,212,0.8));
-          }
-          50% { 
-            filter: drop-shadow(0 0 60px rgba(6,182,212,1)) drop-shadow(0 0 80px rgba(16,185,129,0.6));
-          }
-        }
-
         @keyframes neon-pulse-green {
-          0%, 100% { 
-            box-shadow: 0 0 25px rgba(16,185,129,0.6), inset 0 0 15px rgba(16,185,129,0.2);
-          }
-          50% { 
-            box-shadow: 0 0 40px rgba(16,185,129,0.9), 0 0 60px rgba(16,185,129,0.5), inset 0 0 20px rgba(16,185,129,0.3);
-          }
+          0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.2); }
+          50% { box-shadow: 0 0 0 3px rgba(16,185,129,0.15); }
         }
-
         @keyframes neon-pulse-yellow {
-          0%, 100% { 
-            box-shadow: 0 0 25px rgba(234,179,8,0.6), inset 0 0 15px rgba(234,179,8,0.2);
-          }
-          50% { 
-            box-shadow: 0 0 40px rgba(234,179,8,0.9), 0 0 60px rgba(234,179,8,0.5), inset 0 0 20px rgba(234,179,8,0.3);
-          }
+          0%, 100% { box-shadow: 0 0 0 0 rgba(245,158,11,0.2); }
+          50% { box-shadow: 0 0 0 3px rgba(245,158,11,0.15); }
         }
-
         @keyframes neon-pulse-red {
-          0%, 100% { 
-            box-shadow: 0 0 25px rgba(239,68,68,0.6), inset 0 0 15px rgba(239,68,68,0.2);
-          }
-          50% { 
-            box-shadow: 0 0 40px rgba(239,68,68,0.9), 0 0 60px rgba(239,68,68,0.5), inset 0 0 20px rgba(239,68,68,0.3);
-          }
+          0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.2); }
+          50% { box-shadow: 0 0 0 3px rgba(239,68,68,0.15); }
         }
-
         @keyframes neon-pulse-blue {
-          0%, 100% { 
-            box-shadow: 0 0 25px rgba(14,165,233,0.6), inset 0 0 15px rgba(14,165,233,0.2);
-          }
-          50% { 
-            box-shadow: 0 0 40px rgba(14,165,233,0.9), 0 0 60px rgba(14,165,233,0.5), inset 0 0 20px rgba(14,165,233,0.3);
-          }
+          0%, 100% { box-shadow: 0 0 0 0 rgba(6,182,212,0.2); }
+          50% { box-shadow: 0 0 0 3px rgba(6,182,212,0.15); }
         }
-
-        .animate-shimmer-line {
-          animation: shimmer-line 3s ease-in-out infinite;
-        }
-
-        .animate-border-flow {
-          animation: border-flow 4s ease-in-out infinite;
-        }
-
-        .animate-border-flow-reverse {
-          animation: border-flow-reverse 4s ease-in-out infinite;
-        }
-
-        .animate-border-flow-vertical {
-          animation: border-flow-vertical 5s ease-in-out infinite;
-        }
-
-        .animate-border-flow-vertical-reverse {
-          animation: border-flow-vertical-reverse 5s ease-in-out infinite;
-        }
-
-        .animate-float {
-          animation: float 8s ease-in-out infinite;
-        }
-
-        .animate-float-delayed {
-          animation: float-delayed 8s ease-in-out infinite;
-          animation-delay: 1s;
-        }
-
-        .animate-flip-in {
-          animation: flip-in 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-        }
-
-        .animate-pulse-slow {
-          animation: pulse-slow 3s ease-in-out infinite;
-        }
-
-        .animate-ticker-seamless {
-          animation: ticker-seamless 45s linear infinite;
-          will-change: transform;
-        }
-
-        .animate-ticker-seamless:hover {
-          animation-play-state: paused;
-        }
-
-        .animate-ticker-continuous {
-          animation: ticker-continuous 45s linear infinite;
-          will-change: transform;
-        }
-
-        .animate-ticker-continuous:hover {
-          animation-play-state: paused;
-        }
-
-        .animate-digital-flicker {
-          animation: digital-flicker 3s ease-in-out infinite;
-        }
-
-        .animate-text-glow {
-          animation: text-glow 4s ease-in-out infinite;
-        }
-
-        .animate-neon-pulse-green {
-          animation: neon-pulse-green 2s ease-in-out infinite;
-        }
-
-        .animate-neon-pulse-yellow {
-          animation: neon-pulse-yellow 2s ease-in-out infinite;
-        }
-
-        .animate-neon-pulse-red {
-          animation: neon-pulse-red 2s ease-in-out infinite;
-        }
-
-        .animate-neon-pulse-blue {
-          animation: neon-pulse-blue 2s ease-in-out infinite;
-        }
-
-        /* Airport-Style Neon Scrollbar */
-        .airport-scrollbar::-webkit-scrollbar {
-          width: 12px;
-        }
-
-        .airport-scrollbar::-webkit-scrollbar-track {
-          background: rgba(15, 23, 42, 0.8);
-          border-radius: 6px;
-          border: 1px solid rgba(6, 182, 212, 0.2);
-        }
-
-        .airport-scrollbar::-webkit-scrollbar-thumb {
-          background: linear-gradient(to bottom, rgba(6,182,212,0.6), rgba(16,185,129,0.6));
-          border-radius: 6px;
-          border: 2px solid rgba(15, 23, 42, 0.8);
-          box-shadow: 0 0 10px rgba(6,182,212,0.5);
-        }
-
-        .airport-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: linear-gradient(to bottom, rgba(6,182,212,0.9), rgba(16,185,129,0.9));
-          box-shadow: 0 0 20px rgba(6,182,212,0.8);
-        }
-
-        /* Tabular Numbers for Consistent Width */
-        .tabular-nums {
-          font-variant-numeric: tabular-nums;
-        }
-
-        /* Smooth Hardware Acceleration */
-        .animate-flip-in,
-        .animate-ticker-seamless,
-        .animate-float,
-        .animate-float-delayed {
-          will-change: transform;
-          transform: translateZ(0);
-          backface-visibility: hidden;
-        }
+        .animate-neon-pulse-green { animation: neon-pulse-green 2.5s ease-in-out infinite; }
+        .animate-neon-pulse-yellow { animation: neon-pulse-yellow 2.5s ease-in-out infinite; }
+        .animate-neon-pulse-red { animation: neon-pulse-red 2.5s ease-in-out infinite; }
+        .animate-neon-pulse-blue { animation: neon-pulse-blue 2.5s ease-in-out infinite; }
+        .schedule-scrollbar::-webkit-scrollbar { width: 8px; }
+        .schedule-scrollbar::-webkit-scrollbar-track { background: rgb(15 23 42); border-radius: 4px; }
+        .schedule-scrollbar::-webkit-scrollbar-thumb { background: rgb(51 65 85); border-radius: 4px; }
+        .schedule-scrollbar::-webkit-scrollbar-thumb:hover { background: rgb(71 85 105); }
       `}</style>
     </div>
   )
 
-  if (isFullscreen) {
-    return <ScheduleContent />
-  }
-
+  if (isFullscreen) return <ScheduleContent />
   return (
     <DashboardLayout>
       <ScheduleContent />
