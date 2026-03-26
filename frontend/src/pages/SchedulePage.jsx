@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import DashboardLayout from '../components/DashboardLayout'
@@ -25,7 +25,10 @@ import {
 } from 'lucide-react'
 
 const AUTO_REFRESH_MS = 30000
-const DEFAULT_LIMIT = 200
+const INITIAL_LIMIT = 1000
+// Safety cap so we don't accidentally request an absurdly huge payload.
+// If total is bigger than this cap, we fall back to page-by-page fetching.
+const MAX_LIMIT = 10000
 
 const STATUS_GROUP = {
   // disamakan dengan Accurate + status dari app (QUEUE/PROCEED/WATING)
@@ -84,48 +87,100 @@ const SchedulePage = () => {
     totalRevenue: 0,
   })
 
+  const fetchRequestId = useRef(0)
+
   const fetchOrders = useCallback(async ({ silent = false } = {}) => {
+    const requestId = ++fetchRequestId.current
     try {
       if (silent) setRefreshing(true)
       else setLoading(true)
       const { startDate, endDate } = getMonthRange(month)
-      const response = await api.get('/sales-orders', {
-        params: { page: 1, limit: DEFAULT_LIMIT, startDate, endDate },
+
+      const firstResponse = await api.get('/sales-orders', {
+        params: { page: 1, limit: INITIAL_LIMIT, startDate, endDate },
       })
 
       // Backend returns: { success, message, data: [...], pagination: {...} }
-      if (response.data?.success) {
-        const fetchedOrders = Array.isArray(response.data.data)
-          ? response.data.data
-          : []
-        setOrders(fetchedOrders)
-
-        const counter = fetchedOrders.reduce(
-          (acc, o) => {
-            const group = getOrderStatusGroup(o)
-            if (group === 'completed') acc.completed += 1
-            else if (group === 'processing') acc.processing += 1
-            else if (group === 'pending') acc.pending += 1
-            return acc
-          },
-          { completed: 0, processing: 0, pending: 0 }
-        )
-        const totalRevenue = fetchedOrders.reduce(
-          (sum, o) => sum + (o.totalAmount || 0),
-          0
-        )
-
-        setStats({
-          total: fetchedOrders.length,
-          completed: counter.completed,
-          processing: counter.processing,
-          pending: counter.pending,
-          totalRevenue,
-        })
-      } else {
+      if (!firstResponse.data?.success) {
         // Keep previous data on unexpected response to avoid flashing
-        console.error('[SchedulePage] Unexpected response structure:', response.data)
+        console.error(
+          '[SchedulePage] Unexpected response structure:',
+          firstResponse.data
+        )
+        return
       }
+
+      const firstOrders = Array.isArray(firstResponse.data.data)
+        ? firstResponse.data.data
+        : []
+      const total = Number(
+        firstResponse.data?.pagination?.total ?? firstOrders.length
+      )
+
+      let allOrders = firstOrders
+
+      // If total is within our cap, re-fetch once to get everything in one go.
+      // This avoids multiple COUNT queries across pages.
+      if (total > INITIAL_LIMIT && total <= MAX_LIMIT) {
+        const secondResponse = await api.get('/sales-orders', {
+          params: { page: 1, limit: total, startDate, endDate },
+        })
+        if (
+          requestId === fetchRequestId.current &&
+          secondResponse.data?.success &&
+          Array.isArray(secondResponse.data.data)
+        ) {
+          allOrders = secondResponse.data.data
+        }
+      }
+
+      // If total exceeds the cap, fall back to fetching page-by-page.
+      if (total > MAX_LIMIT) {
+        const totalPages = Number(
+          firstResponse.data?.pagination?.totalPages ??
+            Math.ceil(total / INITIAL_LIMIT)
+        )
+        const collected = [...firstOrders]
+        for (let page = 2; page <= totalPages; page++) {
+          const pageResponse = await api.get('/sales-orders', {
+            params: { page, limit: INITIAL_LIMIT, startDate, endDate },
+          })
+          if (!pageResponse.data?.success) break
+          const pageOrders = Array.isArray(pageResponse.data.data)
+            ? pageResponse.data.data
+            : []
+          if (pageOrders.length === 0) break
+          collected.push(...pageOrders)
+        }
+        allOrders = collected
+      }
+
+      // Ignore out-of-date requests (e.g. user changes month quickly).
+      if (requestId !== fetchRequestId.current) return
+
+      setOrders(allOrders)
+      const counter = allOrders.reduce(
+        (acc, o) => {
+          const group = getOrderStatusGroup(o)
+          if (group === 'completed') acc.completed += 1
+          else if (group === 'processing') acc.processing += 1
+          else if (group === 'pending') acc.pending += 1
+          return acc
+        },
+        { completed: 0, processing: 0, pending: 0 }
+      )
+      const totalRevenue = allOrders.reduce(
+        (sum, o) => sum + (o.totalAmount || 0),
+        0
+      )
+
+      setStats({
+        total: allOrders.length,
+        completed: counter.completed,
+        processing: counter.processing,
+        pending: counter.pending,
+        totalRevenue,
+      })
     } catch (error) {
       console.error('[SchedulePage] Failed to fetch orders:', error)
     } finally {
