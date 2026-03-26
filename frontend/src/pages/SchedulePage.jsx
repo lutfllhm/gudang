@@ -312,6 +312,23 @@ const SchedulePage = () => {
     return list
   }, [orders, filterStatus, sortBy, sortDir])
 
+  const marqueeDurationSeconds = useMemo(() => {
+    const count = filteredAndSortedOrders.length
+    // Make it easier to read: longer duration when there are more rows.
+    // Clamp so it doesn't become extremely slow for huge months.
+    const MIN_SECONDS = 600 // 10 minutes
+    const MAX_SECONDS = 2400 // 40 minutes
+    const BASE_SECONDS = 300
+    const PER_ITEM_SECONDS = 0.8
+
+    return Math.round(
+      Math.min(
+        MAX_SECONDS,
+        Math.max(MIN_SECONDS, BASE_SECONDS + count * PER_ITEM_SECONDS)
+      )
+    )
+  }, [filteredAndSortedOrders.length])
+
   const tableColumns = [
     { key: 'time', label: 'Time', icon: Clock, span: 'col-span-1' },
     { key: 'so', label: 'SO Number', icon: FileText, span: 'col-span-2' },
@@ -617,7 +634,10 @@ const SchedulePage = () => {
                 </p>
               </motion.div>
             ) : (
-              <div className="running-vertical absolute inset-x-0 bottom-0">
+              <div
+                className="running-vertical absolute inset-x-0 bottom-0"
+                style={{ ['--marquee-duration']: `${marqueeDurationSeconds}s` }}
+              >
                 {[...filteredAndSortedOrders, ...filteredAndSortedOrders].map((order, index) => {
                   const statusConfig = getStatusConfig(order.status)
                   return (
@@ -700,7 +720,7 @@ const SchedulePage = () => {
         .running-vertical {
           will-change: transform;
           /* diperlambat lagi supaya teks sangat mudah dibaca */
-          animation: vertical-marquee 480s linear infinite;
+          animation: vertical-marquee var(--marquee-duration, 480s) linear infinite;
         }
         .running-vertical:hover {
           animation-play-state: paused;
