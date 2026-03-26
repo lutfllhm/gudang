@@ -281,10 +281,22 @@ const SchedulePage = () => {
   }
 
   const formatTime = (date) => {
-    return new Date(date).toLocaleTimeString('id-ID', {
-      hour: '2-digit',
-      minute: '2-digit',
-    })
+    if (!date) return '—'
+    const dt = new Date(date)
+    if (Number.isNaN(dt.getTime())) return '—'
+    return dt.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+  }
+
+  const getOrderTimeValue = (order) => {
+    // "Opsi A": Time mengikuti waktu SO tersimpan ke DB / terakhir sync,
+    // karena `tanggal_so` di DB adalah DATE (tanpa jam).
+    return (
+      order?.createdAt ??
+      order?.lastSync ??
+      order?.transDate ??
+      order?.updatedAt ??
+      null
+    )
   }
 
   const filteredAndSortedOrders = useMemo(() => {
@@ -294,15 +306,17 @@ const SchedulePage = () => {
     })
     const dir = sortDir === 'asc' ? 1 : -1
     list = [...list].sort((a, b) => {
-      const tA = new Date(a.transDate).getTime()
-      const tB = new Date(b.transDate).getTime()
+      const tA = new Date(getOrderTimeValue(a)).getTime()
+      const tB = new Date(getOrderTimeValue(b)).getTime()
       switch (sortBy) {
         case 'time':
           return (tA - tB) * dir
         case 'so':
           return ((a.transNumber || '').localeCompare(b.transNumber || '')) * dir
         case 'date':
-          return (tA - tB) * dir
+          return (
+            (new Date(a.transDate).getTime() - new Date(b.transDate).getTime()) * dir
+          )
         case 'status':
           return (getOrderStatusGroup(a).localeCompare(getOrderStatusGroup(b))) * dir
         default:
@@ -649,7 +663,7 @@ const SchedulePage = () => {
                     >
                       <div className="col-span-1 flex items-center min-w-0">
                         <span className="text-sm font-mono font-medium text-slate-300 tabular-nums">
-                          {formatTime(order.transDate)}
+                          {formatTime(getOrderTimeValue(order))}
                         </span>
                       </div>
                       <div className="col-span-2 flex items-center min-w-0">
