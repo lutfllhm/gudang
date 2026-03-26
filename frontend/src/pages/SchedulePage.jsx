@@ -316,10 +316,10 @@ const SchedulePage = () => {
     const count = filteredAndSortedOrders.length
     // Make it easier to read: longer duration when there are more rows.
     // Clamp so it doesn't become extremely slow for huge months.
-    const MIN_SECONDS = 600 // 10 minutes
-    const MAX_SECONDS = 2400 // 40 minutes
-    const BASE_SECONDS = 300
-    const PER_ITEM_SECONDS = 0.8
+    const MIN_SECONDS = 1800 // 30 minutes (slow even for small lists)
+    const MAX_SECONDS = 10800 // 3 hours (cap for very large lists)
+    const BASE_SECONDS = 900
+    const PER_ITEM_SECONDS = 3.0
 
     return Math.round(
       Math.min(
