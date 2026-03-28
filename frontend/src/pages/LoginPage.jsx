@@ -330,14 +330,6 @@ const LoginPage = () => {
                   </button>
                 </form>
 
-                {/* Demo Account */}
-                <div className="mt-6 p-4 bg-gradient-to-r from-slate-50 to-slate-100 rounded-xl border border-slate-200">
-                  <p className="text-xs text-center text-slate-700">
-                    <span className="font-semibold text-slate-900">Akun Demo:</span>{' '}
-                    superadmin@iware.id / jasad666
-                  </p>
-                </div>
-
                 {/* Security Badge */}
                 <div className="mt-6 flex items-center justify-center gap-2 text-xs text-slate-500">
                   <Lock size={14} />
