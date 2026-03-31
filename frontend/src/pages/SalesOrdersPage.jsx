@@ -27,7 +27,7 @@ const SalesOrdersPage = () => {
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
   const [search, setSearch] = useState('')
-  const [month, setMonth] = useState(() => toYyyyMm(new Date()))
+  const [month, setMonth] = useState('all') // Default ke 'all' untuk menampilkan semua data
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 20,
@@ -42,17 +42,24 @@ const SalesOrdersPage = () => {
   const fetchOrders = async () => {
     try {
       setLoading(true)
-      const { startDate, endDate } = getMonthRange(month)
-      console.log('[SalesOrdersPage] Fetching orders...', { page: pagination.page, limit: pagination.limit, search, month, startDate, endDate })
-      const response = await api.get('/sales-orders', {
-        params: {
-          page: pagination.page,
-          limit: pagination.limit,
-          search,
-          startDate,
-          endDate,
-        }
-      })
+      
+      // Hanya kirim startDate dan endDate jika month bukan 'all'
+      const params = {
+        page: pagination.page,
+        limit: pagination.limit,
+        search,
+      }
+      
+      if (month !== 'all') {
+        const { startDate, endDate } = getMonthRange(month)
+        params.startDate = startDate
+        params.endDate = endDate
+        console.log('[SalesOrdersPage] Fetching orders with date filter...', { page: pagination.page, limit: pagination.limit, search, month, startDate, endDate })
+      } else {
+        console.log('[SalesOrdersPage] Fetching all orders (no date filter)...', { page: pagination.page, limit: pagination.limit, search })
+      }
+      
+      const response = await api.get('/sales-orders', { params })
       console.log('[SalesOrdersPage] Orders fetched:', response.data)
       
       // Backend returns: { success, message, data: [...], pagination: {...} }
@@ -139,13 +146,23 @@ const SalesOrdersPage = () => {
             />
           </div>
           <div className="flex flex-wrap items-center gap-3 text-sm">
-            <span className="font-semibold text-gray-600">Bulan</span>
-            <input
-              type="month"
+            <span className="font-semibold text-gray-600">Filter Bulan</span>
+            <select
               value={month}
               onChange={(e) => handleMonthChange(e.target.value)}
-              className="border-2 border-gray-200 rounded-xl px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent bg-gray-50 hover:bg-white"
-            />
+              className="border-2 border-gray-200 rounded-xl px-4 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent bg-gray-50 hover:bg-white"
+            >
+              <option value="all">Semua Data</option>
+              <option value={toYyyyMm(new Date())}>Bulan Ini</option>
+            </select>
+            {month !== 'all' && (
+              <input
+                type="month"
+                value={month}
+                onChange={(e) => handleMonthChange(e.target.value)}
+                className="border-2 border-gray-200 rounded-xl px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent bg-gray-50 hover:bg-white"
+              />
+            )}
           </div>
         </div>
 

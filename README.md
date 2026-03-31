@@ -266,6 +266,24 @@ docker exec -i iware_db mysql -u iware -piware_password iware_warehouse < backup
 
 ## 🐛 Troubleshooting
 
+### Error: "failed to set up container networking"
+
+Jika muncul error networking saat rebuild:
+
+```bash
+# Quick fix
+chmod +x fix-docker-simple.sh
+./fix-docker-simple.sh
+```
+
+Atau manual:
+```bash
+docker-compose down -v
+docker rm -f $(docker ps -aq)
+docker network prune -f
+docker-compose up -d --build
+```
+
 ### Container terus restart
 
 ```bash
@@ -304,7 +322,7 @@ sleep 30
 docker-compose restart backend
 ```
 
-Lihat [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) untuk troubleshooting lengkap.
+Lihat [TROUBLESHOOTING.md](TROUBLESHOOTING.md) untuk panduan lengkap troubleshooting.
 
 ## 🔒 Security
 
