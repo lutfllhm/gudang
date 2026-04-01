@@ -1,4 +1,11 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+  useLayoutEffect,
+} from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import DashboardLayout from '../components/DashboardLayout'
@@ -29,6 +36,12 @@ const INITIAL_LIMIT = 1000
 // Safety cap so we don't accidentally request an absurdly huge payload.
 // If total is bigger than this cap, we fall back to page-by-page fetching.
 const MAX_LIMIT = 10000
+
+// Marquee: kecepatan tetap (px/s) agar ganti bulan tidak mengubah kecepatan scroll.
+// Durasi = (jarak animasi) / MARQUEE_PX_PER_SECOND; jarak = 2× tinggi konten (100%→-100%).
+const MARQUEE_PX_PER_SECOND = 15
+const MARQUEE_MIN_DURATION_SEC = 90
+const MARQUEE_MAX_DURATION_SEC = 7200
 
 const STATUS_GROUP = {
   // disamakan dengan Accurate + status dari app (QUEUE/PROCEED/WATING)
@@ -88,6 +101,8 @@ const SchedulePage = () => {
   })
 
   const fetchRequestId = useRef(0)
+  const marqueeRef = useRef(null)
+  const [marqueeDurationSec, setMarqueeDurationSec] = useState(600)
 
   const fetchOrders = useCallback(async ({ silent = false } = {}) => {
     const requestId = ++fetchRequestId.current
@@ -326,21 +341,33 @@ const SchedulePage = () => {
     return list
   }, [orders, filterStatus, sortBy, sortDir])
 
-  const marqueeDurationSeconds = useMemo(() => {
-    const count = filteredAndSortedOrders.length
-    // Longer duration when there are more rows; clamp so huge months stay usable.
-    const MIN_SECONDS = 1200 // ~20 min floor — sedikit lebih cepat, tetap nyaman dibaca
-    const MAX_SECONDS = 8100 // ~2.25 h cap for very large lists
-    const BASE_SECONDS = 600
-    const PER_ITEM_SECONDS = 2.25
-
-    return Math.round(
-      Math.min(
-        MAX_SECONDS,
-        Math.max(MIN_SECONDS, BASE_SECONDS + count * PER_ITEM_SECONDS)
+  const updateMarqueeDuration = useCallback(() => {
+    const el = marqueeRef.current
+    if (!el) return
+    const h = el.offsetHeight
+    if (h < 4) return
+    const travelPx = 2 * h
+    const sec = travelPx / MARQUEE_PX_PER_SECOND
+    setMarqueeDurationSec(
+      Math.round(
+        Math.min(
+          MARQUEE_MAX_DURATION_SEC,
+          Math.max(MARQUEE_MIN_DURATION_SEC, sec)
+        )
       )
     )
-  }, [filteredAndSortedOrders.length])
+  }, [])
+
+  useLayoutEffect(() => {
+    const el = marqueeRef.current
+    if (!el) return
+    updateMarqueeDuration()
+    const ro = new ResizeObserver(() => {
+      updateMarqueeDuration()
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [filteredAndSortedOrders, updateMarqueeDuration])
 
   const tableColumns = [
     { key: 'time', label: 'Time', icon: Clock, span: 'col-span-1' },
@@ -648,8 +675,9 @@ const SchedulePage = () => {
               </motion.div>
             ) : (
               <div
+                ref={marqueeRef}
                 className="running-vertical absolute inset-x-0 bottom-0"
-                style={{ ['--marquee-duration']: `${marqueeDurationSeconds}s` }}
+                style={{ ['--marquee-duration']: `${marqueeDurationSec}s` }}
               >
                 {[...filteredAndSortedOrders, ...filteredAndSortedOrders].map((order, index) => {
                   const statusConfig = getStatusConfig(order.status)
@@ -733,7 +761,7 @@ const SchedulePage = () => {
         .running-vertical {
           will-change: transform;
           /* linear scroll; hover pauses — default fallback jika CSS var tidak set */
-          animation: vertical-marquee var(--marquee-duration, 360s) linear infinite;
+          animation: vertical-marquee var(--marquee-duration, 600s) linear infinite;
         }
         .running-vertical:hover {
           animation-play-state: paused;
