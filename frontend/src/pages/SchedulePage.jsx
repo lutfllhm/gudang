@@ -328,12 +328,11 @@ const SchedulePage = () => {
 
   const marqueeDurationSeconds = useMemo(() => {
     const count = filteredAndSortedOrders.length
-    // Make it easier to read: longer duration when there are more rows.
-    // Clamp so it doesn't become extremely slow for huge months.
-    const MIN_SECONDS = 1800 // 30 minutes (slow even for small lists)
-    const MAX_SECONDS = 10800 // 3 hours (cap for very large lists)
-    const BASE_SECONDS = 900
-    const PER_ITEM_SECONDS = 3.0
+    // Longer duration when there are more rows; clamp so huge months stay usable.
+    const MIN_SECONDS = 1200 // ~20 min floor — sedikit lebih cepat, tetap nyaman dibaca
+    const MAX_SECONDS = 8100 // ~2.25 h cap for very large lists
+    const BASE_SECONDS = 600
+    const PER_ITEM_SECONDS = 2.25
 
     return Math.round(
       Math.min(
@@ -733,8 +732,8 @@ const SchedulePage = () => {
         }
         .running-vertical {
           will-change: transform;
-          /* diperlambat lagi supaya teks sangat mudah dibaca */
-          animation: vertical-marquee var(--marquee-duration, 480s) linear infinite;
+          /* linear scroll; hover pauses — default fallback jika CSS var tidak set */
+          animation: vertical-marquee var(--marquee-duration, 360s) linear infinite;
         }
         .running-vertical:hover {
           animation-play-state: paused;

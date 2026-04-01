@@ -274,7 +274,7 @@ server {
 Aktifkan dan reload:
 
 ```bash
-ln -sf /etc/nginx/sites-available/iwareid.com /etc/nginx/sites-enabled/
+  ln -sf /etc/nginx/sites-available/iwareid.com /etc/nginx/sites-enabled/
 nginx -t && systemctl reload nginx
 ```
 
