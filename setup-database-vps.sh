@@ -151,8 +151,12 @@ fi
 
 print_info "Menggunakan schema file: $SCHEMA_FILE"
 
-# Import schema
-mysql -u $DB_USER -p$DB_PASSWORD $DB_NAME < $SCHEMA_FILE
+# Import schema menggunakan root (untuk trigger yang butuh SUPER privilege)
+if [ -z "$DB_ROOT_PASSWORD" ]; then
+    sudo mysql $DB_NAME < $SCHEMA_FILE
+else
+    mysql -u root -p$DB_ROOT_PASSWORD $DB_NAME < $SCHEMA_FILE
+fi
 
 print_success "Schema berhasil diimport"
 echo ""
