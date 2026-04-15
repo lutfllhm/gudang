@@ -646,7 +646,7 @@ const SchedulePage = () => {
             ))}
           </div>
 
-          <div className="divide-y divide-slate-700/40 max-h-[calc(100vh-280px)] min-h-[500px] overflow-hidden relative">
+          <div className="divide-y divide-slate-700/40 max-h-[calc(100vh-260px)] min-h-[600px] overflow-hidden relative">
             {loading ? (
               <div className="py-24 flex flex-col items-center justify-center gap-4">
                 <RefreshCw className="w-10 h-10 text-slate-500 animate-spin" />
@@ -754,6 +754,21 @@ const SchedulePage = () => {
       </div>
 
       <style>{`
+        /* Optimized for 43" TV (1920x1080) */
+        @media screen and (min-width: 1920px) {
+          html {
+            font-size: 16px;
+          }
+        }
+        
+        /* Prevent zoom and ensure proper scaling */
+        * {
+          -webkit-text-size-adjust: 100%;
+          -moz-text-size-adjust: 100%;
+          -ms-text-size-adjust: 100%;
+          text-size-adjust: 100%;
+        }
+        
         @keyframes vertical-marquee {
           0% { transform: translateY(100%); }
           100% { transform: translateY(-100%); }
