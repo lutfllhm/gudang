@@ -32,10 +32,10 @@ import {
 } from 'lucide-react'
 
 const AUTO_REFRESH_MS = 30000
-const INITIAL_LIMIT = 1000
+const INITIAL_LIMIT = 5000
 // Safety cap so we don't accidentally request an absurdly huge payload.
 // If total is bigger than this cap, we fall back to page-by-page fetching.
-const MAX_LIMIT = 10000
+const MAX_LIMIT = 50000
 
 // Marquee: kecepatan tetap (px/s) agar ganti bulan tidak mengubah kecepatan scroll.
 // Durasi = (jarak animasi) / MARQUEE_PX_PER_SECOND; jarak = 2× tinggi konten (100%→-100%).
@@ -89,7 +89,7 @@ const SchedulePage = () => {
   const [isFullscreen, setIsFullscreen] = useState(true)
   const [currentTime, setCurrentTime] = useState(new Date())
   const [month, setMonth] = useState(() => toYyyyMm(new Date()))
-  const [filterStatus, setFilterStatus] = useState('all')
+  const [filterStatus, setFilterStatus] = useState('active')
   const [sortBy, setSortBy] = useState('time')
   const [sortDir, setSortDir] = useState('desc')
   const [stats, setStats] = useState({
@@ -173,6 +173,9 @@ const SchedulePage = () => {
       // Ignore out-of-date requests (e.g. user changes month quickly).
       if (requestId !== fetchRequestId.current) return
 
+      console.log('[SchedulePage] Total orders fetched:', allOrders.length)
+      console.log('[SchedulePage] Total from API:', total)
+
       setOrders(allOrders)
       const counter = allOrders.reduce(
         (acc, o) => {
@@ -184,6 +187,9 @@ const SchedulePage = () => {
         },
         { completed: 0, processing: 0, pending: 0 }
       )
+      
+      console.log('[SchedulePage] Stats breakdown:', counter)
+      
       const totalRevenue = allOrders.reduce(
         (sum, o) => sum + (o.totalAmount || 0),
         0
@@ -317,8 +323,16 @@ const SchedulePage = () => {
   const filteredAndSortedOrders = useMemo(() => {
     let list = orders.filter((o) => {
       if (filterStatus === 'all') return true
+      if (filterStatus === 'active') {
+        // Hanya tampilkan pending dan processing, exclude completed
+        const group = getOrderStatusGroup(o)
+        return group === 'pending' || group === 'processing'
+      }
       return getOrderStatusGroup(o) === filterStatus
     })
+    
+    console.log('[SchedulePage] Filtered orders count:', list.length, 'Filter:', filterStatus)
+    
     const dir = sortDir === 'asc' ? 1 : -1
     list = [...list].sort((a, b) => {
       const tA = new Date(getOrderTimeValue(a)).getTime()
@@ -572,6 +586,7 @@ const SchedulePage = () => {
             <Filter className="w-4 h-4 text-slate-500 shrink-0" />
             <span className="text-xs font-medium text-slate-500 uppercase tracking-wider mr-2">Status</span>
             {[
+              { value: 'active', label: 'Aktif (Pending & Processing)' },
               { value: 'all', label: 'Semua' },
               { value: 'completed', label: 'Terproses' },
               { value: 'processing', label: 'Sebagian terproses' },
@@ -674,61 +689,63 @@ const SchedulePage = () => {
                 </p>
               </motion.div>
             ) : (
-              <div
-                ref={marqueeRef}
-                className="running-vertical absolute inset-0"
-                style={{ ['--marquee-duration']: `${marqueeDurationSec}s` }}
-              >
-                {[...filteredAndSortedOrders, ...filteredAndSortedOrders].map((order, index) => {
-                  const statusConfig = getStatusConfig(order.status)
-                  return (
-                    <div
-                      key={`${order.id || order.transNumber || 'row'}-${index}`}
-                      className={`grid grid-cols-12 gap-4 px-6 lg:px-8 py-3.5 hover:bg-slate-800/40 transition-colors border-l-2 border-transparent hover:border-cyan-500/40 ${
-                        index % 2 === 1 ? 'bg-slate-800/20' : ''
-                      }`}
-                    >
-                      <div className="col-span-1 flex items-center min-w-0">
-                        <span className="text-lg font-mono font-semibold text-slate-200 tabular-nums">
-                          {formatTime(getOrderTimeValue(order))}
-                        </span>
-                      </div>
-                      <div className="col-span-2 flex items-center min-w-0">
-                        <span className="text-lg font-semibold text-white truncate" title={order.transNumber}>
-                          {order.transNumber}
-                        </span>
-                      </div>
-                      <div className="col-span-2 flex items-center min-w-0">
-                        <span className="text-lg text-slate-300 font-mono tabular-nums">
-                          {formatDate(order.transDate)}
-                        </span>
-                      </div>
-                      <div className="col-span-3 flex items-center min-w-0">
-                        <span className="text-lg text-white truncate block" title={order.customerName}>
-                          {order.customerName}
-                        </span>
-                      </div>
-                      <div className="col-span-2 flex items-center min-w-0">
-                        {order.description ? (
-                          <span className="text-lg text-slate-300 truncate block" title={order.description}>
-                            {order.description}
+              <div className="absolute inset-0 overflow-hidden">
+                <div
+                  ref={marqueeRef}
+                  className="running-vertical"
+                  style={{ ['--marquee-duration']: `${marqueeDurationSec}s` }}
+                >
+                  {[...filteredAndSortedOrders, ...filteredAndSortedOrders].map((order, index) => {
+                    const statusConfig = getStatusConfig(order.status)
+                    return (
+                      <div
+                        key={`${order.id || order.transNumber || 'row'}-${index}`}
+                        className={`grid grid-cols-12 gap-4 px-6 lg:px-8 py-3.5 hover:bg-slate-800/40 transition-colors border-l-2 border-transparent hover:border-cyan-500/40 ${
+                          index % 2 === 1 ? 'bg-slate-800/20' : ''
+                        }`}
+                      >
+                        <div className="col-span-1 flex items-center min-w-0">
+                          <span className="text-lg font-mono font-semibold text-slate-200 tabular-nums">
+                            {formatTime(getOrderTimeValue(order))}
                           </span>
-                        ) : (
-                          <span className="text-lg font-mono text-slate-200">
-                            {formatCurrency(order.totalAmount)}
+                        </div>
+                        <div className="col-span-2 flex items-center min-w-0">
+                          <span className="text-lg font-semibold text-white truncate" title={order.transNumber}>
+                            {order.transNumber}
                           </span>
-                        )}
+                        </div>
+                        <div className="col-span-2 flex items-center min-w-0">
+                          <span className="text-lg text-slate-300 font-mono tabular-nums">
+                            {formatDate(order.transDate)}
+                          </span>
+                        </div>
+                        <div className="col-span-3 flex items-center min-w-0">
+                          <span className="text-lg text-white truncate block" title={order.customerName}>
+                            {order.customerName}
+                          </span>
+                        </div>
+                        <div className="col-span-2 flex items-center min-w-0">
+                          {order.description ? (
+                            <span className="text-lg text-slate-300 truncate block" title={order.description}>
+                              {order.description}
+                            </span>
+                          ) : (
+                            <span className="text-lg font-mono text-slate-200">
+                              {formatCurrency(order.totalAmount)}
+                            </span>
+                          )}
+                        </div>
+                        <div className="col-span-2 flex items-center justify-center">
+                          <span
+                            className={`inline-flex items-center justify-center min-w-[120px] px-4 py-2.5 rounded-lg border-2 text-sm font-bold uppercase tracking-wider ${statusConfig.className} ${statusConfig.glow}`}
+                          >
+                            {formatStatusLabel(order.status)}
+                          </span>
+                        </div>
                       </div>
-                      <div className="col-span-2 flex items-center justify-center">
-                        <span
-                          className={`inline-flex items-center justify-center min-w-[120px] px-4 py-2.5 rounded-lg border-2 text-sm font-bold uppercase tracking-wider ${statusConfig.className} ${statusConfig.glow}`}
-                        >
-                          {formatStatusLabel(order.status)}
-                        </span>
-                      </div>
-                    </div>
-                  )
-                })}
+                    )
+                  })}
+                </div>
               </div>
             )}
           </div>
@@ -746,6 +763,10 @@ const SchedulePage = () => {
             </span>
             <span className="text-slate-500">·</span>
             <span className="text-slate-500">Auto refresh 30s</span>
+            <span className="text-slate-500">·</span>
+            <span className="text-cyan-400 font-medium">
+              Menampilkan {filteredAndSortedOrders.length} dari {orders.length} SO
+            </span>
           </div>
           <span className="text-slate-500 text-sm">
             iWare · Warehouse Management
@@ -770,14 +791,21 @@ const SchedulePage = () => {
         }
         
         @keyframes vertical-marquee {
-          0% { transform: translateY(100%); }
-          100% { transform: translateY(-100%); }
+          0% { 
+            transform: translateY(0); 
+          }
+          100% { 
+            transform: translateY(-50%); 
+          }
         }
+        
         .running-vertical {
           will-change: transform;
-          /* linear scroll; hover pauses — default fallback jika CSS var tidak set */
           animation: vertical-marquee var(--marquee-duration, 600s) linear infinite;
+          display: flex;
+          flex-direction: column;
         }
+        
         .running-vertical:hover {
           animation-play-state: paused;
         }
