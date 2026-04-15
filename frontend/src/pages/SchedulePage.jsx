@@ -634,13 +634,13 @@ const SchedulePage = () => {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3, delay: 0.05 }}
         >
-          <div className="sticky top-0 z-20 grid grid-cols-12 gap-3 px-4 lg:px-6 py-3 bg-slate-800/90 border-b border-slate-700/60 backdrop-blur-sm">
+          <div className="sticky top-0 z-20 grid grid-cols-12 gap-4 px-6 lg:px-8 py-4 bg-slate-800/90 border-b border-slate-700/60 backdrop-blur-sm">
             {tableColumns.map((col) => (
               <div
                 key={col.key}
-                className={`${col.span} flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider`}
+                className={`${col.span} flex items-center gap-2 text-sm font-bold text-slate-300 uppercase tracking-wider`}
               >
-                <col.icon className="w-4 h-4 shrink-0 text-slate-500" />
+                <col.icon className="w-5 h-5 shrink-0 text-slate-400" />
                 {col.label}
               </div>
             ))}
@@ -684,44 +684,44 @@ const SchedulePage = () => {
                   return (
                     <div
                       key={`${order.id || order.transNumber || 'row'}-${index}`}
-                      className={`grid grid-cols-12 gap-3 px-4 lg:px-6 py-2 hover:bg-slate-800/40 transition-colors border-l-2 border-transparent hover:border-cyan-500/40 ${
+                      className={`grid grid-cols-12 gap-4 px-6 lg:px-8 py-3.5 hover:bg-slate-800/40 transition-colors border-l-2 border-transparent hover:border-cyan-500/40 ${
                         index % 2 === 1 ? 'bg-slate-800/20' : ''
                       }`}
                     >
                       <div className="col-span-1 flex items-center min-w-0">
-                        <span className="text-base font-mono font-medium text-slate-300 tabular-nums">
+                        <span className="text-lg font-mono font-semibold text-slate-200 tabular-nums">
                           {formatTime(getOrderTimeValue(order))}
                         </span>
                       </div>
                       <div className="col-span-2 flex items-center min-w-0">
-                        <span className="text-base font-medium text-slate-100 truncate" title={order.transNumber}>
+                        <span className="text-lg font-semibold text-white truncate" title={order.transNumber}>
                           {order.transNumber}
                         </span>
                       </div>
                       <div className="col-span-2 flex items-center min-w-0">
-                        <span className="text-base text-slate-400 font-mono tabular-nums">
+                        <span className="text-lg text-slate-300 font-mono tabular-nums">
                           {formatDate(order.transDate)}
                         </span>
                       </div>
                       <div className="col-span-3 flex items-center min-w-0">
-                        <span className="text-base text-slate-200 truncate block" title={order.customerName}>
+                        <span className="text-lg text-white truncate block" title={order.customerName}>
                           {order.customerName}
                         </span>
                       </div>
                       <div className="col-span-2 flex items-center min-w-0">
                         {order.description ? (
-                          <span className="text-base text-slate-400 truncate block" title={order.description}>
+                          <span className="text-lg text-slate-300 truncate block" title={order.description}>
                             {order.description}
                           </span>
                         ) : (
-                          <span className="text-base font-mono text-slate-300">
+                          <span className="text-lg font-mono text-slate-200">
                             {formatCurrency(order.totalAmount)}
                           </span>
                         )}
                       </div>
                       <div className="col-span-2 flex items-center justify-center">
                         <span
-                          className={`inline-flex items-center justify-center min-w-[100px] px-3 py-2 rounded-md border text-xs font-semibold uppercase tracking-wider ${statusConfig.className} ${statusConfig.glow}`}
+                          className={`inline-flex items-center justify-center min-w-[120px] px-4 py-2.5 rounded-lg border-2 text-sm font-bold uppercase tracking-wider ${statusConfig.className} ${statusConfig.glow}`}
                         >
                           {formatStatusLabel(order.status)}
                         </span>
