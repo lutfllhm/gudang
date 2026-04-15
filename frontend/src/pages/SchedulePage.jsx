@@ -587,8 +587,6 @@ const SchedulePage = () => {
             <span className="text-xs font-medium text-slate-500 uppercase tracking-wider mr-2">Status</span>
             {[
               { value: 'active', label: 'Aktif (Pending & Processing)' },
-              { value: 'all', label: 'Semua' },
-              { value: 'completed', label: 'Terproses' },
               { value: 'processing', label: 'Sebagian terproses' },
               { value: 'pending', label: 'Menunggu diproses' },
             ].map((opt) => (
