@@ -170,7 +170,7 @@ const HomePage = () => {
                 onClick={() => navigate('/login')}
                 className="px-6 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-all shadow-lg hover:shadow-xl hover:scale-105"
               >
-                Get Started
+                Mulai Sekarang
               </button>
             </div>
 
@@ -198,7 +198,7 @@ const HomePage = () => {
               <button onClick={() => scrollToSection('contact')} className="block w-full text-left py-2 text-slate-700 font-medium hover:text-blue-600 hover:translate-x-2 transition-all">Contact</button>
               <div className="pt-3">
                 <button onClick={() => navigate('/login')} className="w-full px-6 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-all hover:scale-105">
-                  Get Started
+                  Mulai Sekarang
                 </button>
               </div>
             </div>
@@ -326,19 +326,19 @@ const HomePage = () => {
             <div className="space-y-5 animate-fade-in-left">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
                 <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                <span className="text-xs font-bold tracking-wide text-white">SOLUSI GUDANG TERPADU</span>
+                <span className="text-xs font-bold tracking-wide text-white">SISTEM GUDANG MODERN</span>
               </div>
 
               <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-white leading-tight tracking-tight">
-                Kelola Gudang Anda
+                Atur Gudang Jadi
                 <span className="block text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-300 mt-1">
-                  Lebih Mudah & Efisien
+                  Gampang Banget!
                 </span>
               </h1>
 
               <p className="text-base text-slate-300 leading-relaxed font-light">
-                Terintegrasi langsung dengan Accurate Online. Sinkronisasi stok real-time, 
-                laporan lengkap, dan kontrol penuh atas inventori Anda.
+                Langsung nyambung ke Accurate Online. Stok update sendiri, laporan lengkap, 
+                semua barang terpantau dengan jelas.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-3 pt-2">
@@ -367,7 +367,7 @@ const HomePage = () => {
                   {/* Shine effect */}
                   <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/30 to-transparent" />
                   
-                  <span className="relative z-10">Get Started</span>
+                  <span className="relative z-10">Mulai Sekarang</span>
                   <ArrowRight size={18} className="relative z-10 group-hover:translate-x-1 transition-transform" />
                 </button>
                 <button
@@ -396,7 +396,7 @@ const HomePage = () => {
                   <span className="absolute inset-0 bg-white/10 scale-0 group-hover:scale-100 transition-transform duration-500 rounded-lg" />
                   
                   <Play size={18} className="relative z-10 group-hover:scale-110 transition-transform" />
-                  <span className="relative z-10">Lihat Fitur</span>
+                  <span className="relative z-10">Cek Fiturnya</span>
                 </button>
               </div>
 
@@ -568,10 +568,10 @@ const HomePage = () => {
               <span className="text-xs font-bold tracking-wide text-blue-600 uppercase">Core Features</span>
             </div>
             <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-4 tracking-tight">
-              Fitur Lengkap untuk Bisnis Anda
+              Fitur yang Bikin Kerjaan Makin Ringan
             </h2>
             <p className="text-base text-slate-600 max-w-3xl mx-auto font-light leading-relaxed">
-              Semua yang Anda butuhkan untuk mengelola gudang dengan lebih baik
+              Semua yang lo butuhin buat ngatur gudang ada di siniengan lebih baik
             </p>
           </div>
 
@@ -581,42 +581,42 @@ const HomePage = () => {
               {
                 icon: Package,
                 title: 'Tracking Inventori',
-                description: 'Pantau stok barang secara real-time dengan sistem barcode, tracking batch, dan notifikasi otomatis saat stok menipis.',
+                description: 'Cek stok barang kapan aja, dimana aja. Pakai barcode, tracking batch, plus dikasih tau kalau stok mau habis.',
                 color: 'blue',
                 gradient: 'from-blue-600 to-blue-700'
               },
               {
                 icon: RefreshCw,
                 title: 'Integrasi Accurate Online',
-                description: 'Sinkronisasi otomatis dengan Accurate Online. Data keuangan dan inventori selalu update tanpa input manual.',
+                description: 'Nyambung langsung ke Accurate Online. Data keuangan sama inventori update otomatis, gak perlu input manual lagi.',
                 color: 'green',
                 gradient: 'from-green-600 to-green-700'
               },
               {
                 icon: Activity,
                 title: 'Update Stok Real-Time',
-                description: 'Perubahan stok langsung tersinkron ke semua gudang. Tidak ada lagi data yang tertinggal atau tidak akurat.',
+                description: 'Stok berubah? Langsung sinkron ke semua gudang. Gak ada lagi data yang ketinggalan atau salah.',
                 color: 'purple',
                 gradient: 'from-purple-600 to-purple-700'
               },
               {
                 icon: Database,
                 title: 'Multi Gudang',
-                description: 'Kelola beberapa lokasi gudang sekaligus dari satu dashboard. Kontrol terpusat, operasional tersebar.',
+                description: 'Punya beberapa gudang? Atur semuanya dari satu tempat aja. Gampang, praktis, gak ribet.',
                 color: 'orange',
                 gradient: 'from-orange-600 to-orange-700'
               },
               {
                 icon: BarChart3,
                 title: 'Laporan & Analitik',
-                description: 'Dashboard lengkap dengan grafik, chart, dan laporan yang bisa disesuaikan. Insight bisnis jadi lebih jelas.',
+                description: 'Dashboard lengkap dengan grafik dan laporan yang bisa disesuaikan. Bikin keputusan bisnis jadi lebih gampang.',
                 color: 'indigo',
                 gradient: 'from-indigo-600 to-indigo-700'
               },
               {
                 icon: Users,
                 title: 'Manajemen User',
-                description: 'Atur hak akses tim dengan role-based system. Setiap orang hanya bisa akses yang mereka butuhkan.',
+                description: 'Atur siapa bisa akses apa. Setiap orang cuma bisa lihat dan edit yang mereka butuhin aja.',
                 color: 'pink',
                 gradient: 'from-pink-600 to-pink-700'
               }
@@ -666,7 +666,7 @@ const HomePage = () => {
                   className="relative flex items-center gap-2 text-blue-600 font-bold group-hover:gap-3 transition-all text-xs tracking-wide"
                 >
                   <span className="relative">
-                    PELAJARI LEBIH LANJUT
+                    LIHAT SELENGKAPNYA
                     {/* Animated underline */}
                     <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-600 group-hover:w-full transition-all duration-300" style={{ willChange: 'width' }} />
                   </span>
@@ -694,15 +694,15 @@ const HomePage = () => {
               </div>
 
               <h2 className="text-4xl md:text-5xl font-black text-slate-900 leading-tight tracking-tight">
-                Integrasi Langsung dengan
+                Langsung Nyambung ke
                 <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-800 mt-2">
                   Accurate Online
                 </span>
               </h2>
 
               <p className="text-lg text-slate-600 leading-relaxed font-light">
-                Sistem kami terhubung langsung ke API Accurate Online. Data gudang dan keuangan 
-                Anda selalu sinkron secara otomatis, tanpa perlu input manual.
+                Sistemnya langsung konek ke Accurate Online. Data gudang sama keuangan 
+                selalu sinkron otomatis, gak perlu input manual lagi deh.
               </p>
 
               {/* Integration Features */}
@@ -711,17 +711,17 @@ const HomePage = () => {
                   {
                     icon: RefreshCw,
                     title: 'Sinkronisasi Otomatis',
-                    description: 'Data gudang dan akuntansi selalu sinkron secara real-time'
+                    description: 'Data gudang sama akuntansi selalu update sendiri secara real-time'
                   },
                   {
                     icon: Server,
                     title: 'Berbasis Cloud',
-                    description: 'Infrastruktur cloud yang aman dan bisa diandalkan'
+                    description: 'Pakai cloud yang aman dan stabil, bisa diakses dari mana aja'
                   },
                   {
                     icon: CheckCircle,
                     title: 'Validasi Data',
-                    description: 'Validasi otomatis untuk memastikan akurasi dan konsistensi data'
+                    description: 'Data dicek otomatis biar gak ada yang salah atau gak konsisten'
                   }
                 ].map((item, index) => (
                   <div key={index} className="flex items-start gap-4 p-5 bg-slate-50 rounded-xl hover:bg-slate-100 transition-all group cursor-pointer">
@@ -742,7 +742,7 @@ const HomePage = () => {
                 onClick={() => navigate('/login')}
                 className="group px-8 py-4 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-all inline-flex items-center gap-2 shadow-lg hover:shadow-xl hover:scale-105"
               >
-                Get Started
+                Mulai Sekarang
                 <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
@@ -831,10 +831,10 @@ const HomePage = () => {
               <span className="text-sm font-bold tracking-wide text-blue-600 uppercase">Dashboard</span>
             </div>
             <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-6 tracking-tight">
-              Dashboard yang Powerful
+              Dashboard yang Keren Abis
             </h2>
             <p className="text-xl text-slate-600 max-w-3xl mx-auto font-light leading-relaxed">
-              Analitik lengkap dan insight real-time dalam satu tampilan
+              Semua data penting langsung keliatan di satu layar
             </p>
           </div>
 
@@ -1063,15 +1063,15 @@ const HomePage = () => {
           </div>
 
           <h2 className="text-4xl md:text-5xl font-black text-white mb-6 tracking-tight">
-            Mulai Kelola Gudang Anda
+            Yuk, Atur Gudang
             <span className="block text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-300 mt-2">
-              dengan Lebih Cerdas
+              Jadi Lebih Gampang!
             </span>
           </h2>
 
           <p className="text-xl text-slate-300 mb-12 max-w-2xl mx-auto font-light leading-relaxed">
-            Bergabunglah dengan ratusan bisnis yang sudah mempercayai iware. 
-            Rasakan kemudahan mengelola gudang dengan teknologi modern.
+            Udah ratusan bisnis yang pakai iware. Cobain sendiri gimana enaknya 
+            ngatur gudang pakai teknologi modern.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
