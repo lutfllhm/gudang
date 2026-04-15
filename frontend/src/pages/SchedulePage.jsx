@@ -548,7 +548,7 @@ const SchedulePage = () => {
                     {stat.label}
                   </div>
                   <div
-                    className={`text-xl font-bold tabular-nums mt-0.5 ${
+                    className={`text-lg font-bold tabular-nums mt-0.5 ${
                       stat.accent === 'cyan'
                         ? 'text-cyan-300'
                         : stat.accent === 'emerald'
@@ -689,32 +689,32 @@ const SchedulePage = () => {
                       }`}
                     >
                       <div className="col-span-1 flex items-center min-w-0">
-                        <span className="text-base font-mono font-medium text-slate-300 tabular-nums">
+                        <span className="text-lg font-mono font-medium text-slate-300 tabular-nums">
                           {formatTime(getOrderTimeValue(order))}
                         </span>
                       </div>
                       <div className="col-span-2 flex items-center min-w-0">
-                        <span className="text-base font-medium text-slate-100 truncate" title={order.transNumber}>
+                        <span className="text-lg font-medium text-slate-100 truncate" title={order.transNumber}>
                           {order.transNumber}
                         </span>
                       </div>
                       <div className="col-span-2 flex items-center min-w-0">
-                        <span className="text-base text-slate-400 font-mono tabular-nums">
+                        <span className="text-lg text-slate-400 font-mono tabular-nums">
                           {formatDate(order.transDate)}
                         </span>
                       </div>
                       <div className="col-span-3 flex items-center min-w-0">
-                        <span className="text-base text-slate-200 truncate block" title={order.customerName}>
+                        <span className="text-lg text-slate-200 truncate block" title={order.customerName}>
                           {order.customerName}
                         </span>
                       </div>
                       <div className="col-span-2 flex items-center min-w-0">
                         {order.description ? (
-                          <span className="text-base text-slate-400 truncate block" title={order.description}>
+                          <span className="text-lg text-slate-400 truncate block" title={order.description}>
                             {order.description}
                           </span>
                         ) : (
-                          <span className="text-base font-mono text-slate-300">
+                          <span className="text-lg font-mono text-slate-300">
                             {formatCurrency(order.totalAmount)}
                           </span>
                         )}
