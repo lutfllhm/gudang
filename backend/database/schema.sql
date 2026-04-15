@@ -204,9 +204,9 @@ VALUES (
   'aktif'
 ) ON DUPLICATE KEY UPDATE id=id;
 
--- Default Sync Config
+-- Default Sync Config (Auto sync setiap 1 menit = 60 detik)
 INSERT INTO sync_config (id, sync_start_date, auto_sync_enabled, sync_interval_seconds) 
-VALUES (1, '2026-02-24', TRUE, 300)
+VALUES (1, '2026-02-24', TRUE, 60)
 ON DUPLICATE KEY UPDATE id=id;
 
 -- =============================================

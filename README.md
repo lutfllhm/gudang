@@ -87,6 +87,9 @@ Password: admin123
 ## 📖 Detailed Documentation
 
 - **[Deployment Guide](DEPLOYMENT_GUIDE.md)** - Panduan deployment lengkap
+- **[Sync & Webhook Setup](SUMMARY_SYNC_WEBHOOK.md)** - ⭐ Setup auto sync & webhook
+- **[Quick Update Guide](QUICK_UPDATE_GUIDE.md)** - Update sync interval di VPS
+- **[Webhook Setup Guide](WEBHOOK_SETUP_GUIDE.md)** - Setup webhook lengkap
 - **[Docker Help](DOCKER_HELP.md)** - Docker commands dan troubleshooting
 - **[Backend README](backend/README.md)** - Backend API documentation
 - **[Frontend README](frontend/README.md)** - Frontend documentation
