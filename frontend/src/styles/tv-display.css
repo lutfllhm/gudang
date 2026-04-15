@@ -73,13 +73,23 @@
   /* Slightly increase base font size for better readability */
   body {
     font-size: 16px;
-    line-height: 1.6;
+    line-height: 1.5;
   }
   
   /* Ensure buttons and interactive elements are visible */
   button, a {
     min-height: 44px;
     min-width: 44px;
+  }
+  
+  /* Optimize schedule table for maximum visibility */
+  .running-vertical {
+    line-height: 1.4 !important;
+  }
+  
+  /* Reduce spacing in schedule rows for more content */
+  .grid.grid-cols-12 {
+    gap: 0.5rem !important;
   }
 }
 

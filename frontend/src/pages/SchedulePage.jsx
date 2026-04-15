@@ -393,9 +393,9 @@ const SchedulePage = () => {
         }}
       />
 
-      <div className="relative z-10 min-h-screen flex flex-col p-3 sm:p-4 lg:p-5 w-full">
+      <div className="relative z-10 min-h-screen flex flex-col p-2 sm:p-3 lg:p-3 w-full">
         {/* Top bar */}
-        <header className="flex items-center justify-between mb-4">
+        <header className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-4">
             <Logo variant="neon" size="md" className="rounded-lg" />
             <div className="hidden sm:block border-l border-slate-600/60 pl-4">
@@ -441,7 +441,7 @@ const SchedulePage = () => {
 
         {/* Hero: Title + Clock */}
         <motion.section
-          className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 mb-4 pb-4 border-b border-slate-700/60"
+          className="flex flex-col lg:flex-row lg:items-end justify-between gap-2 mb-2 pb-2 border-b border-slate-700/60"
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35 }}
@@ -478,7 +478,7 @@ const SchedulePage = () => {
         </motion.section>
 
         {/* Stats */}
-        <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+        <section className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-2">
           {[
             {
               key: 'total',
@@ -567,7 +567,7 @@ const SchedulePage = () => {
         </section>
 
         {/* Filter & Sort */}
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
           <div className="flex items-center gap-2 flex-wrap">
             <Filter className="w-4 h-4 text-slate-500 shrink-0" />
             <span className="text-xs font-medium text-slate-500 uppercase tracking-wider mr-2">Status</span>
@@ -646,7 +646,7 @@ const SchedulePage = () => {
             ))}
           </div>
 
-          <div className="divide-y divide-slate-700/40 max-h-[calc(100vh-260px)] min-h-[600px] overflow-hidden relative">
+          <div className="divide-y divide-slate-700/40 h-[calc(100vh-240px)] overflow-hidden relative">
             {loading ? (
               <div className="py-24 flex flex-col items-center justify-center gap-4">
                 <RefreshCw className="w-10 h-10 text-slate-500 animate-spin" />
@@ -676,7 +676,7 @@ const SchedulePage = () => {
             ) : (
               <div
                 ref={marqueeRef}
-                className="running-vertical absolute inset-x-0 bottom-0"
+                className="running-vertical absolute inset-0"
                 style={{ ['--marquee-duration']: `${marqueeDurationSec}s` }}
               >
                 {[...filteredAndSortedOrders, ...filteredAndSortedOrders].map((order, index) => {
@@ -684,37 +684,37 @@ const SchedulePage = () => {
                   return (
                     <div
                       key={`${order.id || order.transNumber || 'row'}-${index}`}
-                      className={`grid grid-cols-12 gap-3 px-4 lg:px-6 py-3 lg:py-3 hover:bg-slate-800/40 transition-colors border-l-2 border-transparent hover:border-cyan-500/40 ${
+                      className={`grid grid-cols-12 gap-3 px-4 lg:px-6 py-2 hover:bg-slate-800/40 transition-colors border-l-2 border-transparent hover:border-cyan-500/40 ${
                         index % 2 === 1 ? 'bg-slate-800/20' : ''
                       }`}
                     >
                       <div className="col-span-1 flex items-center min-w-0">
-                        <span className="text-lg font-mono font-medium text-slate-300 tabular-nums">
+                        <span className="text-base font-mono font-medium text-slate-300 tabular-nums">
                           {formatTime(getOrderTimeValue(order))}
                         </span>
                       </div>
                       <div className="col-span-2 flex items-center min-w-0">
-                        <span className="text-lg font-medium text-slate-100 truncate" title={order.transNumber}>
+                        <span className="text-base font-medium text-slate-100 truncate" title={order.transNumber}>
                           {order.transNumber}
                         </span>
                       </div>
                       <div className="col-span-2 flex items-center min-w-0">
-                        <span className="text-lg text-slate-400 font-mono tabular-nums">
+                        <span className="text-base text-slate-400 font-mono tabular-nums">
                           {formatDate(order.transDate)}
                         </span>
                       </div>
                       <div className="col-span-3 flex items-center min-w-0">
-                        <span className="text-lg text-slate-200 truncate block" title={order.customerName}>
+                        <span className="text-base text-slate-200 truncate block" title={order.customerName}>
                           {order.customerName}
                         </span>
                       </div>
                       <div className="col-span-2 flex items-center min-w-0">
                         {order.description ? (
-                          <span className="text-lg text-slate-400 truncate block" title={order.description}>
+                          <span className="text-base text-slate-400 truncate block" title={order.description}>
                             {order.description}
                           </span>
                         ) : (
-                          <span className="text-lg font-mono text-slate-300">
+                          <span className="text-base font-mono text-slate-300">
                             {formatCurrency(order.totalAmount)}
                           </span>
                         )}
@@ -735,7 +735,7 @@ const SchedulePage = () => {
         </motion.section>
 
         {/* Status bar */}
-        <footer className="mt-3 flex flex-col sm:flex-row items-center justify-between gap-2 py-2 px-3 rounded-lg bg-slate-800/40 border border-slate-700/40">
+        <footer className="mt-2 flex flex-col sm:flex-row items-center justify-between gap-2 py-1.5 px-3 rounded-lg bg-slate-800/40 border border-slate-700/40">
           <div className="flex items-center gap-4 text-sm">
             <span className="flex items-center gap-2 text-slate-400">
               <span className="relative flex h-1.5 w-1.5">
