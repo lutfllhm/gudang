@@ -213,6 +213,15 @@ const SchedulePage = () => {
   useEffect(() => {
     fetchOrders()
     const timeInterval = setInterval(() => setCurrentTime(new Date()), 1000)
+    
+    // Auto fullscreen saat halaman dibuka
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch((err) => {
+        console.log('Fullscreen request failed:', err)
+      })
+      setIsFullscreen(true)
+    }
+    
     return () => clearInterval(timeInterval)
   }, [fetchOrders])
 
@@ -396,7 +405,10 @@ const SchedulePage = () => {
     <div
       className={`${
         isFullscreen ? 'min-h-screen' : ''
-      } bg-slate-950 relative overflow-hidden`}
+      } bg-slate-950 relative overflow-hidden tv-display-mode`}
+      style={{
+        transformOrigin: 'top left',
+      }}
     >
       {/* Subtle noise texture for depth */}
       <div
@@ -407,7 +419,7 @@ const SchedulePage = () => {
         }}
       />
 
-      <div className="relative z-10 min-h-screen flex flex-col p-4 sm:p-5 lg:p-6 xl:p-8 w-full">
+      <div className="relative z-10 min-h-screen flex flex-col p-3 sm:p-4 lg:p-5 xl:p-6 w-full">
         {/* Top bar */}
         <header className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-4">
@@ -421,33 +433,26 @@ const SchedulePage = () => {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <motion.button
-              onClick={() => navigate(-1)}
-              className="hidden sm:inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800/80 border border-slate-600/50 text-slate-200 text-sm hover:bg-slate-700/80 hover:border-slate-500/50 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:ring-offset-2 focus:ring-offset-slate-950"
-              whileTap={{ scale: 0.97 }}
-            >
-              Kembali
-            </motion.button>
+          <div className="flex items-center gap-3">
             <motion.button
               onClick={() => fetchOrders({ silent: true })}
               disabled={loading}
-              className="p-2.5 rounded-lg bg-slate-800/80 border border-slate-600/50 text-slate-300 hover:bg-slate-700/80 hover:border-slate-500/50 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:ring-offset-2 focus:ring-offset-slate-950 disabled:opacity-60"
+              className="p-3 rounded-xl bg-slate-800/80 border border-slate-600/50 text-slate-300 hover:bg-slate-700/80 hover:border-slate-500/50 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:ring-offset-2 focus:ring-offset-slate-950 disabled:opacity-60"
               whileTap={{ scale: 0.97 }}
             >
               <RefreshCw
-                className={`w-5 h-5 ${(loading || refreshing) ? 'animate-spin' : ''}`}
+                className={`w-6 h-6 ${(loading || refreshing) ? 'animate-spin' : ''}`}
               />
             </motion.button>
             <motion.button
               onClick={toggleFullscreen}
-              className="p-2.5 rounded-lg bg-slate-800/80 border border-slate-600/50 text-slate-300 hover:bg-slate-700/80 hover:border-slate-500/50 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:ring-offset-2 focus:ring-offset-slate-950"
+              className="p-3 rounded-xl bg-slate-800/80 border border-slate-600/50 text-slate-300 hover:bg-slate-700/80 hover:border-slate-500/50 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:ring-offset-2 focus:ring-offset-slate-950"
               whileTap={{ scale: 0.97 }}
             >
               {isFullscreen ? (
-                <Minimize2 className="w-5 h-5" />
+                <Minimize2 className="w-6 h-6" />
               ) : (
-                <Maximize2 className="w-5 h-5" />
+                <Maximize2 className="w-6 h-6" />
               )}
             </motion.button>
           </div>
@@ -455,16 +460,16 @@ const SchedulePage = () => {
 
         {/* Hero: Title + Clock */}
         <motion.section
-          className="flex flex-col lg:flex-row lg:items-end justify-between gap-3 mb-3 pb-3 border-b border-slate-700/60"
+          className="flex flex-col lg:flex-row lg:items-end justify-between gap-2 mb-2 pb-2 border-b border-slate-700/60"
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35 }}
         >
           <div>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold tracking-tight text-white">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold tracking-tight text-white">
               Schedule Board
             </h1>
-            <p className="mt-2 text-slate-400 text-sm lg:text-base font-medium tracking-wide flex items-center gap-2">
+            <p className="mt-1 text-slate-400 text-xs lg:text-sm font-medium tracking-wide flex items-center gap-2">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-50" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
@@ -473,14 +478,14 @@ const SchedulePage = () => {
             </p>
           </div>
           <div className="flex flex-col items-start lg:items-end">
-            <span className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-mono font-semibold tabular-nums text-slate-100 tracking-tight">
+            <span className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-mono font-semibold tabular-nums text-slate-100 tracking-tight">
               {currentTime.toLocaleTimeString('id-ID', {
                 hour: '2-digit',
                 minute: '2-digit',
                 second: '2-digit',
               })}
             </span>
-            <span className="text-slate-500 text-sm lg:text-base mt-1">
+            <span className="text-slate-500 text-xs lg:text-sm mt-1">
               {currentTime.toLocaleDateString('id-ID', {
                 weekday: 'long',
                 day: 'numeric',
@@ -492,7 +497,7 @@ const SchedulePage = () => {
         </motion.section>
 
         {/* Stats */}
-        <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
+        <section className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-2">
           {[
             {
               key: 'total',
@@ -543,9 +548,9 @@ const SchedulePage = () => {
                           : 'rgba(239, 68, 68, 0.6)',
                 }}
               />
-              <div className="p-4 lg:p-5 flex items-center gap-4">
+              <div className="p-3 lg:p-4 flex items-center gap-3">
                 <div
-                  className={`flex-shrink-0 w-12 h-12 lg:w-14 lg:h-14 rounded-lg flex items-center justify-center ${
+                  className={`flex-shrink-0 w-10 h-10 lg:w-12 lg:h-12 rounded-lg flex items-center justify-center ${
                     stat.accent === 'cyan'
                       ? 'bg-cyan-500/10 text-cyan-400'
                       : stat.accent === 'emerald'
@@ -555,14 +560,14 @@ const SchedulePage = () => {
                           : 'bg-red-500/10 text-red-400'
                   }`}
                 >
-                  <stat.icon className="w-6 h-6 lg:w-7 lg:h-7" />
+                  <stat.icon className="w-5 h-5 lg:w-6 lg:h-6" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-xs lg:text-sm font-medium text-slate-500 uppercase tracking-wider">
+                  <div className="text-[10px] lg:text-xs font-medium text-slate-500 uppercase tracking-wider">
                     {stat.label}
                   </div>
                   <div
-                    className={`text-2xl lg:text-3xl xl:text-4xl font-bold tabular-nums mt-1 ${
+                    className={`text-xl lg:text-2xl xl:text-3xl font-bold tabular-nums mt-0.5 ${
                       stat.accent === 'cyan'
                         ? 'text-cyan-300'
                         : stat.accent === 'emerald'
@@ -581,10 +586,10 @@ const SchedulePage = () => {
         </section>
 
         {/* Filter & Sort */}
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-          <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Filter className="w-5 h-5 text-slate-500 shrink-0" />
-            <span className="text-sm font-medium text-slate-500 uppercase tracking-wider mr-2">Status</span>
+            <span className="text-sm font-medium text-slate-500 uppercase tracking-wider mr-1">Status</span>
             {[
               { value: 'active', label: 'Aktif (Pending & Processing)' },
               { value: 'processing', label: 'Sebagian terproses' },
@@ -593,7 +598,7 @@ const SchedulePage = () => {
               <button
                 key={opt.value}
                 onClick={() => setFilterStatus(opt.value)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                   filterStatus === opt.value
                     ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/40'
                     : 'bg-slate-800/60 text-slate-400 border border-slate-600/50 hover:bg-slate-700/60 hover:text-slate-300'
@@ -603,13 +608,13 @@ const SchedulePage = () => {
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-slate-500 uppercase tracking-wider">Month</span>
             <input
               type="month"
               value={month}
               onChange={(e) => setMonth(e.target.value)}
-              className="bg-slate-800/80 border border-slate-600/50 rounded-lg px-4 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50"
+              className="bg-slate-800/80 border border-slate-600/50 rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50"
             />
             <span className="text-sm font-medium text-slate-500 uppercase tracking-wider">Sort</span>
             {refreshing && (
@@ -625,7 +630,7 @@ const SchedulePage = () => {
                 setSortBy(field)
                 setSortDir(dir)
               }}
-              className="bg-slate-800/80 border border-slate-600/50 rounded-lg px-4 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50"
+              className="bg-slate-800/80 border border-slate-600/50 rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50"
             >
               <option value="time-desc">Time (newest)</option>
               <option value="time-asc">Time (oldest)</option>
@@ -650,7 +655,7 @@ const SchedulePage = () => {
           {/* Table Header with CSS Grid */}
           <div className="sticky top-0 z-20 bg-slate-800/90 border-b border-slate-700/60 backdrop-blur-sm">
             <div 
-              className="grid gap-4 px-6 lg:px-8 py-5"
+              className="grid gap-4 px-6 lg:px-8 py-4"
               style={{
                 gridTemplateColumns: '100px 200px 150px 1fr 250px 200px'
               }}
@@ -660,14 +665,14 @@ const SchedulePage = () => {
                   key={col.key}
                   className="flex items-center gap-3 text-base lg:text-lg xl:text-xl font-bold text-slate-300 uppercase tracking-wider"
                 >
-                  <col.icon className="w-6 h-6 lg:w-7 lg:h-7 shrink-0 text-slate-400" />
+                  <col.icon className="w-5 h-5 lg:w-6 lg:h-6 shrink-0 text-slate-400" />
                   {col.label}
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="divide-y divide-slate-700/40 h-[calc(100vh-280px)] overflow-hidden relative">
+          <div className="divide-y divide-slate-700/40 h-[calc(100vh-240px)] overflow-hidden relative">
             {loading ? (
               <div className="py-24 flex flex-col items-center justify-center gap-4">
                 <RefreshCw className="w-12 h-12 text-slate-500 animate-spin" />
@@ -711,35 +716,35 @@ const SchedulePage = () => {
                         }`}
                       >
                         <div 
-                          className="grid gap-4 px-6 lg:px-8 py-5"
+                          className="grid gap-4 px-6 lg:px-8 py-4"
                           style={{
                             gridTemplateColumns: '100px 200px 150px 1fr 250px 200px'
                           }}
                         >
                           {/* Time */}
                           <div className="flex items-center">
-                            <span className="text-xl lg:text-2xl xl:text-3xl font-mono font-semibold text-slate-200 tabular-nums">
+                            <span className="text-lg lg:text-xl xl:text-2xl font-mono font-semibold text-slate-200 tabular-nums">
                               {formatTime(getOrderTimeValue(order))}
                             </span>
                           </div>
                           
                           {/* SO Number */}
                           <div className="flex items-center min-w-0">
-                            <span className="text-xl lg:text-2xl xl:text-3xl font-semibold text-white truncate" title={order.transNumber}>
+                            <span className="text-lg lg:text-xl xl:text-2xl font-semibold text-white truncate" title={order.transNumber}>
                               {order.transNumber}
                             </span>
                           </div>
                           
                           {/* Date */}
                           <div className="flex items-center">
-                            <span className="text-xl lg:text-2xl xl:text-3xl text-slate-300 font-mono tabular-nums">
+                            <span className="text-lg lg:text-xl xl:text-2xl text-slate-300 font-mono tabular-nums">
                               {formatDate(order.transDate)}
                             </span>
                           </div>
                           
                           {/* Customer */}
                           <div className="flex items-center min-w-0">
-                            <span className="text-xl lg:text-2xl xl:text-3xl text-white truncate" title={order.customerName}>
+                            <span className="text-lg lg:text-xl xl:text-2xl text-white truncate" title={order.customerName}>
                               {order.customerName}
                             </span>
                           </div>
@@ -747,11 +752,11 @@ const SchedulePage = () => {
                           {/* Description */}
                           <div className="flex items-center min-w-0">
                             {order.description ? (
-                              <span className="text-xl lg:text-2xl xl:text-3xl text-slate-300 truncate" title={order.description}>
+                              <span className="text-lg lg:text-xl xl:text-2xl text-slate-300 truncate" title={order.description}>
                                 {order.description}
                               </span>
                             ) : (
-                              <span className="text-xl lg:text-2xl xl:text-3xl font-mono text-slate-200">
+                              <span className="text-lg lg:text-xl xl:text-2xl font-mono text-slate-200">
                                 {formatCurrency(order.totalAmount)}
                               </span>
                             )}
@@ -760,7 +765,7 @@ const SchedulePage = () => {
                           {/* Status */}
                           <div className="flex items-center justify-center">
                             <span
-                              className={`inline-flex items-center justify-center w-full px-5 py-3 rounded-lg border-2 text-base lg:text-lg font-bold uppercase tracking-wider ${statusConfig.className} ${statusConfig.glow}`}
+                              className={`inline-flex items-center justify-center w-full px-4 py-2 rounded-lg border-2 text-sm lg:text-base font-bold uppercase tracking-wider ${statusConfig.className} ${statusConfig.glow}`}
                             >
                               {formatStatusLabel(order.status)}
                             </span>
