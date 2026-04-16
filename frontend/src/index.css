@@ -195,27 +195,27 @@
   transition-duration: 150ms;
 }
 
-/* TV Display Mode - Auto zoom out untuk layar besar (TV 43 inch+) */
+/* TV Display Mode - Optimized untuk TV 43 inch (1920x1080) */
 @media screen and (min-width: 1920px) {
   .tv-display-mode {
-    zoom: 0.7;
-    -moz-transform: scale(0.7);
+    zoom: 0.85;
+    -moz-transform: scale(0.85);
     -moz-transform-origin: 0 0;
   }
 }
 
 @media screen and (min-width: 2560px) {
   .tv-display-mode {
-    zoom: 0.65;
-    -moz-transform: scale(0.65);
+    zoom: 0.75;
+    -moz-transform: scale(0.75);
     -moz-transform-origin: 0 0;
   }
 }
 
 @media screen and (min-width: 3840px) {
   .tv-display-mode {
-    zoom: 0.6;
-    -moz-transform: scale(0.6);
+    zoom: 0.65;
+    -moz-transform: scale(0.65);
     -moz-transform-origin: 0 0;
   }
 }
