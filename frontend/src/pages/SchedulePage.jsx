@@ -384,12 +384,12 @@ const SchedulePage = () => {
   }, [filteredAndSortedOrders, updateMarqueeDuration])
 
   const tableColumns = [
-    { key: 'time', label: 'Time', icon: Clock, span: 'w-[10%]' },
-    { key: 'so', label: 'SO Number', icon: FileText, span: 'w-[15%]' },
-    { key: 'date', label: 'Date', icon: Calendar, span: 'w-[12%]' },
-    { key: 'customer', label: 'Customer', icon: User, span: 'w-[25%]' },
-    { key: 'description', label: 'Description', icon: ClipboardList, span: 'w-[20%]' },
-    { key: 'status', label: 'Status', icon: Activity, span: 'w-[18%]' },
+    { key: 'time', label: 'Time', icon: Clock },
+    { key: 'so', label: 'SO Number', icon: FileText },
+    { key: 'date', label: 'Date', icon: Calendar },
+    { key: 'customer', label: 'Customer', icon: User },
+    { key: 'description', label: 'Description', icon: ClipboardList },
+    { key: 'status', label: 'Status', icon: Activity },
   ]
 
   const renderScheduleContent = () => (
@@ -647,16 +647,24 @@ const SchedulePage = () => {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3, delay: 0.05 }}
         >
-          <div className="sticky top-0 z-20 flex gap-4 px-6 lg:px-8 py-5 bg-slate-800/90 border-b border-slate-700/60 backdrop-blur-sm">
-            {tableColumns.map((col) => (
-              <div
-                key={col.key}
-                className={`${col.span} flex items-center gap-3 text-base lg:text-lg xl:text-xl font-bold text-slate-300 uppercase tracking-wider`}
-              >
-                <col.icon className="w-6 h-6 lg:w-7 lg:h-7 shrink-0 text-slate-400" />
-                {col.label}
-              </div>
-            ))}
+          {/* Table Header with CSS Grid */}
+          <div className="sticky top-0 z-20 bg-slate-800/90 border-b border-slate-700/60 backdrop-blur-sm">
+            <div 
+              className="grid gap-4 px-6 lg:px-8 py-5"
+              style={{
+                gridTemplateColumns: '100px 200px 150px 1fr 250px 200px'
+              }}
+            >
+              {tableColumns.map((col) => (
+                <div
+                  key={col.key}
+                  className="flex items-center gap-3 text-base lg:text-lg xl:text-xl font-bold text-slate-300 uppercase tracking-wider"
+                >
+                  <col.icon className="w-6 h-6 lg:w-7 lg:h-7 shrink-0 text-slate-400" />
+                  {col.label}
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="divide-y divide-slate-700/40 h-[calc(100vh-280px)] overflow-hidden relative">
@@ -698,47 +706,65 @@ const SchedulePage = () => {
                     return (
                       <div
                         key={`${order.id || order.transNumber || 'row'}-${index}`}
-                        className={`flex gap-4 px-6 lg:px-8 py-5 hover:bg-slate-800/40 transition-colors border-l-4 border-transparent hover:border-cyan-500/40 ${
+                        className={`hover:bg-slate-800/40 transition-colors border-l-4 border-transparent hover:border-cyan-500/40 ${
                           index % 2 === 1 ? 'bg-slate-800/20' : ''
                         }`}
                       >
-                        <div className="w-[10%] flex items-center min-w-0">
-                          <span className="text-xl lg:text-2xl xl:text-3xl font-mono font-semibold text-slate-200 tabular-nums">
-                            {formatTime(getOrderTimeValue(order))}
-                          </span>
-                        </div>
-                        <div className="w-[15%] flex items-center min-w-0">
-                          <span className="text-xl lg:text-2xl xl:text-3xl font-semibold text-white truncate" title={order.transNumber}>
-                            {order.transNumber}
-                          </span>
-                        </div>
-                        <div className="w-[12%] flex items-center min-w-0">
-                          <span className="text-xl lg:text-2xl xl:text-3xl text-slate-300 font-mono tabular-nums">
-                            {formatDate(order.transDate)}
-                          </span>
-                        </div>
-                        <div className="w-[25%] flex items-center min-w-0">
-                          <span className="text-xl lg:text-2xl xl:text-3xl text-white truncate block" title={order.customerName}>
-                            {order.customerName}
-                          </span>
-                        </div>
-                        <div className="w-[20%] flex items-center min-w-0">
-                          {order.description ? (
-                            <span className="text-xl lg:text-2xl xl:text-3xl text-slate-300 truncate block" title={order.description}>
-                              {order.description}
+                        <div 
+                          className="grid gap-4 px-6 lg:px-8 py-5"
+                          style={{
+                            gridTemplateColumns: '100px 200px 150px 1fr 250px 200px'
+                          }}
+                        >
+                          {/* Time */}
+                          <div className="flex items-center">
+                            <span className="text-xl lg:text-2xl xl:text-3xl font-mono font-semibold text-slate-200 tabular-nums">
+                              {formatTime(getOrderTimeValue(order))}
                             </span>
-                          ) : (
-                            <span className="text-xl lg:text-2xl xl:text-3xl font-mono text-slate-200">
-                              {formatCurrency(order.totalAmount)}
+                          </div>
+                          
+                          {/* SO Number */}
+                          <div className="flex items-center min-w-0">
+                            <span className="text-xl lg:text-2xl xl:text-3xl font-semibold text-white truncate" title={order.transNumber}>
+                              {order.transNumber}
                             </span>
-                          )}
-                        </div>
-                        <div className="w-[18%] flex items-center justify-center">
-                          <span
-                            className={`inline-flex items-center justify-center min-w-[160px] px-5 py-3 rounded-lg border-2 text-base lg:text-lg font-bold uppercase tracking-wider ${statusConfig.className} ${statusConfig.glow}`}
-                          >
-                            {formatStatusLabel(order.status)}
-                          </span>
+                          </div>
+                          
+                          {/* Date */}
+                          <div className="flex items-center">
+                            <span className="text-xl lg:text-2xl xl:text-3xl text-slate-300 font-mono tabular-nums">
+                              {formatDate(order.transDate)}
+                            </span>
+                          </div>
+                          
+                          {/* Customer */}
+                          <div className="flex items-center min-w-0">
+                            <span className="text-xl lg:text-2xl xl:text-3xl text-white truncate" title={order.customerName}>
+                              {order.customerName}
+                            </span>
+                          </div>
+                          
+                          {/* Description */}
+                          <div className="flex items-center min-w-0">
+                            {order.description ? (
+                              <span className="text-xl lg:text-2xl xl:text-3xl text-slate-300 truncate" title={order.description}>
+                                {order.description}
+                              </span>
+                            ) : (
+                              <span className="text-xl lg:text-2xl xl:text-3xl font-mono text-slate-200">
+                                {formatCurrency(order.totalAmount)}
+                              </span>
+                            )}
+                          </div>
+                          
+                          {/* Status */}
+                          <div className="flex items-center justify-center">
+                            <span
+                              className={`inline-flex items-center justify-center w-full px-5 py-3 rounded-lg border-2 text-base lg:text-lg font-bold uppercase tracking-wider ${statusConfig.className} ${statusConfig.glow}`}
+                            >
+                              {formatStatusLabel(order.status)}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     )
@@ -747,57 +773,7 @@ const SchedulePage = () => {
               </div>
             )}
           </div>
-
-          <div className="divide-y divide-slate-700/40 h-[calc(100vh-240px)] overflow-hidden relative">
-            {loading ? (
-              <div className="py-24 flex flex-col items-center justify-center gap-4">
-                <RefreshCw className="w-10 h-10 text-slate-500 animate-spin" />
-                <p className="text-slate-500 text-sm font-medium">
-                  Loading schedule…
-                </p>
-              </div>
-            ) : filteredAndSortedOrders.length === 0 ? (
-              <motion.div
-                className="py-24 text-center"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.4 }}
-              >
-                <Warehouse className="w-14 h-14 text-slate-600 mx-auto mb-4" />
-                <p className="text-slate-400 font-medium text-lg">
-                  {orders.length === 0
-                    ? 'No orders scheduled'
-                    : 'No orders match this filter'}
-                </p>
-                <p className="text-slate-500 text-sm mt-1">
-                  {orders.length === 0
-                    ? 'New sales orders will appear here when added.'
-                    : 'Try another status filter.'}
-                </p>
-              </motion.div>
-            ) : (
-              <div className="absolute inset-0 overflow-hidden">
-                <div
-                  ref={marqueeRef}
-                  className="running-vertical"
-                  style={{ ['--marquee-duration']: `${marqueeDurationSec}s` }}
-                >
-                  {[...filteredAndSortedOrders, ...filteredAndSortedOrders].map((order, index) => {
-                    const statusConfig = getStatusConfig(order.status)
-                    return (
-                      <div
-                        key={`${order.id || order.transNumber || 'row'}-${index}`}
-                        className={`grid grid-cols-12 gap-4 px-6 lg:px-8 py-3.5 hover:bg-slate-800/40 transition-colors border-l-2 border-transparent hover:border-cyan-500/40 ${
-                          index % 2 === 1 ? 'bg-slate-800/20' : ''
-                        }`}
-                      >
-                        <div className="col-span-1 flex items-center min-w-0">
-                          <span className="text-lg font-mono font-semibold text-slate-200 tabular-nums">
-                            {formatTime(getOrderTimeValue(order))}
-                          </span>
-                        </div>
-                        <div className="col-span-2 flex items-center min-w-0">
-                          <span className="text-lg font-semibold text-white truncate" title={order.transNumber}>
+        </motion.section>
                             {order.transNumber}
                           </span>
                         </div>
