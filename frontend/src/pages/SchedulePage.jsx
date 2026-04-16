@@ -774,45 +774,6 @@ const SchedulePage = () => {
             )}
           </div>
         </motion.section>
-                            {order.transNumber}
-                          </span>
-                        </div>
-                        <div className="col-span-2 flex items-center min-w-0">
-                          <span className="text-lg text-slate-300 font-mono tabular-nums">
-                            {formatDate(order.transDate)}
-                          </span>
-                        </div>
-                        <div className="col-span-3 flex items-center min-w-0">
-                          <span className="text-lg text-white truncate block" title={order.customerName}>
-                            {order.customerName}
-                          </span>
-                        </div>
-                        <div className="col-span-2 flex items-center min-w-0">
-                          {order.description ? (
-                            <span className="text-lg text-slate-300 truncate block" title={order.description}>
-                              {order.description}
-                            </span>
-                          ) : (
-                            <span className="text-lg font-mono text-slate-200">
-                              {formatCurrency(order.totalAmount)}
-                            </span>
-                          )}
-                        </div>
-                        <div className="col-span-2 flex items-center justify-center">
-                          <span
-                            className={`inline-flex items-center justify-center min-w-[120px] px-4 py-2.5 rounded-lg border-2 text-sm font-bold uppercase tracking-wider ${statusConfig.className} ${statusConfig.glow}`}
-                          >
-                            {formatStatusLabel(order.status)}
-                          </span>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        </motion.section>
 
         {/* Status bar */}
         <footer className="mt-3 flex flex-col sm:flex-row items-center justify-between gap-3 py-3 px-4 rounded-lg bg-slate-800/40 border border-slate-700/40">
