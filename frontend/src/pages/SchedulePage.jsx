@@ -384,12 +384,12 @@ const SchedulePage = () => {
   }, [filteredAndSortedOrders, updateMarqueeDuration])
 
   const tableColumns = [
-    { key: 'time', label: 'Time', icon: Clock, span: 'col-span-1' },
-    { key: 'so', label: 'SO Number', icon: FileText, span: 'col-span-2' },
-    { key: 'date', label: 'Date', icon: Calendar, span: 'col-span-2' },
-    { key: 'customer', label: 'Customer', icon: User, span: 'col-span-3' },
-    { key: 'description', label: 'Description', icon: ClipboardList, span: 'col-span-2' },
-    { key: 'status', label: 'Status', icon: Activity, span: 'col-span-2' },
+    { key: 'time', label: 'Time', icon: Clock, span: 'w-[10%]' },
+    { key: 'so', label: 'SO Number', icon: FileText, span: 'w-[15%]' },
+    { key: 'date', label: 'Date', icon: Calendar, span: 'w-[12%]' },
+    { key: 'customer', label: 'Customer', icon: User, span: 'w-[25%]' },
+    { key: 'description', label: 'Description', icon: ClipboardList, span: 'w-[20%]' },
+    { key: 'status', label: 'Status', icon: Activity, span: 'w-[18%]' },
   ]
 
   const renderScheduleContent = () => (
@@ -407,7 +407,7 @@ const SchedulePage = () => {
         }}
       />
 
-      <div className="relative z-10 min-h-screen flex flex-col p-2 sm:p-3 lg:p-3 w-full">
+      <div className="relative z-10 min-h-screen flex flex-col p-4 sm:p-5 lg:p-6 xl:p-8 w-full">
         {/* Top bar */}
         <header className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-4">
@@ -455,32 +455,32 @@ const SchedulePage = () => {
 
         {/* Hero: Title + Clock */}
         <motion.section
-          className="flex flex-col lg:flex-row lg:items-end justify-between gap-2 mb-2 pb-2 border-b border-slate-700/60"
+          className="flex flex-col lg:flex-row lg:items-end justify-between gap-3 mb-3 pb-3 border-b border-slate-700/60"
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35 }}
         >
           <div>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-white">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold tracking-tight text-white">
               Schedule Board
             </h1>
-            <p className="mt-1 text-slate-400 text-xs font-medium tracking-wide flex items-center gap-2">
-              <span className="relative flex h-1.5 w-1.5">
+            <p className="mt-2 text-slate-400 text-sm lg:text-base font-medium tracking-wide flex items-center gap-2">
+              <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-50" />
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
               </span>
               Live
             </p>
           </div>
           <div className="flex flex-col items-start lg:items-end">
-            <span className="text-3xl sm:text-4xl lg:text-5xl font-mono font-semibold tabular-nums text-slate-100 tracking-tight">
+            <span className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-mono font-semibold tabular-nums text-slate-100 tracking-tight">
               {currentTime.toLocaleTimeString('id-ID', {
                 hour: '2-digit',
                 minute: '2-digit',
                 second: '2-digit',
               })}
             </span>
-            <span className="text-slate-500 text-xs mt-1">
+            <span className="text-slate-500 text-sm lg:text-base mt-1">
               {currentTime.toLocaleDateString('id-ID', {
                 weekday: 'long',
                 day: 'numeric',
@@ -492,7 +492,7 @@ const SchedulePage = () => {
         </motion.section>
 
         {/* Stats */}
-        <section className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-2">
+        <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
           {[
             {
               key: 'total',
@@ -531,7 +531,7 @@ const SchedulePage = () => {
               transition={{ duration: 0.3 }}
             >
               <div
-                className={`absolute top-0 left-0 right-0 h-0.5 bg-${stat.accent}-500/60`}
+                className={`absolute top-0 left-0 right-0 h-1 bg-${stat.accent}-500/60`}
                 style={{
                   backgroundColor:
                     stat.accent === 'cyan'
@@ -543,9 +543,9 @@ const SchedulePage = () => {
                           : 'rgba(239, 68, 68, 0.6)',
                 }}
               />
-              <div className="p-3 flex items-center gap-3">
+              <div className="p-4 lg:p-5 flex items-center gap-4">
                 <div
-                  className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${
+                  className={`flex-shrink-0 w-12 h-12 lg:w-14 lg:h-14 rounded-lg flex items-center justify-center ${
                     stat.accent === 'cyan'
                       ? 'bg-cyan-500/10 text-cyan-400'
                       : stat.accent === 'emerald'
@@ -555,14 +555,14 @@ const SchedulePage = () => {
                           : 'bg-red-500/10 text-red-400'
                   }`}
                 >
-                  <stat.icon className="w-4 h-4" />
+                  <stat.icon className="w-6 h-6 lg:w-7 lg:h-7" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">
+                  <div className="text-xs lg:text-sm font-medium text-slate-500 uppercase tracking-wider">
                     {stat.label}
                   </div>
                   <div
-                    className={`text-lg font-bold tabular-nums mt-0.5 ${
+                    className={`text-2xl lg:text-3xl xl:text-4xl font-bold tabular-nums mt-1 ${
                       stat.accent === 'cyan'
                         ? 'text-cyan-300'
                         : stat.accent === 'emerald'
@@ -581,10 +581,10 @@ const SchedulePage = () => {
         </section>
 
         {/* Filter & Sort */}
-        <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-          <div className="flex items-center gap-2 flex-wrap">
-            <Filter className="w-4 h-4 text-slate-500 shrink-0" />
-            <span className="text-xs font-medium text-slate-500 uppercase tracking-wider mr-2">Status</span>
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+          <div className="flex items-center gap-3 flex-wrap">
+            <Filter className="w-5 h-5 text-slate-500 shrink-0" />
+            <span className="text-sm font-medium text-slate-500 uppercase tracking-wider mr-2">Status</span>
             {[
               { value: 'active', label: 'Aktif (Pending & Processing)' },
               { value: 'processing', label: 'Sebagian terproses' },
@@ -593,7 +593,7 @@ const SchedulePage = () => {
               <button
                 key={opt.value}
                 onClick={() => setFilterStatus(opt.value)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   filterStatus === opt.value
                     ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/40'
                     : 'bg-slate-800/60 text-slate-400 border border-slate-600/50 hover:bg-slate-700/60 hover:text-slate-300'
@@ -603,18 +603,18 @@ const SchedulePage = () => {
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">Month</span>
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium text-slate-500 uppercase tracking-wider">Month</span>
             <input
               type="month"
               value={month}
               onChange={(e) => setMonth(e.target.value)}
-              className="bg-slate-800/80 border border-slate-600/50 rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50"
+              className="bg-slate-800/80 border border-slate-600/50 rounded-lg px-4 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50"
             />
-            <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">Sort</span>
+            <span className="text-sm font-medium text-slate-500 uppercase tracking-wider">Sort</span>
             {refreshing && (
-              <span className="text-xs text-slate-500 flex items-center gap-2">
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-cyan-400/80 animate-pulse" />
+              <span className="text-sm text-slate-500 flex items-center gap-2">
+                <span className="inline-block w-2 h-2 rounded-full bg-cyan-400/80 animate-pulse" />
                 Syncing…
               </span>
             )}
@@ -625,7 +625,7 @@ const SchedulePage = () => {
                 setSortBy(field)
                 setSortDir(dir)
               }}
-              className="bg-slate-800/80 border border-slate-600/50 rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50"
+              className="bg-slate-800/80 border border-slate-600/50 rounded-lg px-4 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50"
             >
               <option value="time-desc">Time (newest)</option>
               <option value="time-asc">Time (oldest)</option>
@@ -647,16 +647,105 @@ const SchedulePage = () => {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3, delay: 0.05 }}
         >
-          <div className="sticky top-0 z-20 grid grid-cols-12 gap-4 px-6 lg:px-8 py-4 bg-slate-800/90 border-b border-slate-700/60 backdrop-blur-sm">
+          <div className="sticky top-0 z-20 flex gap-4 px-6 lg:px-8 py-5 bg-slate-800/90 border-b border-slate-700/60 backdrop-blur-sm">
             {tableColumns.map((col) => (
               <div
                 key={col.key}
-                className={`${col.span} flex items-center gap-2 text-sm font-bold text-slate-300 uppercase tracking-wider`}
+                className={`${col.span} flex items-center gap-3 text-base lg:text-lg xl:text-xl font-bold text-slate-300 uppercase tracking-wider`}
               >
-                <col.icon className="w-5 h-5 shrink-0 text-slate-400" />
+                <col.icon className="w-6 h-6 lg:w-7 lg:h-7 shrink-0 text-slate-400" />
                 {col.label}
               </div>
             ))}
+          </div>
+
+          <div className="divide-y divide-slate-700/40 h-[calc(100vh-280px)] overflow-hidden relative">
+            {loading ? (
+              <div className="py-24 flex flex-col items-center justify-center gap-4">
+                <RefreshCw className="w-12 h-12 text-slate-500 animate-spin" />
+                <p className="text-slate-500 text-base lg:text-lg font-medium">
+                  Loading schedule…
+                </p>
+              </div>
+            ) : filteredAndSortedOrders.length === 0 ? (
+              <motion.div
+                className="py-24 text-center"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.4 }}
+              >
+                <Warehouse className="w-16 h-16 lg:w-20 lg:h-20 text-slate-600 mx-auto mb-4" />
+                <p className="text-slate-400 font-medium text-xl lg:text-2xl">
+                  {orders.length === 0
+                    ? 'No orders scheduled'
+                    : 'No orders match this filter'}
+                </p>
+                <p className="text-slate-500 text-base lg:text-lg mt-2">
+                  {orders.length === 0
+                    ? 'New sales orders will appear here when added.'
+                    : 'Try another status filter.'}
+                </p>
+              </motion.div>
+            ) : (
+              <div className="absolute inset-0 overflow-hidden">
+                <div
+                  ref={marqueeRef}
+                  className="running-vertical"
+                  style={{ ['--marquee-duration']: `${marqueeDurationSec}s` }}
+                >
+                  {[...filteredAndSortedOrders, ...filteredAndSortedOrders].map((order, index) => {
+                    const statusConfig = getStatusConfig(order.status)
+                    return (
+                      <div
+                        key={`${order.id || order.transNumber || 'row'}-${index}`}
+                        className={`flex gap-4 px-6 lg:px-8 py-5 hover:bg-slate-800/40 transition-colors border-l-4 border-transparent hover:border-cyan-500/40 ${
+                          index % 2 === 1 ? 'bg-slate-800/20' : ''
+                        }`}
+                      >
+                        <div className="w-[10%] flex items-center min-w-0">
+                          <span className="text-xl lg:text-2xl xl:text-3xl font-mono font-semibold text-slate-200 tabular-nums">
+                            {formatTime(getOrderTimeValue(order))}
+                          </span>
+                        </div>
+                        <div className="w-[15%] flex items-center min-w-0">
+                          <span className="text-xl lg:text-2xl xl:text-3xl font-semibold text-white truncate" title={order.transNumber}>
+                            {order.transNumber}
+                          </span>
+                        </div>
+                        <div className="w-[12%] flex items-center min-w-0">
+                          <span className="text-xl lg:text-2xl xl:text-3xl text-slate-300 font-mono tabular-nums">
+                            {formatDate(order.transDate)}
+                          </span>
+                        </div>
+                        <div className="w-[25%] flex items-center min-w-0">
+                          <span className="text-xl lg:text-2xl xl:text-3xl text-white truncate block" title={order.customerName}>
+                            {order.customerName}
+                          </span>
+                        </div>
+                        <div className="w-[20%] flex items-center min-w-0">
+                          {order.description ? (
+                            <span className="text-xl lg:text-2xl xl:text-3xl text-slate-300 truncate block" title={order.description}>
+                              {order.description}
+                            </span>
+                          ) : (
+                            <span className="text-xl lg:text-2xl xl:text-3xl font-mono text-slate-200">
+                              {formatCurrency(order.totalAmount)}
+                            </span>
+                          )}
+                        </div>
+                        <div className="w-[18%] flex items-center justify-center">
+                          <span
+                            className={`inline-flex items-center justify-center min-w-[160px] px-5 py-3 rounded-lg border-2 text-base lg:text-lg font-bold uppercase tracking-wider ${statusConfig.className} ${statusConfig.glow}`}
+                          >
+                            {formatStatusLabel(order.status)}
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="divide-y divide-slate-700/40 h-[calc(100vh-240px)] overflow-hidden relative">
@@ -750,12 +839,12 @@ const SchedulePage = () => {
         </motion.section>
 
         {/* Status bar */}
-        <footer className="mt-2 flex flex-col sm:flex-row items-center justify-between gap-2 py-1.5 px-3 rounded-lg bg-slate-800/40 border border-slate-700/40">
-          <div className="flex items-center gap-4 text-sm">
+        <footer className="mt-3 flex flex-col sm:flex-row items-center justify-between gap-3 py-3 px-4 rounded-lg bg-slate-800/40 border border-slate-700/40">
+          <div className="flex items-center gap-4 text-sm lg:text-base">
             <span className="flex items-center gap-2 text-slate-400">
-              <span className="relative flex h-1.5 w-1.5">
+              <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
-                <span className="relative rounded-full h-1.5 w-1.5 bg-emerald-500" />
+                <span className="relative rounded-full h-2 w-2 bg-emerald-500" />
               </span>
               System online
             </span>
@@ -766,7 +855,7 @@ const SchedulePage = () => {
               Menampilkan {filteredAndSortedOrders.length} dari {orders.length} SO
             </span>
           </div>
-          <span className="text-slate-500 text-sm">
+          <span className="text-slate-500 text-sm lg:text-base">
             iWare · Warehouse Management
           </span>
         </footer>
