@@ -108,7 +108,7 @@ const SchedulePage = () => {
   const [currentTime, setCurrentTime] = useState(new Date())
   const [month, setMonth] = useState(() => toYyyyMm(new Date()))
   const [filterStatus, setFilterStatus] = useState('active')
-  const [sortBy, setSortBy] = useState('time')
+  const [sortBy, setSortBy] = useState('date')
   const [sortDir, setSortDir] = useState('asc')
   const [stats, setStats] = useState({
     total: 0,
@@ -636,8 +636,10 @@ const SchedulePage = () => {
               }}
               className="bg-slate-800/80 border border-slate-600/50 rounded px-2 py-1 text-[10px] text-slate-200 focus:outline-none focus:ring-1 focus:ring-cyan-500/50"
             >
-              <option value="time-desc">Time (newest)</option>
+              <option value="date-asc">Date (terlama)</option>
+              <option value="date-desc">Date (terbaru)</option>
               <option value="time-asc">Time (oldest)</option>
+              <option value="time-desc">Time (newest)</option>
               <option value="so-asc">SO (A–Z)</option>
               <option value="so-desc">SO (Z–A)</option>
             </select>
