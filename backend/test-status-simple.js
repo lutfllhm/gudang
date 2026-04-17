@@ -1,12 +1,21 @@
+#!/usr/bin/env node
 /**
- * Test script untuk melihat status yang datang dari Accurate
- * Gunakan untuk debugging status mapping
+ * Simple test script untuk melihat status dari Accurate
+ * Jalankan dari root direktori backend: 
+ * - Cara 1: node test-status-simple.js
+ * - Cara 2: chmod +x test-status-simple.js && ./test-status-simple.js
  */
 
 const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '../../.env') });
-const ApiClient = require('../services/accurate/ApiClient');
-const logger = require('../utils/logger');
+
+// Load environment variables
+try {
+  require('dotenv').config();
+} catch (e) {
+  console.log('⚠️  dotenv not loaded, using existing environment variables');
+}
+
+const ApiClient = require('./src/services/accurate/ApiClient');
 
 async function testAccurateStatus() {
   try {
@@ -28,6 +37,10 @@ async function testAccurateStatus() {
 
     if (!response || !response.d) {
       console.error('❌ No response from Accurate API');
+      console.log('\nPossible reasons:');
+      console.log('1. Accurate token expired or invalid');
+      console.log('2. Network connection issue');
+      console.log('3. User ID not found in database');
       return;
     }
 
@@ -35,8 +48,17 @@ async function testAccurateStatus() {
     console.log(`\n✓ Found ${orders.length} sales orders`);
     console.log('-'.repeat(60));
 
+    if (orders.length === 0) {
+      console.log('\n⚠️  No sales orders found in Accurate');
+      return;
+    }
+
     // Fetch detail untuk setiap order dan tampilkan statusnya
-    for (const order of orders.slice(0, 5)) { // Ambil 5 order pertama saja
+    const maxOrders = Math.min(5, orders.length);
+    console.log(`\nFetching details for first ${maxOrders} orders...\n`);
+
+    for (let i = 0; i < maxOrders; i++) {
+      const order = orders[i];
       try {
         const detailResponse = await ApiClient.get(userId, '/sales-order/detail.do', { 
           id: order.id 
@@ -45,21 +67,27 @@ async function testAccurateStatus() {
         if (detailResponse && detailResponse.d) {
           const detail = detailResponse.d;
           
-          console.log(`\n📋 Order: ${detail.transNumber || detail.number || 'N/A'}`);
+          console.log(`📋 Order ${i + 1}: ${detail.transNumber || detail.number || 'N/A'}`);
           console.log(`   Customer: ${detail.customerName || 'N/A'}`);
           console.log(`   Date: ${detail.transDate || 'N/A'}`);
           console.log(`   Amount: ${detail.totalAmount || 0}`);
           
-          // Tampilkan semua field status yang mungkin
-          console.log('\n   Status Fields:');
-          console.log(`   - documentStatus: ${JSON.stringify(detail.documentStatus)}`);
-          console.log(`   - status: ${JSON.stringify(detail.status)}`);
-          console.log(`   - documentStatusName: ${detail.documentStatusName || 'N/A'}`);
-          console.log(`   - statusName: ${detail.statusName || 'N/A'}`);
-          console.log(`   - status_label: ${detail.status_label || 'N/A'}`);
-          console.log(`   - state: ${detail.state || 'N/A'}`);
+          // Tampilkan field status yang penting
+          console.log('\n   Status Fields from Accurate:');
+          if (detail.documentStatus) {
+            console.log(`   - documentStatus: ${JSON.stringify(detail.documentStatus)}`);
+          }
+          if (detail.status) {
+            console.log(`   - status: ${JSON.stringify(detail.status)}`);
+          }
+          if (detail.documentStatusName) {
+            console.log(`   - documentStatusName: ${detail.documentStatusName}`);
+          }
+          if (detail.statusName) {
+            console.log(`   - statusName: ${detail.statusName}`);
+          }
           
-          // Simulasi mapping
+          // Simulasi mapping (sama seperti di SalesOrderService)
           const docStatus = detail?.documentStatus;
           const statusObj = detail?.status;
           const rawStatus =
@@ -73,27 +101,40 @@ async function testAccurateStatus() {
           const rawStr = rawStatus == null ? '' : String(rawStatus).trim();
           const normalizedStatus = rawStr.toUpperCase();
           
-          console.log(`\n   Extracted Status:`);
-          console.log(`   - Raw: "${rawStr}"`);
+          console.log(`\n   📊 Status Mapping:`);
+          console.log(`   - Raw Status: "${rawStr}"`);
           console.log(`   - Normalized: "${normalizedStatus}"`);
           
-          // Mapping
+          // Mapping logic
           const completedSet = ['CLOSED', 'CLOSE', 'COMPLETED', 'COMPLETE', 'FINISHED', 'DONE', 'SELESAI', 'TERPROSES'];
           const partialSet = ['PARTIAL', 'PARTIALLY', 'PARTIAL_COMPLETED', 'PARTIAL_COMPLETE', 'SEBAGIAN', 'SEBAGIAN_TERPROSES', 'SEBAGIAN TERPROSES', 'SEBAGIAN_DIPROSES', 'SEBAGIAN DIPROSES', 'DIPROSES', 'IN PROGRESS', 'IN_PROGRESS', 'PROCESSING'];
           const pendingSet = ['DIPESAN', 'OPEN', 'OPENED', 'PENDING', 'MENUNGGU', 'MENUNGGU PROSES', 'MENUNGGU DIPROSES', 'MENUNGGU_DIPROSES', 'NEW', 'DRAFT'];
 
           let mappedStatus = 'Menunggu diproses';
+          let category = 'pending';
+          let color = '🔴';
+          
           if (completedSet.includes(normalizedStatus)) {
             mappedStatus = 'Terproses';
+            category = 'completed';
+            color = '🟢';
           } else if (partialSet.includes(normalizedStatus)) {
             mappedStatus = 'Sebagian diproses';
+            category = 'processing';
+            color = '🟡';
           } else if (pendingSet.includes(normalizedStatus)) {
             mappedStatus = 'Menunggu diproses';
+            category = 'pending';
+            color = '🔴';
           } else if (rawStr) {
             mappedStatus = rawStr;
+            category = 'unknown';
+            color = '⚪';
           }
           
-          console.log(`   - Mapped to: "${mappedStatus}"`);
+          console.log(`   - Mapped Status: "${mappedStatus}"`);
+          console.log(`   - Category: ${category}`);
+          console.log(`   - Display Color: ${color}`);
           console.log('-'.repeat(60));
         }
       } catch (error) {
@@ -102,23 +143,36 @@ async function testAccurateStatus() {
     }
 
     console.log('\n' + '='.repeat(60));
-    console.log('✓ Test completed');
+    console.log('✓ Test completed successfully');
+    console.log('='.repeat(60));
+    console.log('\nNext Steps:');
+    console.log('1. Verify the status mapping above matches Accurate');
+    console.log('2. If correct, run sync: POST /api/sync/sales-orders');
+    console.log('3. Check frontend to see if "Sebagian diproses" appears');
     console.log('='.repeat(60));
 
   } catch (error) {
     console.error('\n❌ Test failed:', error.message);
-    console.error(error.stack);
+    console.error('\nError details:', error);
+    
+    console.log('\n💡 Troubleshooting:');
+    console.log('1. Check if Accurate token exists and is valid');
+    console.log('2. Verify database connection in .env file');
+    console.log('3. Ensure user_id exists in accurate_tokens table');
+    console.log('4. Check network connectivity to Accurate API');
+    
     process.exit(1);
   }
 }
 
 // Run test
+console.log('\n🚀 Starting Accurate Status Test...\n');
 testAccurateStatus()
   .then(() => {
-    console.log('\n✓ Script finished successfully');
+    console.log('\n✅ Script finished successfully\n');
     process.exit(0);
   })
   .catch((error) => {
-    console.error('\n❌ Script failed:', error);
+    console.error('\n❌ Script failed:', error.message);
     process.exit(1);
   });
