@@ -94,7 +94,7 @@ class ItemService {
             'sp.page': page,
             'sp.pageSize': pageSize,
             // Minta field yang sering dibutuhkan agar tidak selalu bergantung ke detail.do
-            fields: 'id,no,name,unitName,availableQty,unitPrice,avgCost'
+            fields: 'id,no,name,unitName,availableQty,availableQuantity,onHand,qtyOnHand,unitPrice,avgCost'
           });
 
           if (!response || !response.d) {
@@ -115,8 +115,17 @@ class ItemService {
             try {
               const detailResponse = await ApiClient.get(userId, '/item/detail.do', { id: item.id });
               if (detailResponse && detailResponse.d) {
-                // Merge: detail as base, list as fallback (list punya stock/price di beberapa kasus)
-                detailedItems.push({ ...detailResponse.d, ...item });
+                // Merge: list as base, detail overrides (list punya stock/price di beberapa kasus)
+                const merged = { ...item, ...detailResponse.d };
+                logger.debug('Item merged data', { 
+                  itemId: item.id, 
+                  itemNo: merged.no,
+                  availableQty: merged.availableQty,
+                  availableQuantity: merged.availableQuantity,
+                  onHand: merged.onHand,
+                  qtyOnHand: merged.qtyOnHand
+                });
+                detailedItems.push(merged);
               }
             } catch (error) {
               logger.warn('Failed to get item detail', { itemId: item.id, error: error.message });
@@ -135,11 +144,22 @@ class ItemService {
           for (const item of detailedItems) {
             const transformed = this.transformAccurateItem(item);
 
+            logger.debug('Transformed item', {
+              itemId: transformed.item_id,
+              itemNo: transformed.kode_item,
+              itemName: transformed.nama_item,
+              stock: transformed.stok_tersedia
+            });
+
             // Fallback: jika stock tidak ada di response, ambil lewat endpoint khusus stock
             if (!transformed.stok_tersedia || transformed.stok_tersedia === 0) {
               try {
+                logger.info('Fetching stock from get-stock.do', { itemId: item.id, itemNo: item.no });
                 const stockResp = await ApiClient.get(userId, '/item/get-stock.do', { id: item.id });
                 const stockData = stockResp?.d;
+                
+                logger.debug('Stock response', { itemId: item.id, stockData });
+                
                 // Beberapa bentuk response yang umum: number langsung / object punya availableQty
                 const stockValue =
                   typeof stockData === 'number' ? stockData :
@@ -147,12 +167,19 @@ class ItemService {
                   Number.parseFloat(
                     stockData?.availableQty ??
                     stockData?.availableQuantity ??
+                    stockData?.onHand ??
+                    stockData?.qtyOnHand ??
                     stockData?.qty ??
                     stockData?.stock ??
                     0
                   );
-                if (Number.isFinite(stockValue)) {
+                if (Number.isFinite(stockValue) && stockValue > 0) {
                   transformed.stok_tersedia = stockValue;
+                  logger.info('Stock updated from get-stock.do', { 
+                    itemId: item.id, 
+                    itemNo: item.no,
+                    stock: stockValue 
+                  });
                 }
               } catch (error) {
                 // tidak fatal
@@ -233,19 +260,25 @@ class ItemService {
       return 0;
     };
 
+    // Try to get stock from various possible field names
+    const stock = pickNumber(
+      accurateItem.availableQty,
+      accurateItem.availableQuantity,
+      accurateItem.qtyAvailable,
+      accurateItem.onHand,
+      accurateItem.qtyOnHand,
+      accurateItem.stock,
+      accurateItem.quantity,
+      accurateItem.qty
+    );
+
     return {
       item_id: String(accurateItem.id || accurateItem.itemId),
       nama_item: accurateItem.name || accurateItem.itemName || '',
       kode_item: accurateItem.no || accurateItem.itemNo || '',
       kategori: accurateItem.itemCategoryName || null,
       satuan: accurateItem.unitName || null,
-      stok_tersedia: pickNumber(
-        accurateItem.availableQty,
-        accurateItem.availableQuantity,
-        accurateItem.qtyAvailable,
-        accurateItem.stock,
-        accurateItem.onHand
-      ),
+      stok_tersedia: stock,
       harga_jual: pickNumber(
         accurateItem.unitPrice,
         accurateItem.sellPrice,

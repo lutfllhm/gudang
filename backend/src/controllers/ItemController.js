@@ -60,6 +60,37 @@ class ItemController {
 
     success(res, result, 'Items synced successfully');
   });
+
+  static debugAccurateItem = asyncHandler(async (req, res) => {
+    const { id } = req.query;
+    const ApiClient = require('../services/accurate/ApiClient');
+
+    // Ambil 1 item dari list untuk melihat struktur response
+    const listResp = await ApiClient.get(req.user.id, '/item/list.do', {
+      'sp.page': 1,
+      'sp.pageSize': 1,
+      fields: 'id,no,name,unitName,availableQty,availableQuantity,onHand,qtyOnHand,unitPrice,avgCost'
+    });
+
+    const itemId = id || listResp?.d?.[0]?.id;
+    let detailResp = null;
+    let stockResp = null;
+
+    if (itemId) {
+      detailResp = await ApiClient.get(req.user.id, '/item/detail.do', { id: itemId });
+      try {
+        stockResp = await ApiClient.get(req.user.id, '/item/get-stock.do', { id: itemId });
+      } catch (e) {
+        stockResp = { error: e.message };
+      }
+    }
+
+    success(res, {
+      listSample: listResp?.d?.[0] || null,
+      detailSample: detailResp?.d || null,
+      stockSample: stockResp?.d || stockResp || null
+    }, 'Debug info');
+  });
 }
 
 module.exports = ItemController;

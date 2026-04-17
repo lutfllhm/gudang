@@ -18,4 +18,7 @@ router.get('/:id', ItemController.getById);
 // Sync routes
 router.post('/sync', syncLimiter, ItemController.syncFromAccurate);
 
+// Debug route (untuk investigasi struktur response Accurate)
+router.get('/debug/accurate-raw', ItemController.debugAccurateItem);
+
 module.exports = router;
