@@ -148,33 +148,61 @@ const SchedulePage = () => {
   }, [])
 
   // Reminder suara untuk SO yang telat >= OVERDUE_DAYS hari
+  // Menggunakan AudioContext (reliable di semua browser) + speech synthesis sebagai fallback
   const playOverdueReminder = useCallback((overdueOrders) => {
     if (!overdueOrders || overdueOrders.length === 0) return
-    if (!window.speechSynthesis) return
 
-    // Ambil 5 SO dari belakang
-    const last5 = overdueOrders.slice(-5)
-    const soList = last5.map((o) => {
-      const no = o.transNumber || o.nomor_so || o.so_id || ''
-      const customer = o.customerName || o.nama_pelanggan || ''
-      return `${no}, customer ${customer}`
-    }).join('. ')
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext
+      if (!AudioCtx) return
+      const ctx = new AudioCtx()
 
-    const text = `Perhatian, terdapat ${overdueOrders.length} sales order yang belum diproses dan telah melewati batas waktu. ${soList}. Mohon segera ditindaklanjuti.`
+      // Sequence: 3x beep keras lalu jeda, ulangi 2x
+      const playBeepSequence = (startTime) => {
+        const beeps = [0, 0.35, 0.7, 1.4, 1.75, 2.1]
+        beeps.forEach((offset) => {
+          const osc = ctx.createOscillator()
+          const gain = ctx.createGain()
+          osc.connect(gain)
+          gain.connect(ctx.destination)
+          osc.type = 'square'
+          osc.frequency.setValueAtTime(880, ctx.currentTime + startTime + offset)
+          osc.frequency.setValueAtTime(660, ctx.currentTime + startTime + offset + 0.12)
+          gain.gain.setValueAtTime(0, ctx.currentTime + startTime + offset)
+          gain.gain.linearRampToValueAtTime(0.6, ctx.currentTime + startTime + offset + 0.01)
+          gain.gain.setValueAtTime(0.6, ctx.currentTime + startTime + offset + 0.18)
+          gain.gain.linearRampToValueAtTime(0, ctx.currentTime + startTime + offset + 0.28)
+          osc.start(ctx.currentTime + startTime + offset)
+          osc.stop(ctx.currentTime + startTime + offset + 0.3)
+        })
+      }
 
-    window.speechSynthesis.cancel()
-    const utterance = new SpeechSynthesisUtterance(text)
-    utterance.lang = 'id-ID'
-    utterance.rate = 0.9
-    utterance.pitch = 1
-    utterance.volume = 1
+      playBeepSequence(0)
+      playBeepSequence(3.2)
 
-    // Pilih suara Bahasa Indonesia jika tersedia
-    const voices = window.speechSynthesis.getVoices()
-    const idVoice = voices.find((v) => v.lang.startsWith('id'))
-    if (idVoice) utterance.voice = idVoice
+      // Setelah beep selesai (~7 detik), coba speech synthesis
+      setTimeout(() => {
+        if (!window.speechSynthesis) return
+        const last5 = overdueOrders.slice(-5)
+        const soList = last5.map((o) => {
+          const no = o.transNumber || o.nomor_so || o.so_id || ''
+          const customer = o.customerName || o.nama_pelanggan || ''
+          return `${no}, customer ${customer}`
+        }).join('. ')
+        const text = `Perhatian, terdapat ${overdueOrders.length} sales order yang belum diproses dan telah melewati batas waktu. ${soList}. Mohon segera ditindaklanjuti.`
+        window.speechSynthesis.cancel()
+        const utterance = new SpeechSynthesisUtterance(text)
+        utterance.lang = 'id-ID'
+        utterance.rate = 0.88
+        utterance.pitch = 1
+        utterance.volume = 1
+        const voices = window.speechSynthesis.getVoices()
+        const idVoice = voices.find((v) => v.lang.startsWith('id'))
+        if (idVoice) utterance.voice = idVoice
+        window.speechSynthesis.speak(utterance)
+      }, 7000)
 
-    window.speechSynthesis.speak(utterance)
+    } catch (_) {}
   }, [])
 
   // Cek SO yang telat dan jalankan reminder jika sudah waktunya
