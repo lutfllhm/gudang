@@ -89,12 +89,10 @@ class ItemService {
 
       while (hasMore) {
         try {
-          // Get items list from Accurate (only IDs)
+          // Get items list from Accurate
           const response = await ApiClient.get(userId, '/item/list.do', {
             'sp.page': page,
-            'sp.pageSize': pageSize,
-            // Minta field yang sering dibutuhkan agar tidak selalu bergantung ke detail.do
-            fields: 'id,no,name,unitName,availableQty,availableQuantity,onHand,qtyOnHand,unitPrice,avgCost'
+            'sp.pageSize': pageSize
           });
 
           if (!response || !response.d) {
@@ -359,16 +357,49 @@ class ItemService {
 
       const userId = userResult[0].id;
 
-      // Get item from Accurate
-      const accurateItem = await this.getFromAccurate(userId, itemId);
+      // Get item detail from Accurate
+      const detailResp = await ApiClient.get(userId, '/item/detail.do', { id: itemId });
+      if (!detailResp || !detailResp.d) {
+        throw new AppError('Item not found in Accurate', 404);
+      }
+
+      // Also get from list to have stock data
+      const accurateItem = detailResp.d;
+
+      // Try to get stock if not in detail
+      const transformed = this.transformAccurateItem(accurateItem);
+      if (!transformed.stok_tersedia || transformed.stok_tersedia === 0) {
+        try {
+          const stockResp = await ApiClient.get(userId, '/item/get-stock.do', { id: itemId });
+          const stockData = stockResp?.d;
+          const stockValue =
+            typeof stockData === 'number' ? stockData :
+            typeof stockData === 'string' ? Number.parseFloat(stockData) :
+            Number.parseFloat(
+              stockData?.availableQty ??
+              stockData?.availableQuantity ??
+              stockData?.onHand ??
+              stockData?.qtyOnHand ??
+              stockData?.qty ??
+              stockData?.stock ??
+              0
+            );
+          if (Number.isFinite(stockValue) && stockValue > 0) {
+            transformed.stok_tersedia = stockValue;
+          }
+        } catch (e) {
+          logger.warn('Failed to fetch stock for single item', { itemId, error: e.message });
+        }
+      }
 
       // Upsert item
-      const result = await Item.bulkUpsert([accurateItem]);
+      const result = await Item.bulkUpsert([transformed]);
 
       logger.info('Single item synced', { 
         itemId, 
         inserted: result.inserted, 
-        updated: result.updated 
+        updated: result.updated,
+        stock: transformed.stok_tersedia
       });
 
       return {

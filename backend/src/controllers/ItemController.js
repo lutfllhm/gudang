@@ -62,34 +62,64 @@ class ItemController {
   });
 
   static debugAccurateItem = asyncHandler(async (req, res) => {
-    const { id } = req.query;
+    const { id, itemNo } = req.query;
     const ApiClient = require('../services/accurate/ApiClient');
 
-    // Ambil 1 item dari list untuk melihat struktur response
-    const listResp = await ApiClient.get(req.user.id, '/item/list.do', {
-      'sp.page': 1,
-      'sp.pageSize': 1,
-      fields: 'id,no,name,unitName,availableQty,availableQuantity,onHand,qtyOnHand,unitPrice,avgCost'
-    });
+    try {
+      // Ambil 1 item dari list untuk melihat struktur response
+      const listResp = await ApiClient.get(req.user.id, '/item/list.do', {
+        'sp.page': 1,
+        'sp.pageSize': id || itemNo ? 100 : 1
+      });
 
-    const itemId = id || listResp?.d?.[0]?.id;
-    let detailResp = null;
-    let stockResp = null;
-
-    if (itemId) {
-      detailResp = await ApiClient.get(req.user.id, '/item/detail.do', { id: itemId });
-      try {
-        stockResp = await ApiClient.get(req.user.id, '/item/get-stock.do', { id: itemId });
-      } catch (e) {
-        stockResp = { error: e.message };
+      let targetItem = null;
+      if (id) {
+        targetItem = listResp?.d?.find(item => item.id == id);
+      } else if (itemNo) {
+        targetItem = listResp?.d?.find(item => item.no == itemNo);
+      } else {
+        targetItem = listResp?.d?.[0];
       }
-    }
 
-    success(res, {
-      listSample: listResp?.d?.[0] || null,
-      detailSample: detailResp?.d || null,
-      stockSample: stockResp?.d || stockResp || null
-    }, 'Debug info');
+      const itemId = targetItem?.id;
+      let detailResp = null;
+      let stockResp = null;
+      let warehouseResp = null;
+
+      if (itemId) {
+        // Get detail
+        detailResp = await ApiClient.get(req.user.id, '/item/detail.do', { id: itemId });
+        
+        // Try get-stock endpoint
+        try {
+          stockResp = await ApiClient.get(req.user.id, '/item/get-stock.do', { id: itemId });
+        } catch (e) {
+          stockResp = { error: e.message };
+        }
+
+        // Try warehouse stock endpoint
+        try {
+          warehouseResp = await ApiClient.get(req.user.id, '/warehouse/item-stock.do', { itemId: itemId });
+        } catch (e) {
+          warehouseResp = { error: e.message };
+        }
+      }
+
+      success(res, {
+        searchCriteria: { id, itemNo },
+        listSample: targetItem || listResp?.d?.[0] || null,
+        detailSample: detailResp?.d || null,
+        stockSample: stockResp?.d || stockResp || null,
+        warehouseStockSample: warehouseResp?.d || warehouseResp || null,
+        allFieldsFromDetail: detailResp?.d ? Object.keys(detailResp.d) : [],
+        allFieldsFromList: targetItem ? Object.keys(targetItem) : []
+      }, 'Debug info - check all fields to find stock');
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
   });
 }
 
