@@ -149,13 +149,64 @@ const SchedulePage = () => {
     } catch (_) {}
   }, [])
 
+  // Bel stasiun: Ding-Dong-Ding-Dong via AudioContext
+  // Mengembalikan Promise yang resolve setelah bel selesai (~6 detik)
+  const playStationChime = useCallback(() => {
+    return new Promise((resolve) => {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext
+        if (!AudioCtx) { resolve(); return }
+        const ctx = new AudioCtx()
+
+        const chimeNotes = [
+          { freq: 1046.50, time: 0.0  },  // C6 - Ding
+          { freq: 783.99,  time: 0.55 },  // G5 - Dong
+          { freq: 880.00,  time: 1.1  },  // A5 - Ding
+          { freq: 659.25,  time: 1.65 },  // E5 - Dong
+        ]
+
+        const playChime = (startOffset) => {
+          chimeNotes.forEach(({ freq, time }) => {
+            const osc = ctx.createOscillator()
+            const gain = ctx.createGain()
+            osc.connect(gain)
+            gain.connect(ctx.destination)
+            osc.type = 'sine'
+            osc.frequency.setValueAtTime(freq, ctx.currentTime + startOffset + time)
+            gain.gain.setValueAtTime(0, ctx.currentTime + startOffset + time)
+            gain.gain.linearRampToValueAtTime(0.7, ctx.currentTime + startOffset + time + 0.02)
+            gain.gain.setValueAtTime(0.7, ctx.currentTime + startOffset + time + 0.15)
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + startOffset + time + 0.9)
+            osc.start(ctx.currentTime + startOffset + time)
+            osc.stop(ctx.currentTime + startOffset + time + 1.0)
+          })
+        }
+
+        // 2x chime seperti di stasiun, total ~5.8 detik
+        playChime(0)
+        playChime(2.8)
+
+        // Resolve setelah semua nada selesai
+        setTimeout(resolve, 5800)
+      } catch (_) {
+        resolve()
+      }
+    })
+  }, [])
+
   // Reminder suara untuk SO yang telat >= OVERDUE_DAYS hari
-  // Pakai backend TTS + Audio element — bunyi di semua browser termasuk Android TV
+  // Urutan: bel stasiun → banner muncul → TTS dibacakan → banner hilang
   const playOverdueReminder = useCallback(async (overdueOrders) => {
     if (!overdueOrders || overdueOrders.length === 0) return
 
     try {
-      // Build teks reminder
+      // 1. Bunyikan bel stasiun dulu, tunggu selesai
+      await playStationChime()
+
+      // 2. Tampilkan banner merah
+      setOverdueReminder({ count: overdueOrders.length, orders: overdueOrders })
+
+      // 3. Fetch & play TTS
       const last5 = overdueOrders.slice(-5)
       const soList = last5.map((o) => {
         const no = o.transNumber || o.nomor_so || o.so_id || ''
@@ -164,45 +215,59 @@ const SchedulePage = () => {
       }).join('. ')
       const text = `Perhatian, terdapat ${overdueOrders.length} sales order yang belum diproses dan telah melewati batas waktu. ${soList}. Mohon segera ditindaklanjuti.`
 
-      // Fetch audio dari backend TTS
       const token = localStorage.getItem('accessToken')
-      const audioUrl = `/api/tts?text=${encodeURIComponent(text)}`
-      
-      const audio = new Audio()
-      audio.volume = 1.0
-
-      // Fetch dengan auth header lalu buat blob URL
       const response = await fetch(`${api.defaults.baseURL}/tts?text=${encodeURIComponent(text)}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       if (!response.ok) throw new Error('TTS fetch failed')
       const blob = await response.blob()
-      audio.src = URL.createObjectURL(blob)
+      const blobUrl = URL.createObjectURL(blob)
+      const audio = new Audio(blobUrl)
+      audio.volume = 1.0
 
-      // Play audio
       await audio.play()
 
-      // Hilangkan banner setelah audio selesai
+      // 4. Hilangkan banner setelah TTS selesai
       audio.onended = () => {
         setTimeout(() => setOverdueReminder(null), 1500)
-        URL.revokeObjectURL(audio.src)
+        URL.revokeObjectURL(blobUrl)
       }
       audio.onerror = () => {
         setTimeout(() => setOverdueReminder(null), 1500)
-        URL.revokeObjectURL(audio.src)
+        URL.revokeObjectURL(blobUrl)
       }
-
-      // Fallback: hilangkan setelah 40 detik kalau onended tidak trigger
-      setTimeout(() => {
-        setOverdueReminder(null)
-        URL.revokeObjectURL(audio.src)
-      }, 40000)
+      // Fallback max 40 detik
+      setTimeout(() => { setOverdueReminder(null); URL.revokeObjectURL(blobUrl) }, 40000)
 
     } catch (error) {
       console.error('[playOverdueReminder] Error:', error)
-      // Fallback: hilangkan banner setelah 5 detik
       setTimeout(() => setOverdueReminder(null), 5000)
     }
+  }, [playStationChime])
+
+  // Putar ulang TTS saja (tanpa bel) untuk tombol di banner
+  const replayTTS = useCallback(async (overdueOrders) => {
+    if (!overdueOrders || overdueOrders.length === 0) return
+    try {
+      const last5 = overdueOrders.slice(-5)
+      const soList = last5.map((o) => {
+        const no = o.transNumber || o.nomor_so || o.so_id || ''
+        const customer = o.customerName || o.nama_pelanggan || ''
+        return `${no}, customer ${customer}`
+      }).join('. ')
+      const text = `Perhatian, terdapat ${overdueOrders.length} sales order yang belum diproses dan telah melewati batas waktu. ${soList}. Mohon segera ditindaklanjuti.`
+      const token = localStorage.getItem('accessToken')
+      const response = await fetch(`${api.defaults.baseURL}/tts?text=${encodeURIComponent(text)}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      if (!response.ok) return
+      const blob = await response.blob()
+      const blobUrl = URL.createObjectURL(blob)
+      const audio = new Audio(blobUrl)
+      audio.volume = 1.0
+      await audio.play()
+      audio.onended = () => URL.revokeObjectURL(blobUrl)
+    } catch (_) {}
   }, [])
 
   // Cek SO yang telat dan jalankan reminder jika sudah waktunya
@@ -224,9 +289,8 @@ const SchedulePage = () => {
       return
     }
 
-    setOverdueReminder({ count: overdueOrders.length, orders: overdueOrders })
-
     // Jalankan suara hanya jika sudah melewati interval reminder
+    // Banner akan muncul di dalam playOverdueReminder setelah bel selesai
     const elapsed = now - lastReminderRef.current
     if (lastReminderRef.current === 0 || elapsed >= REMINDER_INTERVAL_MS) {
       lastReminderRef.current = now
@@ -625,7 +689,7 @@ const SchedulePage = () => {
                   <p className="text-red-400 text-[11px] font-medium mt-1.5 italic">Mohon segera ditindaklanjuti</p>
                 </div>
                 <button
-                  onClick={() => playOverdueReminder(overdueReminder.orders)}
+                  onClick={() => replayTTS(overdueReminder.orders)}
                   className="shrink-0 px-2.5 py-1.5 rounded-lg bg-red-500/20 border border-red-400/40 text-red-300 text-[11px] font-medium hover:bg-red-500/30 transition-colors"
                   title="Putar ulang"
                 >
