@@ -150,83 +150,57 @@ const SchedulePage = () => {
   }, [])
 
   // Reminder suara untuk SO yang telat >= OVERDUE_DAYS hari
-  // Menggunakan AudioContext (reliable di semua browser) + speech synthesis sebagai fallback
-  const playOverdueReminder = useCallback((overdueOrders) => {
+  // Pakai backend TTS + Audio element — bunyi di semua browser termasuk Android TV
+  const playOverdueReminder = useCallback(async (overdueOrders) => {
     if (!overdueOrders || overdueOrders.length === 0) return
 
     try {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext
-      if (!AudioCtx) return
-      const ctx = new AudioCtx()
+      // Build teks reminder
+      const last5 = overdueOrders.slice(-5)
+      const soList = last5.map((o) => {
+        const no = o.transNumber || o.nomor_so || o.so_id || ''
+        const customer = o.customerName || o.nama_pelanggan || ''
+        return `${no}, customer ${customer}`
+      }).join('. ')
+      const text = `Perhatian, terdapat ${overdueOrders.length} sales order yang belum diproses dan telah melewati batas waktu. ${soList}. Mohon segera ditindaklanjuti.`
 
-      // Nada khas pengumuman stasiun: Ding-Dong-Ding-Dong (4 nada)
-      // Frekuensi mirip chime stasiun kereta Indonesia
-      const chimeNotes = [
-        { freq: 1046.50, time: 0.0 },   // C6  - Ding
-        { freq: 783.99,  time: 0.55 },  // G5  - Dong
-        { freq: 880.00,  time: 1.1 },   // A5  - Ding
-        { freq: 659.25,  time: 1.65 },  // E5  - Dong
-      ]
+      // Fetch audio dari backend TTS
+      const token = localStorage.getItem('accessToken')
+      const audioUrl = `/api/tts?text=${encodeURIComponent(text)}`
+      
+      const audio = new Audio()
+      audio.volume = 1.0
 
-      const playChime = (startOffset) => {
-        chimeNotes.forEach(({ freq, time }) => {
-          const osc = ctx.createOscillator()
-          const gain = ctx.createGain()
-          osc.connect(gain)
-          gain.connect(ctx.destination)
-          osc.type = 'sine'
-          osc.frequency.setValueAtTime(freq, ctx.currentTime + startOffset + time)
-          gain.gain.setValueAtTime(0, ctx.currentTime + startOffset + time)
-          gain.gain.linearRampToValueAtTime(0.7, ctx.currentTime + startOffset + time + 0.02)
-          gain.gain.setValueAtTime(0.7, ctx.currentTime + startOffset + time + 0.15)
-          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + startOffset + time + 0.9)
-          osc.start(ctx.currentTime + startOffset + time)
-          osc.stop(ctx.currentTime + startOffset + time + 1.0)
-        })
+      // Fetch dengan auth header lalu buat blob URL
+      const response = await fetch(`${api.defaults.baseURL}/tts?text=${encodeURIComponent(text)}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      if (!response.ok) throw new Error('TTS fetch failed')
+      const blob = await response.blob()
+      audio.src = URL.createObjectURL(blob)
+
+      // Play audio
+      await audio.play()
+
+      // Hilangkan banner setelah audio selesai
+      audio.onended = () => {
+        setTimeout(() => setOverdueReminder(null), 1500)
+        URL.revokeObjectURL(audio.src)
+      }
+      audio.onerror = () => {
+        setTimeout(() => setOverdueReminder(null), 1500)
+        URL.revokeObjectURL(audio.src)
       }
 
-      // Mainkan 2x chime seperti di stasiun
-      playChime(0)
-      playChime(2.8)
-
-      // Setelah chime selesai (~6 detik), coba speech synthesis
+      // Fallback: hilangkan setelah 40 detik kalau onended tidak trigger
       setTimeout(() => {
-        if (!window.speechSynthesis) {
-          // Tidak ada speech — hilangkan banner setelah jeda singkat
-          setTimeout(() => setOverdueReminder(null), 3000)
-          return
-        }
-        const last5 = overdueOrders.slice(-5)
-        const soList = last5.map((o) => {
-          const no = o.transNumber || o.nomor_so || o.so_id || ''
-          const customer = o.customerName || o.nama_pelanggan || ''
-          return `${no}, customer ${customer}`
-        }).join('. ')
-        const text = `Perhatian, terdapat ${overdueOrders.length} sales order yang belum diproses dan telah melewati batas waktu. ${soList}. Mohon segera ditindaklanjuti.`
-        window.speechSynthesis.cancel()
-        const utterance = new SpeechSynthesisUtterance(text)
-        utterance.lang = 'id-ID'
-        utterance.rate = 0.88
-        utterance.pitch = 1
-        utterance.volume = 1
-        const voices = window.speechSynthesis.getVoices()
-        const idVoice = voices.find((v) => v.lang.startsWith('id'))
-        if (idVoice) utterance.voice = idVoice
-        // Hilangkan banner setelah speech selesai
-        utterance.onend = () => {
-          setTimeout(() => setOverdueReminder(null), 1500)
-        }
-        utterance.onerror = () => {
-          setTimeout(() => setOverdueReminder(null), 1500)
-        }
-        window.speechSynthesis.speak(utterance)
+        setOverdueReminder(null)
+        URL.revokeObjectURL(audio.src)
+      }, 40000)
 
-        // Fallback: kalau speech tidak trigger onend (browser bug), hilangkan setelah 30 detik
-        setTimeout(() => setOverdueReminder(null), 30000)
-      }, 6000)
-
-    } catch (_) {
-      // Kalau AudioContext gagal, tetap hilangkan banner setelah 5 detik
+    } catch (error) {
+      console.error('[playOverdueReminder] Error:', error)
+      // Fallback: hilangkan banner setelah 5 detik
       setTimeout(() => setOverdueReminder(null), 5000)
     }
   }, [])

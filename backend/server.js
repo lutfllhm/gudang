@@ -75,6 +75,7 @@ app.use('/api/dashboard', require('./src/routes/dashboardRoutes'));
 app.use('/api/users', require('./src/routes/userRoutes'));
 app.use('/api/accurate', require('./src/routes/accurateRoutes'));
 app.use('/api/sync', require('./src/routes/syncRoutes'));
+app.use('/api/tts', require('./src/routes/ttsRoutes'));
 
 // 404 handler
 app.use(notFoundHandler);
