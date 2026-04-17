@@ -32,9 +32,11 @@ import {
 } from 'lucide-react'
 
 const AUTO_REFRESH_MS = 30000
-const TOAST_DURATION_MS = 6000
+const TOAST_DURATION_MS = 15000
 const KNOWN_SO_KEY = 'schedule_known_so_ids'
 const INITIAL_LIMIT = 5000
+const OVERDUE_DAYS = 3
+const REMINDER_INTERVAL_MS = 2 * 60 * 1000 // 2 menit
 // Safety cap so we don't accidentally request an absurdly huge payload.
 // If total is bigger than this cap, we fall back to page-by-page fetching.
 const MAX_LIMIT = 50000
@@ -121,10 +123,12 @@ const SchedulePage = () => {
   })
 
   const [newSOToasts, setNewSOToasts] = useState([])
+  const [overdueReminder, setOverdueReminder] = useState(null) // { count, orders }
   const isFirstLoad = useRef(true)
   const fetchRequestId = useRef(0)
   const marqueeRef = useRef(null)
   const [marqueeDurationSec, setMarqueeDurationSec] = useState(600)
+  const lastReminderRef = useRef(0)
 
   const playNotificationSound = useCallback(() => {
     try {
@@ -142,6 +146,65 @@ const SchedulePage = () => {
       osc.stop(ctx.currentTime + 0.5)
     } catch (_) {}
   }, [])
+
+  // Reminder suara untuk SO yang telat >= OVERDUE_DAYS hari
+  const playOverdueReminder = useCallback((overdueOrders) => {
+    if (!overdueOrders || overdueOrders.length === 0) return
+    if (!window.speechSynthesis) return
+
+    // Ambil 5 SO dari belakang
+    const last5 = overdueOrders.slice(-5)
+    const soList = last5.map((o) => {
+      const no = o.transNumber || o.nomor_so || o.so_id || ''
+      const customer = o.customerName || o.nama_pelanggan || ''
+      return `${no}, customer ${customer}`
+    }).join('. ')
+
+    const text = `Perhatian, terdapat ${overdueOrders.length} sales order yang belum diproses dan telah melewati batas waktu. ${soList}. Mohon segera ditindaklanjuti.`
+
+    window.speechSynthesis.cancel()
+    const utterance = new SpeechSynthesisUtterance(text)
+    utterance.lang = 'id-ID'
+    utterance.rate = 0.9
+    utterance.pitch = 1
+    utterance.volume = 1
+
+    // Pilih suara Bahasa Indonesia jika tersedia
+    const voices = window.speechSynthesis.getVoices()
+    const idVoice = voices.find((v) => v.lang.startsWith('id'))
+    if (idVoice) utterance.voice = idVoice
+
+    window.speechSynthesis.speak(utterance)
+  }, [])
+
+  // Cek SO yang telat dan jalankan reminder jika sudah waktunya
+  const checkAndTriggerOverdueReminder = useCallback((allOrders) => {
+    const now = Date.now()
+    const threeDaysMs = OVERDUE_DAYS * 24 * 60 * 60 * 1000
+
+    const overdueOrders = allOrders.filter((o) => {
+      const group = getOrderStatusGroup(o)
+      if (group !== 'pending' && group !== 'processing') return false
+      const dateStr = o.transDate || o.tanggal_so
+      if (!dateStr) return false
+      const orderDate = new Date(dateStr).getTime()
+      return now - orderDate >= threeDaysMs
+    })
+
+    if (overdueOrders.length === 0) {
+      setOverdueReminder(null)
+      return
+    }
+
+    setOverdueReminder({ count: overdueOrders.length, orders: overdueOrders })
+
+    // Jalankan suara hanya jika sudah melewati interval reminder
+    const elapsed = now - lastReminderRef.current
+    if (lastReminderRef.current === 0 || elapsed >= REMINDER_INTERVAL_MS) {
+      lastReminderRef.current = now
+      playOverdueReminder(overdueOrders)
+    }
+  }, [playOverdueReminder])
 
   const dismissToast = useCallback((id) => {
     setNewSOToasts((prev) => prev.filter((t) => t.id !== id))
@@ -229,15 +292,18 @@ const SchedulePage = () => {
           return id && !knownIds.has(String(id))
         })
         if (newOrders.length > 0) {
-          playNotificationSound()
-          const toasts = newOrders.slice(0, 5).map((o) => ({
-            id: `${o.so_id || o.id || o.transNumber}-${Date.now()}`,
+          const toasts = newOrders.slice(0, 5).map((o, i) => ({
+            id: `${o.so_id || o.id || o.transNumber}-${Date.now()}-${i}`,
             soNumber: o.transNumber || o.nomor_so || o.so_id,
             customer: o.customerName || o.nama_pelanggan || '—',
           }))
-          setNewSOToasts((prev) => [...prev, ...toasts])
-          toasts.forEach((t) => {
-            setTimeout(() => dismissToast(t.id), TOAST_DURATION_MS)
+          // Munculkan bergantian dengan jeda 1.5 detik per toast
+          toasts.forEach((t, i) => {
+            setTimeout(() => {
+              if (i === 0) playNotificationSound()
+              setNewSOToasts((prev) => [...prev, t])
+              setTimeout(() => dismissToast(t.id), TOAST_DURATION_MS)
+            }, i * 1500)
           })
         }
       } else {
@@ -271,13 +337,16 @@ const SchedulePage = () => {
         pending: counter.pending,
         totalRevenue,
       })
+
+      // Cek SO yang telat >= 3 hari dan trigger reminder suara
+      checkAndTriggerOverdueReminder(allOrders)
     } catch (error) {
       console.error('[SchedulePage] Failed to fetch orders:', error)
     } finally {
       if (silent) setRefreshing(false)
       else setLoading(false)
     }
-  }, [month, playNotificationSound, dismissToast])
+  }, [month, playNotificationSound, dismissToast, checkAndTriggerOverdueReminder])
 
   useEffect(() => {
     fetchOrders()
@@ -511,6 +580,56 @@ const SchedulePage = () => {
           ))}
         </AnimatePresence>
       </div>
+
+      {/* Banner Reminder SO Telat */}
+      <AnimatePresence>
+        {overdueReminder && (
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 40 }}
+            transition={{ duration: 0.4 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[90vw] max-w-3xl pointer-events-auto"
+          >
+            <div className="flex items-start gap-4 px-5 py-4 rounded-xl bg-red-950/90 border-2 border-red-500/70 backdrop-blur-md shadow-2xl shadow-red-900/40">
+              <div className="flex-shrink-0 mt-0.5">
+                <span className="relative flex h-4 w-4">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-60" />
+                  <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500" />
+                </span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-red-300 font-bold text-sm mb-1">
+                  Perhatian — {overdueReminder.count} SO belum diproses &gt; {OVERDUE_DAYS} hari
+                </p>
+                <div className="flex flex-wrap gap-x-4 gap-y-1">
+                  {overdueReminder.orders.slice(-5).map((o, i) => (
+                    <span key={i} className="text-xs text-red-200 font-mono">
+                      {o.transNumber || o.nomor_so} · <span className="text-red-300/80">{o.customerName || o.nama_pelanggan}</span>
+                    </span>
+                  ))}
+                </div>
+                <p className="text-red-400/80 text-xs mt-1.5">Mohon segera ditindaklanjuti</p>
+              </div>
+              <div className="flex flex-col gap-2 flex-shrink-0">
+                <button
+                  onClick={() => playOverdueReminder(overdueReminder.orders)}
+                  className="px-3 py-1.5 rounded-lg bg-red-500/20 border border-red-400/40 text-red-300 text-xs font-medium hover:bg-red-500/30 transition-colors"
+                  title="Putar ulang suara"
+                >
+                  🔊 Putar
+                </button>
+                <button
+                  onClick={() => setOverdueReminder(null)}
+                  className="px-3 py-1.5 rounded-lg bg-slate-700/60 border border-slate-600/40 text-slate-400 text-xs font-medium hover:bg-slate-600/60 transition-colors"
+                >
+                  Tutup
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="relative z-10 h-screen flex flex-col p-2 w-full overflow-hidden">
         {/* Top bar - Compact */}
@@ -878,10 +997,30 @@ const SchedulePage = () => {
             <span className="text-cyan-400 font-medium">
               Menampilkan {filteredAndSortedOrders.length} dari {orders.length} SO
             </span>
+            {overdueReminder && (
+              <>
+                <span className="text-slate-500">·</span>
+                <span className="flex items-center gap-1 text-red-400 font-semibold">
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-400 animate-ping" />
+                  {overdueReminder.count} SO telat &gt;{OVERDUE_DAYS}h
+                </span>
+              </>
+            )}
           </div>
-          <span className="text-slate-500 text-[10px]">
-            iWare · Warehouse Management
-          </span>
+          <div className="flex items-center gap-2">
+            {overdueReminder && (
+              <button
+                onClick={() => playOverdueReminder(overdueReminder.orders)}
+                className="px-2 py-1 rounded bg-red-500/15 border border-red-400/30 text-red-400 text-[10px] font-medium hover:bg-red-500/25 transition-colors"
+                title="Putar ulang reminder suara"
+              >
+                🔊 Reminder
+              </button>
+            )}
+            <span className="text-slate-500 text-[10px]">
+              iWare · Warehouse Management
+            </span>
+          </div>
         </footer>
       </div>
 
