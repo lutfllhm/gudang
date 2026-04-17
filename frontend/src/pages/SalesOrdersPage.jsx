@@ -242,7 +242,7 @@ const SalesOrdersPage = () => {
                               // Processing - penting untuk "Sebagian diproses" dari Accurate
                               if (s.includes('sebagian') || s.includes('processing') || s.includes('diproses') || 
                                   s.includes('partial') || s.includes('in progress')) {
-                                return 'Sebagian terproses'
+                                return 'Sebagian diproses'
                               }
                               
                               // Pending - termasuk queue dan status lain

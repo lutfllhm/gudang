@@ -264,6 +264,16 @@ class SalesOrderService {
     const rawStr = rawStatus == null ? '' : String(rawStatus).trim();
     const normalizedStatus = rawStr.toUpperCase();
 
+    // Log untuk debugging - lihat status apa yang datang dari Accurate
+    logger.debug('Accurate order status mapping', {
+      orderId: accurateOrder?.id,
+      transNumber: accurateOrder?.transNumber,
+      rawStatus: rawStr,
+      normalizedStatus,
+      docStatus: accurateOrder?.documentStatus,
+      statusObj: accurateOrder?.status
+    });
+
     // Gunakan teks persis dari Accurate jika sudah salah satu dari 3 status; kalau tidak, map lalu pakai label baku
     const completedSet = ['CLOSED', 'CLOSE', 'COMPLETED', 'COMPLETE', 'FINISHED', 'DONE', 'SELESAI', 'TERPROSES'];
     const partialSet = ['PARTIAL', 'PARTIALLY', 'PARTIAL_COMPLETED', 'PARTIAL_COMPLETE', 'SEBAGIAN', 'SEBAGIAN_TERPROSES', 'SEBAGIAN TERPROSES', 'SEBAGIAN_DIPROSES', 'SEBAGIAN DIPROSES', 'DIPROSES', 'IN PROGRESS', 'IN_PROGRESS', 'PROCESSING'];
@@ -271,11 +281,11 @@ class SalesOrderService {
 
     let status = 'Menunggu diproses';
     if (completedSet.includes(normalizedStatus)) {
-      status = rawStr || 'Terproses';
+      status = 'Terproses';
     } else if (partialSet.includes(normalizedStatus)) {
-      status = rawStr || 'Sebagian terproses';
+      status = 'Sebagian diproses';
     } else if (pendingSet.includes(normalizedStatus)) {
-      status = rawStr || 'Menunggu diproses';
+      status = 'Menunggu diproses';
     } else if (rawStr) {
       // Nilai dari Accurate yang tidak kita kenal: simpan apa adanya agar aplikasi ikut Accurate
       status = rawStr;
@@ -288,6 +298,13 @@ class SalesOrderService {
         });
       }
     }
+
+    logger.debug('Status mapping result', {
+      orderId: accurateOrder?.id,
+      transNumber: accurateOrder?.transNumber,
+      rawStatus: rawStr,
+      mappedStatus: status
+    });
 
     // Convert date from DD/MM/YYYY to YYYY-MM-DD
     let tanggalSo = new Date().toISOString().split('T')[0];

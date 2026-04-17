@@ -306,9 +306,9 @@ const SchedulePage = () => {
       return 'Terproses'
     }
     
-    // Processing - ini yang penting untuk "Sebagian diproses" dari Accurate
+    // Processing - PERSIS seperti Accurate: "Sebagian diproses"
     if (STATUS_GROUP.processing.some(x => s.includes(x))) {
-      return 'Sebagian Terproses'
+      return 'Sebagian diproses'
     }
     
     // Pending
@@ -530,7 +530,7 @@ const SchedulePage = () => {
             },
             {
               key: 'processing',
-              label: 'Sebagian terproses',
+              label: 'Sebagian diproses',
               value: stats.processing,
               icon: Activity,
               accent: 'amber',
