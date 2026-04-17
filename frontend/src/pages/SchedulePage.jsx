@@ -149,6 +149,52 @@ const SchedulePage = () => {
     } catch (_) {}
   }, [])
 
+  // Helper: fetch satu segmen teks dari backend TTS dan play, return Promise resolve saat selesai
+  const fetchAndPlayTTS = useCallback(async (text, token) => {
+    const response = await fetch(`${api.defaults.baseURL}/tts?text=${encodeURIComponent(text)}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    if (!response.ok) throw new Error('TTS fetch failed')
+    const blob = await response.blob()
+    const blobUrl = URL.createObjectURL(blob)
+    const audio = new Audio(blobUrl)
+    audio.volume = 1.0
+    return new Promise((resolve) => {
+      audio.onended = () => { URL.revokeObjectURL(blobUrl); resolve() }
+      audio.onerror = () => { URL.revokeObjectURL(blobUrl); resolve() }
+      audio.play().catch(() => resolve())
+    })
+  }, [])
+
+  // Pecah array SO menjadi segmen-segmen teks ≤ 180 karakter agar tidak terpotong Google TTS
+  const buildTTSSegments = useCallback((overdueOrders) => {
+    const intro = `Perhatian, terdapat ${overdueOrders.length} sales order yang belum diproses dan telah melewati batas waktu.`
+    const segments = [intro]
+
+    // Setiap SO jadi segmen sendiri: "Nomor SO, customer Nama"
+    overdueOrders.forEach((o) => {
+      const no = o.transNumber || o.nomor_so || o.so_id || ''
+      const customer = o.customerName || o.nama_pelanggan || ''
+      segments.push(`${no}, customer ${customer}.`)
+    })
+
+    segments.push('Mohon segera ditindaklanjuti.')
+    return segments
+  }, [])
+
+  // Play semua segmen TTS satu per satu secara berurutan
+  const playAllTTSSegments = useCallback(async (overdueOrders) => {
+    const token = localStorage.getItem('accessToken')
+    const segments = buildTTSSegments(overdueOrders)
+    for (const seg of segments) {
+      try {
+        await fetchAndPlayTTS(seg, token)
+      } catch (_) {
+        // lanjut ke segmen berikutnya meski ada error
+      }
+    }
+  }, [fetchAndPlayTTS, buildTTSSegments])
+
   // Bel stasiun: Ding-Dong-Ding-Dong via AudioContext
   // Mengembalikan Promise yang resolve setelah bel selesai (~6 detik)
   const playStationChime = useCallback(() => {
@@ -195,7 +241,7 @@ const SchedulePage = () => {
   }, [])
 
   // Reminder suara untuk SO yang telat >= OVERDUE_DAYS hari
-  // Urutan: bel stasiun → banner muncul → TTS dibacakan → banner hilang
+  // Urutan: bel stasiun → banner muncul → TTS semua SO satu per satu → banner hilang
   const playOverdueReminder = useCallback(async (overdueOrders) => {
     if (!overdueOrders || overdueOrders.length === 0) return
 
@@ -206,69 +252,25 @@ const SchedulePage = () => {
       // 2. Tampilkan banner merah
       setOverdueReminder({ count: overdueOrders.length, orders: overdueOrders })
 
-      // 3. Fetch & play TTS
-      const last5 = overdueOrders.slice(-5)
-      const soList = last5.map((o) => {
-        const no = o.transNumber || o.nomor_so || o.so_id || ''
-        const customer = o.customerName || o.nama_pelanggan || ''
-        return `${no}, customer ${customer}`
-      }).join('. ')
-      const text = `Perhatian, terdapat ${overdueOrders.length} sales order yang belum diproses dan telah melewati batas waktu. ${soList}. Mohon segera ditindaklanjuti.`
+      // 3. Play semua segmen TTS satu per satu sampai selesai
+      await playAllTTSSegments(overdueOrders)
 
-      const token = localStorage.getItem('accessToken')
-      const response = await fetch(`${api.defaults.baseURL}/tts?text=${encodeURIComponent(text)}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
-      if (!response.ok) throw new Error('TTS fetch failed')
-      const blob = await response.blob()
-      const blobUrl = URL.createObjectURL(blob)
-      const audio = new Audio(blobUrl)
-      audio.volume = 1.0
-
-      await audio.play()
-
-      // 4. Hilangkan banner setelah TTS selesai
-      audio.onended = () => {
-        setTimeout(() => setOverdueReminder(null), 1500)
-        URL.revokeObjectURL(blobUrl)
-      }
-      audio.onerror = () => {
-        setTimeout(() => setOverdueReminder(null), 1500)
-        URL.revokeObjectURL(blobUrl)
-      }
-      // Fallback max 40 detik
-      setTimeout(() => { setOverdueReminder(null); URL.revokeObjectURL(blobUrl) }, 40000)
+      // 4. Hilangkan banner setelah semua selesai dibacakan
+      setTimeout(() => setOverdueReminder(null), 1500)
 
     } catch (error) {
       console.error('[playOverdueReminder] Error:', error)
       setTimeout(() => setOverdueReminder(null), 5000)
     }
-  }, [playStationChime])
+  }, [playStationChime, playAllTTSSegments])
 
   // Putar ulang TTS saja (tanpa bel) untuk tombol di banner
   const replayTTS = useCallback(async (overdueOrders) => {
     if (!overdueOrders || overdueOrders.length === 0) return
     try {
-      const last5 = overdueOrders.slice(-5)
-      const soList = last5.map((o) => {
-        const no = o.transNumber || o.nomor_so || o.so_id || ''
-        const customer = o.customerName || o.nama_pelanggan || ''
-        return `${no}, customer ${customer}`
-      }).join('. ')
-      const text = `Perhatian, terdapat ${overdueOrders.length} sales order yang belum diproses dan telah melewati batas waktu. ${soList}. Mohon segera ditindaklanjuti.`
-      const token = localStorage.getItem('accessToken')
-      const response = await fetch(`${api.defaults.baseURL}/tts?text=${encodeURIComponent(text)}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
-      if (!response.ok) return
-      const blob = await response.blob()
-      const blobUrl = URL.createObjectURL(blob)
-      const audio = new Audio(blobUrl)
-      audio.volume = 1.0
-      await audio.play()
-      audio.onended = () => URL.revokeObjectURL(blobUrl)
+      await playAllTTSSegments(overdueOrders)
     } catch (_) {}
-  }, [])
+  }, [playAllTTSSegments])
 
   // Cek SO yang telat dan jalankan reminder jika sudah waktunya
   const checkAndTriggerOverdueReminder = useCallback((allOrders) => {
@@ -677,8 +679,8 @@ const SchedulePage = () => {
                   <p className="text-red-200 font-bold text-sm leading-tight">
                     Perhatian — {overdueReminder.count} SO belum diproses &gt; {OVERDUE_DAYS} hari
                   </p>
-                  <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1">
-                    {overdueReminder.orders.slice(-5).map((o, i) => (
+                  <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 max-h-32 overflow-y-auto">
+                    {overdueReminder.orders.map((o, i) => (
                       <span key={i} className="text-[11px] text-red-200/90 font-mono">
                         {o.transNumber || o.nomor_so}
                         <span className="text-red-400/70 mx-1">·</span>
