@@ -287,15 +287,16 @@ class SalesOrderService {
     });
 
     // Mapping status Accurate -> label baku aplikasi
-    // Accurate Online umumnya: OPEN/DIPESAN = menunggu, PARTIAL/SEBAGIAN = sebagian, CLOSED/TERPROSES = selesai
+    // Accurate Online mengirim: "Terproses", "Sebagian diproses", "Menunggu diproses"
+    // Kita normalkan ke 3 label baku tersebut agar konsisten dengan tampilan Accurate.
     const completedSet = [
       'CLOSED', 'CLOSE', 'COMPLETED', 'COMPLETE', 'FINISHED', 'DONE',
       'SELESAI', 'TERPROSES', 'FULLY PROCESSED', 'FULLY_PROCESSED'
     ];
     const partialSet = [
       'PARTIAL', 'PARTIALLY', 'PARTIAL_COMPLETED', 'PARTIAL_COMPLETE',
-      'SEBAGIAN', 'SEBAGIAN_TERPROSES', 'SEBAGIAN TERPROSES',
-      'SEBAGIAN_DIPROSES', 'SEBAGIAN DIPROSES', 'DIPROSES',
+      'SEBAGIAN', 'SEBAGIAN TERPROSES', 'SEBAGIAN_TERPROSES',
+      'SEBAGIAN DIPROSES', 'SEBAGIAN_DIPROSES',
       'IN PROGRESS', 'IN_PROGRESS', 'PROCESSING',
       'PARTIALLY PROCESSED', 'PARTIALLY_PROCESSED'
     ];

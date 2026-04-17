@@ -43,16 +43,16 @@ const MARQUEE_PX_PER_SECOND = 15
 const MARQUEE_MIN_DURATION_SEC = 90
 const MARQUEE_MAX_DURATION_SEC = 7200
 
+// Status label baku dari Accurate Online (disimpan persis di DB):
+// "Terproses", "Sebagian diproses", "Menunggu diproses"
 const STATUS_GROUP = {
-  // disamakan dengan Accurate + status dari app (QUEUE/PROCEED/WATING)
-  completed: ['completed', 'terproses', 'selesai', 'proceed', 'closed', 'close', 'finished', 'done', 'fully processed'],
+  completed: ['terproses', 'selesai', 'completed', 'closed', 'close', 'finished', 'done', 'fully processed'],
   processing: [
-    'processing', 
-    'sebagian terproses', 
-    'sebagian diproses', 
-    'sebagian_terproses',
+    'sebagian diproses',
+    'sebagian terproses',
     'sebagian_diproses',
-    'diproses',
+    'sebagian_terproses',
+    'processing',
     'partial',
     'partially',
     'in progress',
@@ -61,11 +61,11 @@ const STATUS_GROUP = {
     'partially_processed',
   ],
   pending: [
+    'menunggu diproses',
+    'menunggu proses',
+    'menunggu_diproses',
     'pending',
     'belum terproses',
-    'menunggu proses',
-    'menunggu diproses',
-    'menunggu_diproses',
     'dipesan',
     'queue',
     'waiting',
@@ -261,29 +261,26 @@ const SchedulePage = () => {
   const getStatusConfig = (status) => {
     const s = (status || '').toLowerCase().trim()
     
-    // Completed statuses - Green
-    if (STATUS_GROUP.completed.some(x => s.includes(x))) {
+    // Completed - Green
+    if (STATUS_GROUP.completed.some(x => s === x || s.includes(x))) {
       return {
-        className:
-          'bg-emerald-500/15 text-emerald-400 border-emerald-400/40',
+        className: 'bg-emerald-500/15 text-emerald-400 border-emerald-400/40',
         glow: 'animate-neon-pulse-green',
       }
     }
     
-    // Processing statuses - Yellow/Amber
-    if (STATUS_GROUP.processing.some(x => s.includes(x))) {
+    // Processing (Sebagian diproses) - Yellow/Amber
+    if (STATUS_GROUP.processing.some(x => s === x || s.includes(x))) {
       return {
-        className:
-          'bg-amber-500/15 text-amber-400 border-amber-400/40',
+        className: 'bg-amber-500/15 text-amber-400 border-amber-400/40',
         glow: 'animate-neon-pulse-yellow',
       }
     }
     
-    // Pending statuses - Red
-    if (STATUS_GROUP.pending.some(x => s.includes(x))) {
+    // Pending (Menunggu diproses) - Red
+    if (STATUS_GROUP.pending.some(x => s === x || s.includes(x))) {
       return {
-        className:
-          'bg-red-500/15 text-red-400 border-red-400/40',
+        className: 'bg-red-500/15 text-red-400 border-red-400/40',
         glow: 'animate-neon-pulse-red',
       }
     }
@@ -306,27 +303,20 @@ const SchedulePage = () => {
   const formatStatusLabel = (status) => {
     const s = (status || '').toLowerCase().trim()
     
-    // Completed
-    if (STATUS_GROUP.completed.some(x => s.includes(x))) {
+    // Kembalikan label baku Accurate berdasarkan group
+    if (STATUS_GROUP.completed.some(x => s === x || s.includes(x))) {
       return 'Terproses'
     }
-    
-    // Processing - PERSIS seperti Accurate: "Sebagian diproses"
-    if (STATUS_GROUP.processing.some(x => s.includes(x))) {
+    if (STATUS_GROUP.processing.some(x => s === x || s.includes(x))) {
       return 'Sebagian diproses'
     }
-    
-    // Pending
-    if (STATUS_GROUP.pending.some(x => s.includes(x))) {
+    if (STATUS_GROUP.pending.some(x => s === x || s.includes(x))) {
       return 'Menunggu diproses'
     }
-    
-    // Cancelled
     if (s === 'cancelled' || s === 'batal') {
       return 'Batal'
     }
-    
-    // Return original if no match
+    // Tampilkan apa adanya jika tidak dikenali
     return status || '—'
   }
 
