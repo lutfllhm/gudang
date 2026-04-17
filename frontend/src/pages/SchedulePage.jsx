@@ -32,6 +32,8 @@ import {
 } from 'lucide-react'
 
 const AUTO_REFRESH_MS = 30000
+const TOAST_DURATION_MS = 6000
+const KNOWN_SO_KEY = 'schedule_known_so_ids'
 const INITIAL_LIMIT = 5000
 // Safety cap so we don't accidentally request an absurdly huge payload.
 // If total is bigger than this cap, we fall back to page-by-page fetching.
@@ -118,9 +120,32 @@ const SchedulePage = () => {
     totalRevenue: 0,
   })
 
+  const [newSOToasts, setNewSOToasts] = useState([])
+  const isFirstLoad = useRef(true)
   const fetchRequestId = useRef(0)
   const marqueeRef = useRef(null)
   const [marqueeDurationSec, setMarqueeDurationSec] = useState(600)
+
+  const playNotificationSound = useCallback(() => {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)()
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(880, ctx.currentTime)
+      osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.3)
+      gain.gain.setValueAtTime(0.4, ctx.currentTime)
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5)
+      osc.start(ctx.currentTime)
+      osc.stop(ctx.currentTime + 0.5)
+    } catch (_) {}
+  }, [])
+
+  const dismissToast = useCallback((id) => {
+    setNewSOToasts((prev) => prev.filter((t) => t.id !== id))
+  }, [])
 
   const fetchOrders = useCallback(async ({ silent = false } = {}) => {
     const requestId = ++fetchRequestId.current
@@ -195,6 +220,32 @@ const SchedulePage = () => {
       console.log('[SchedulePage] Total from API:', total)
 
       setOrders(allOrders)
+
+      // Deteksi SO baru (skip saat first load)
+      if (!isFirstLoad.current) {
+        const knownIds = new Set(JSON.parse(localStorage.getItem(KNOWN_SO_KEY) || '[]'))
+        const newOrders = allOrders.filter((o) => {
+          const id = o.so_id || o.id || o.transNumber
+          return id && !knownIds.has(String(id))
+        })
+        if (newOrders.length > 0) {
+          playNotificationSound()
+          const toasts = newOrders.slice(0, 5).map((o) => ({
+            id: `${o.so_id || o.id || o.transNumber}-${Date.now()}`,
+            soNumber: o.transNumber || o.nomor_so || o.so_id,
+            customer: o.customerName || o.nama_pelanggan || '—',
+          }))
+          setNewSOToasts((prev) => [...prev, ...toasts])
+          toasts.forEach((t) => {
+            setTimeout(() => dismissToast(t.id), TOAST_DURATION_MS)
+          })
+        }
+      } else {
+        isFirstLoad.current = false
+      }
+      // Simpan semua ID yang diketahui
+      const allIds = allOrders.map((o) => String(o.so_id || o.id || o.transNumber)).filter(Boolean)
+      localStorage.setItem(KNOWN_SO_KEY, JSON.stringify(allIds))
       const counter = allOrders.reduce(
         (acc, o) => {
           const group = getOrderStatusGroup(o)
@@ -226,7 +277,7 @@ const SchedulePage = () => {
       if (silent) setRefreshing(false)
       else setLoading(false)
     }
-  }, [month])
+  }, [month, playNotificationSound, dismissToast])
 
   useEffect(() => {
     fetchOrders()
@@ -428,6 +479,38 @@ const SchedulePage = () => {
           backgroundSize: '24px 24px',
         }}
       />
+
+      {/* Toast Notifikasi SO Baru */}
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2 pointer-events-none">
+        <AnimatePresence>
+          {newSOToasts.map((toast) => (
+            <motion.div
+              key={toast.id}
+              initial={{ opacity: 0, y: -24, scale: 0.92 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -16, scale: 0.92 }}
+              transition={{ duration: 0.3 }}
+              className="pointer-events-auto flex items-center gap-3 px-5 py-3 rounded-xl bg-cyan-500/10 border border-cyan-400/50 backdrop-blur-md shadow-lg shadow-cyan-500/10"
+            >
+              <span className="flex h-2.5 w-2.5 shrink-0">
+                <span className="animate-ping absolute inline-flex h-2.5 w-2.5 rounded-full bg-cyan-400 opacity-60" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-400" />
+              </span>
+              <div className="text-sm">
+                <span className="font-bold text-cyan-300">SO Baru Masuk</span>
+                <span className="text-slate-300 ml-2 font-mono">{toast.soNumber}</span>
+                <span className="text-slate-400 ml-2">· {toast.customer}</span>
+              </div>
+              <button
+                onClick={() => dismissToast(toast.id)}
+                className="ml-2 text-slate-500 hover:text-slate-300 transition-colors text-lg leading-none"
+              >
+                ×
+              </button>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
 
       <div className="relative z-10 h-screen flex flex-col p-2 w-full overflow-hidden">
         {/* Top bar - Compact */}
