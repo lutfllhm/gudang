@@ -266,8 +266,8 @@ class SalesOrderService {
 
     // Gunakan teks persis dari Accurate jika sudah salah satu dari 3 status; kalau tidak, map lalu pakai label baku
     const completedSet = ['CLOSED', 'CLOSE', 'COMPLETED', 'COMPLETE', 'FINISHED', 'DONE', 'SELESAI', 'TERPROSES'];
-    const partialSet = ['PARTIAL', 'PARTIALLY', 'PARTIAL_COMPLETED', 'PARTIAL_COMPLETE', 'SEBAGIAN', 'SEBAGIAN_TERPROSES', 'DIPROSES', 'IN PROGRESS', 'IN_PROGRESS', 'PROCESSING'];
-    const pendingSet = ['DIPESAN', 'OPEN', 'OPENED', 'PENDING', 'MENUNGGU', 'MENUNGGU PROSES', 'MENUNGGU DIPROSES', 'NEW', 'DRAFT'];
+    const partialSet = ['PARTIAL', 'PARTIALLY', 'PARTIAL_COMPLETED', 'PARTIAL_COMPLETE', 'SEBAGIAN', 'SEBAGIAN_TERPROSES', 'SEBAGIAN TERPROSES', 'SEBAGIAN_DIPROSES', 'SEBAGIAN DIPROSES', 'DIPROSES', 'IN PROGRESS', 'IN_PROGRESS', 'PROCESSING'];
+    const pendingSet = ['DIPESAN', 'OPEN', 'OPENED', 'PENDING', 'MENUNGGU', 'MENUNGGU PROSES', 'MENUNGGU DIPROSES', 'MENUNGGU_DIPROSES', 'NEW', 'DRAFT'];
 
     let status = 'Menunggu diproses';
     if (completedSet.includes(normalizedStatus)) {

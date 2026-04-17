@@ -235,7 +235,8 @@ class SalesOrder {
 
     // Terima status sesuai Accurate (persis atau varian)
     const validStatuses = [
-      'Menunggu Diproses', 'Menunggu diproses', 'Sebagian Terproses', 'Sebagian terproses', 'Terproses',
+      'Menunggu Diproses', 'Menunggu diproses', 'Sebagian Terproses', 'Sebagian terproses', 
+      'Sebagian Diproses', 'Sebagian diproses', 'Terproses',
       'Menunggu Proses', 'Dipesan', 'Diproses', 'Selesai'
     ];
     if (!validStatuses.includes(status)) {
@@ -292,7 +293,7 @@ class SalesOrder {
         COUNT(*) as total_orders,
         SUM(total_amount) as total_sales,
         SUM(CASE WHEN status IN ('Menunggu Proses', 'Menunggu Diproses', 'Menunggu diproses', 'Dipesan') THEN 1 ELSE 0 END) as pending,
-        SUM(CASE WHEN status IN ('Sebagian Terproses', 'Sebagian terproses', 'Diproses') THEN 1 ELSE 0 END) as partial,
+        SUM(CASE WHEN status IN ('Sebagian Terproses', 'Sebagian terproses', 'Sebagian Diproses', 'Sebagian diproses', 'Diproses') THEN 1 ELSE 0 END) as partial,
         SUM(CASE WHEN status IN ('Terproses', 'Selesai') THEN 1 ELSE 0 END) as completed,
         AVG(total_amount) as average_order_value
       FROM sales_orders

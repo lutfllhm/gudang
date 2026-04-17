@@ -46,7 +46,7 @@ const MARQUEE_MAX_DURATION_SEC = 7200
 const STATUS_GROUP = {
   // disamakan dengan Accurate + status dari app (QUEUE/PROCEED/WATING)
   completed: ['completed', 'terproses', 'selesai', 'proceed'],
-  processing: ['processing', 'sebagian terproses', 'diproses'],
+  processing: ['processing', 'sebagian terproses', 'sebagian diproses', 'diproses'],
   pending: [
     'pending',
     'belum terproses',
@@ -249,7 +249,7 @@ const SchedulePage = () => {
         glow: 'animate-neon-pulse-green',
       }
     }
-    if (['processing', 'sebagian terproses', 'diproses'].includes(s)) {
+    if (['processing', 'sebagian terproses', 'sebagian diproses', 'diproses'].includes(s)) {
       return {
         className:
           'bg-amber-500/15 text-amber-400 border-amber-400/40',
@@ -290,7 +290,7 @@ const SchedulePage = () => {
     if (s === 'completed' || s === 'selesai' || s === 'terproses' || s === 'proceed') {
       return 'Terproses'
     }
-    if (s === 'processing' || s === 'sebagian terproses' || s === 'diproses') {
+    if (s === 'processing' || s === 'sebagian terproses' || s === 'sebagian diproses' || s === 'diproses') {
       return 'Sebagian Terproses'
     }
     if (

@@ -67,6 +67,7 @@ export const getStatusColor = (status) => {
     diproses: 'info',
     processing: 'info',
     'sebagian terproses': 'info',
+    'sebagian diproses': 'info',
     cancelled: 'danger',
     batal: 'danger'
   }
