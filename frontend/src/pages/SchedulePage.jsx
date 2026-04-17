@@ -45,8 +45,17 @@ const MARQUEE_MAX_DURATION_SEC = 7200
 
 const STATUS_GROUP = {
   // disamakan dengan Accurate + status dari app (QUEUE/PROCEED/WATING)
-  completed: ['completed', 'terproses', 'selesai', 'proceed'],
-  processing: ['processing', 'sebagian terproses', 'sebagian diproses', 'diproses'],
+  completed: ['completed', 'terproses', 'selesai', 'proceed', 'closed', 'close', 'finished', 'done'],
+  processing: [
+    'processing', 
+    'sebagian terproses', 
+    'sebagian diproses', 
+    'diproses',
+    'partial',
+    'partially',
+    'in progress',
+    'in_progress'
+  ],
   pending: [
     'pending',
     'belum terproses',
@@ -55,6 +64,10 @@ const STATUS_GROUP = {
     'dipesan',
     'queue',
     'waiting',
+    'open',
+    'opened',
+    'new',
+    'draft'
   ],
 }
 
@@ -73,10 +86,10 @@ const getMonthRange = (yyyyMm) => {
 }
 
 const getOrderStatusGroup = (order) => {
-  const s = (order?.status || '').toLowerCase()
-  if (STATUS_GROUP.completed.some((x) => x === s)) return 'completed'
-  if (STATUS_GROUP.processing.some((x) => x === s)) return 'processing'
-  if (STATUS_GROUP.pending.some((x) => x === s)) return 'pending'
+  const s = (order?.status || '').toLowerCase().trim()
+  if (STATUS_GROUP.completed.some((x) => s.includes(x))) return 'completed'
+  if (STATUS_GROUP.processing.some((x) => s.includes(x))) return 'processing'
+  if (STATUS_GROUP.pending.some((x) => s.includes(x))) return 'pending'
   return 'other'
 }
 
@@ -241,44 +254,44 @@ const SchedulePage = () => {
   }
 
   const getStatusConfig = (status) => {
-    const s = (status || '').toLowerCase()
-    if (['completed', 'terproses', 'selesai', 'proceed'].includes(s)) {
+    const s = (status || '').toLowerCase().trim()
+    
+    // Completed statuses - Green
+    if (STATUS_GROUP.completed.some(x => s.includes(x))) {
       return {
         className:
           'bg-emerald-500/15 text-emerald-400 border-emerald-400/40',
         glow: 'animate-neon-pulse-green',
       }
     }
-    if (['processing', 'sebagian terproses', 'sebagian diproses', 'diproses'].includes(s)) {
+    
+    // Processing statuses - Yellow/Amber
+    if (STATUS_GROUP.processing.some(x => s.includes(x))) {
       return {
         className:
           'bg-amber-500/15 text-amber-400 border-amber-400/40',
         glow: 'animate-neon-pulse-yellow',
       }
     }
-    if (
-      [
-        'pending',
-        'belum terproses',
-        'menunggu proses',
-        'menunggu diproses',
-        'dipesan',
-        'queue',
-        'waiting',
-      ].includes(s)
-    ) {
+    
+    // Pending statuses - Red
+    if (STATUS_GROUP.pending.some(x => s.includes(x))) {
       return {
         className:
           'bg-red-500/15 text-red-400 border-red-400/40',
         glow: 'animate-neon-pulse-red',
       }
     }
+    
+    // Cancelled
     if (s === 'cancelled' || s === 'batal') {
       return {
         className: 'bg-slate-500/15 text-slate-400 border-slate-400/40',
         glow: '',
       }
     }
+    
+    // Default
     return {
       className: 'bg-cyan-500/15 text-cyan-400 border-cyan-400/40',
       glow: 'animate-neon-pulse-blue',
@@ -286,27 +299,29 @@ const SchedulePage = () => {
   }
 
   const formatStatusLabel = (status) => {
-    const s = (status || '').toLowerCase()
-    if (s === 'completed' || s === 'selesai' || s === 'terproses' || s === 'proceed') {
+    const s = (status || '').toLowerCase().trim()
+    
+    // Completed
+    if (STATUS_GROUP.completed.some(x => s.includes(x))) {
       return 'Terproses'
     }
-    if (s === 'processing' || s === 'sebagian terproses' || s === 'sebagian diproses' || s === 'diproses') {
+    
+    // Processing - ini yang penting untuk "Sebagian diproses" dari Accurate
+    if (STATUS_GROUP.processing.some(x => s.includes(x))) {
       return 'Sebagian Terproses'
     }
-    if (
-      s === 'pending' ||
-      s === 'belum terproses' ||
-      s === 'menunggu proses' ||
-      s === 'menunggu diproses' ||
-      s === 'dipesan' ||
-      s === 'queue' ||
-      s === 'waiting'
-    ) {
+    
+    // Pending
+    if (STATUS_GROUP.pending.some(x => s.includes(x))) {
       return 'Menunggu diproses'
     }
+    
+    // Cancelled
     if (s === 'cancelled' || s === 'batal') {
       return 'Batal'
     }
+    
+    // Return original if no match
     return status || '—'
   }
 

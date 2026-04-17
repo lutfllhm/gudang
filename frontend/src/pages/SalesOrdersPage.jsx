@@ -230,14 +230,22 @@ const SalesOrdersPage = () => {
                             className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold tracking-wider badge-${getStatusColor(order.status || 'menunggu diproses')}`}
                           >
                             {(() => {
-                              const s = (order.status || '').toLowerCase()
-                              if (s === 'terproses' || s === 'completed' || s === 'selesai' || s === 'proceed') {
+                              const s = (order.status || '').toLowerCase().trim()
+                              
+                              // Completed
+                              if (s.includes('terproses') || s.includes('completed') || s.includes('selesai') || 
+                                  s.includes('proceed') || s.includes('closed') || s.includes('close') || 
+                                  s.includes('finished') || s.includes('done')) {
                                 return 'Terproses'
                               }
-                              if (s === 'sebagian terproses' || s === 'sebagian diproses' || s === 'processing' || s === 'diproses') {
+                              
+                              // Processing - penting untuk "Sebagian diproses" dari Accurate
+                              if (s.includes('sebagian') || s.includes('processing') || s.includes('diproses') || 
+                                  s.includes('partial') || s.includes('in progress')) {
                                 return 'Sebagian terproses'
                               }
-                              // termasuk queue dan status lain dianggap menunggu diproses
+                              
+                              // Pending - termasuk queue dan status lain
                               return 'Menunggu diproses'
                             })()}
                           </span>
