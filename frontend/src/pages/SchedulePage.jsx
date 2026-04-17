@@ -36,7 +36,8 @@ const TOAST_DURATION_MS = 15000
 const KNOWN_SO_KEY = 'schedule_known_so_ids'
 const INITIAL_LIMIT = 5000
 const OVERDUE_DAYS = 3
-const REMINDER_INTERVAL_MS = 2 * 60 * 1000 // 2 menit
+// Jam reminder WIB (UTC+7): 09:00, 11:00, 14:00
+const REMINDER_HOURS_WIB = [9, 11, 14]
 // Safety cap so we don't accidentally request an absurdly huge payload.
 // If total is bigger than this cap, we fall back to page-by-page fetching.
 const MAX_LIMIT = 50000
@@ -130,7 +131,7 @@ const SchedulePage = () => {
   const fetchRequestId = useRef(0)
   const marqueeRef = useRef(null)
   const [marqueeDurationSec, setMarqueeDurationSec] = useState(600)
-  const lastReminderRef = useRef(0)
+  const lastReminderRef = useRef('') // format: "YYYY-MM-DD-HH" jam terakhir yang sudah diputar
 
   const playNotificationSound = useCallback(() => {
     try {
@@ -171,11 +172,10 @@ const SchedulePage = () => {
     const intro = `Perhatian, terdapat ${overdueOrders.length} sales order yang belum diproses dan telah melewati batas waktu.`
     const segments = [intro]
 
-    // Setiap SO jadi segmen sendiri: "Nomor SO, customer Nama"
+    // Setiap SO jadi segmen sendiri: sebut nama customer saja
     overdueOrders.forEach((o) => {
-      const no = o.transNumber || o.nomor_so || o.so_id || ''
       const customer = o.customerName || o.nama_pelanggan || ''
-      segments.push(`${no}, customer ${customer}.`)
+      if (customer) segments.push(`${customer}.`)
     })
 
     segments.push('Mohon segera ditindaklanjuti.')
@@ -273,6 +273,7 @@ const SchedulePage = () => {
   }, [playAllTTSSegments])
 
   // Cek SO yang telat dan jalankan reminder jika sudah waktunya
+  // Cek SO yang telat dan jalankan reminder hanya pada jam 09:00, 11:00, 14:00 WIB
   const checkAndTriggerOverdueReminder = useCallback((allOrders) => {
     const now = Date.now()
     const threeDaysMs = OVERDUE_DAYS * 24 * 60 * 60 * 1000
@@ -291,11 +292,19 @@ const SchedulePage = () => {
       return
     }
 
-    // Jalankan suara hanya jika sudah melewati interval reminder
-    // Banner akan muncul di dalam playOverdueReminder setelah bel selesai
-    const elapsed = now - lastReminderRef.current
-    if (lastReminderRef.current === 0 || elapsed >= REMINDER_INTERVAL_MS) {
-      lastReminderRef.current = now
+    // Cek apakah sekarang adalah jam reminder WIB (UTC+7)
+    const nowWIB = new Date(now + 7 * 60 * 60 * 1000) // konversi ke WIB
+    const hourWIB = nowWIB.getUTCHours()
+    const minuteWIB = nowWIB.getUTCMinutes()
+    const dateKey = nowWIB.toISOString().slice(0, 10) // YYYY-MM-DD
+    const reminderKey = `${dateKey}-${hourWIB}` // unik per hari per jam
+
+    // Hanya trigger dalam window 0-2 menit setelah jam reminder
+    const isReminderHour = REMINDER_HOURS_WIB.includes(hourWIB) && minuteWIB < 2
+    const alreadyPlayed = lastReminderRef.current === reminderKey
+
+    if (isReminderHour && !alreadyPlayed) {
+      lastReminderRef.current = reminderKey
       playOverdueReminder(overdueOrders)
     }
   }, [playOverdueReminder])
@@ -321,8 +330,7 @@ const SchedulePage = () => {
   const fetchOrders = useCallback(async ({ silent = false } = {}) => {
     const requestId = ++fetchRequestId.current
     try {
-      if (silent) setRefreshing(true)
-      else setLoading(true)
+      if (!silent) setLoading(true)
       const { startDate, endDate } = getMonthRange(month)
 
       const firstResponse = await api.get('/sales-orders', {
@@ -390,7 +398,20 @@ const SchedulePage = () => {
       console.log('[SchedulePage] Total orders fetched:', allOrders.length)
       console.log('[SchedulePage] Total from API:', total)
 
-      setOrders(allOrders)
+      // Saat silent refresh: merge data baru ke state existing agar tabel tidak flicker
+      // Saat first load / ganti bulan: replace semua
+      if (silent) {
+        setOrders((prev) => {
+          const existingMap = new Map(prev.map((o) => [String(o.so_id || o.id || o.transNumber), o]))
+          allOrders.forEach((o) => {
+            const key = String(o.so_id || o.id || o.transNumber)
+            existingMap.set(key, o) // update existing atau tambah baru
+          })
+          return Array.from(existingMap.values())
+        })
+      } else {
+        setOrders(allOrders)
+      }
 
       // Deteksi SO baru (skip saat first load)
       if (!isFirstLoad.current) {
@@ -450,8 +471,8 @@ const SchedulePage = () => {
     } catch (error) {
       console.error('[SchedulePage] Failed to fetch orders:', error)
     } finally {
-      if (silent) setRefreshing(false)
-      else setLoading(false)
+      if (!silent) setLoading(false)
+      setRefreshing(false)
     }
   }, [month, playNotificationSound, dismissToast, checkAndTriggerOverdueReminder, showNextToast, activeToast])
 
@@ -657,46 +678,98 @@ const SchedulePage = () => {
       />
 
       {/* ── Notifikasi area: tengah atas, di bawah header ── */}
-      <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2 w-full max-w-2xl px-4 pointer-events-none">
+      <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2 w-full max-w-3xl px-4 pointer-events-none">
 
         {/* Banner Reminder SO Telat — muncul saat suara, hilang otomatis */}
         <AnimatePresence>
           {overdueReminder && (
             <motion.div
               key="overdue-banner"
-              initial={{ opacity: 0, y: -16, scale: 0.96 }}
+              initial={{ opacity: 0, y: -20, scale: 0.97 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -12, scale: 0.96 }}
-              transition={{ duration: 0.35 }}
+              exit={{ opacity: 0, y: -16, scale: 0.97 }}
+              transition={{ duration: 0.4, ease: 'easeOut' }}
               className="pointer-events-auto w-full"
             >
-              <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-red-950/95 border-2 border-red-500/60 backdrop-blur-md shadow-2xl shadow-red-900/50">
-                <span className="relative flex h-3.5 w-3.5 shrink-0 mt-0.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-70" />
-                  <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-red-500" />
-                </span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-red-200 font-bold text-sm leading-tight">
-                    Perhatian — {overdueReminder.count} SO belum diproses &gt; {OVERDUE_DAYS} hari
-                  </p>
-                  <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 max-h-32 overflow-y-auto">
+              {/* Outer glow effect */}
+              <div className="relative rounded-2xl overflow-hidden shadow-2xl"
+                style={{ boxShadow: '0 0 0 1px rgba(239,68,68,0.4), 0 0 32px rgba(239,68,68,0.15), 0 8px 32px rgba(0,0,0,0.6)' }}
+              >
+                {/* Animated top border */}
+                <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-red-400 to-transparent animate-pulse" />
+
+                {/* Background */}
+                <div className="bg-gradient-to-b from-red-950/98 to-slate-950/98 backdrop-blur-xl px-5 py-4">
+
+                  {/* Header row */}
+                  <div className="flex items-center justify-between gap-4 mb-3">
+                    <div className="flex items-center gap-3">
+                      {/* Pulsing alert icon */}
+                      <div className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-red-500/15 border border-red-500/30">
+                        <span className="animate-ping absolute inline-flex w-full h-full rounded-xl bg-red-500/20" />
+                        <svg className="w-5 h-5 text-red-400 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                        </svg>
+                      </div>
+
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-red-400/80">
+                            Peringatan Sistem
+                          </span>
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-red-500/20 text-red-300 border border-red-500/30 tracking-wider">
+                            OVERDUE
+                          </span>
+                        </div>
+                        <p className="text-white font-bold text-base leading-tight mt-0.5">
+                          {overdueReminder.count} Sales Order Belum Diproses
+                          <span className="text-red-400 ml-2 font-semibold text-sm">&gt; {OVERDUE_DAYS} Hari</span>
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Replay button */}
+                    <button
+                      onClick={() => replayTTS(overdueReminder.orders)}
+                      className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-500/15 border border-red-400/30 text-red-300 text-xs font-semibold hover:bg-red-500/25 hover:border-red-400/50 transition-all"
+                      title="Putar ulang pengumuman"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
+                      </svg>
+                      Putar Ulang
+                    </button>
+                  </div>
+
+                  {/* Divider */}
+                  <div className="h-px bg-gradient-to-r from-transparent via-red-500/30 to-transparent mb-3" />
+
+                  {/* SO list — tampilkan nama customer saja */}
+                  <div className="max-h-28 overflow-y-auto pr-1 space-y-1"
+                    style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(239,68,68,0.3) transparent' }}
+                  >
                     {overdueReminder.orders.map((o, i) => (
-                      <span key={i} className="text-[11px] text-red-200/90 font-mono">
-                        {o.transNumber || o.nomor_so}
-                        <span className="text-red-400/70 mx-1">·</span>
-                        <span className="text-red-300/80 font-sans">{o.customerName || o.nama_pelanggan}</span>
-                      </span>
+                      <div key={i} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-red-500/8 border border-red-500/15 hover:bg-red-500/12 transition-colors">
+                        <span className="text-red-500/60 text-[10px] font-mono w-5 text-right shrink-0">{i + 1}.</span>
+                        <span className="text-white text-xs font-medium truncate">{o.customerName || o.nama_pelanggan}</span>
+                      </div>
                     ))}
                   </div>
-                  <p className="text-red-400 text-[11px] font-medium mt-1.5 italic">Mohon segera ditindaklanjuti</p>
+
+                  {/* Footer */}
+                  <div className="mt-3 flex items-center justify-between">
+                    <p className="text-red-400/70 text-[11px] font-medium flex items-center gap-1.5">
+                      <span className="inline-block w-1 h-1 rounded-full bg-red-400 animate-pulse" />
+                      Mohon segera ditindaklanjuti
+                    </p>
+                    <span className="text-slate-600 text-[10px] font-mono">
+                      {new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
                 </div>
-                <button
-                  onClick={() => replayTTS(overdueReminder.orders)}
-                  className="shrink-0 px-2.5 py-1.5 rounded-lg bg-red-500/20 border border-red-400/40 text-red-300 text-[11px] font-medium hover:bg-red-500/30 transition-colors"
-                  title="Putar ulang"
-                >
-                  🔊
-                </button>
+
+                {/* Animated bottom border */}
+                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-red-600/60 to-transparent" />
               </div>
             </motion.div>
           )}
