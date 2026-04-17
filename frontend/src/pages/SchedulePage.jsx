@@ -780,28 +780,72 @@ const SchedulePage = () => {
           {activeToast && (
             <motion.div
               key={activeToast.id}
-              initial={{ opacity: 0, y: -12, scale: 0.94 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -8, scale: 0.94 }}
-              transition={{ duration: 0.28 }}
+              initial={{ opacity: 0, x: 40, scale: 0.96 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 40, scale: 0.96 }}
+              transition={{ duration: 0.32, ease: 'easeOut' }}
               className="pointer-events-auto w-full"
             >
-              <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-cyan-950/90 border border-cyan-400/40 backdrop-blur-md shadow-lg shadow-cyan-900/30">
-                <span className="relative flex h-2.5 w-2.5 shrink-0">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-60" />
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-400" />
-                </span>
-                <div className="flex-1 text-sm">
-                  <span className="font-bold text-cyan-300">SO Baru Masuk</span>
-                  <span className="text-slate-200 ml-2 font-mono text-[13px]">{activeToast.soNumber}</span>
-                  <span className="text-slate-400 ml-2 text-[12px]">· {activeToast.customer}</span>
+              <div className="relative rounded-2xl overflow-hidden"
+                style={{ boxShadow: '0 0 0 1px rgba(6,182,212,0.35), 0 0 24px rgba(6,182,212,0.1), 0 8px 24px rgba(0,0,0,0.5)' }}
+              >
+                {/* Animated top border */}
+                <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent animate-pulse" />
+
+                <div className="bg-gradient-to-r from-cyan-950/95 via-slate-900/95 to-slate-950/95 backdrop-blur-xl px-4 py-3">
+                  <div className="flex items-center gap-3">
+
+                    {/* Icon */}
+                    <div className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-cyan-500/15 border border-cyan-500/25 shrink-0">
+                      <span className="animate-ping absolute inline-flex w-full h-full rounded-xl bg-cyan-500/15" />
+                      <svg className="w-4.5 h-4.5 text-cyan-400 relative z-10 w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
+                      </svg>
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-[10px] font-bold tracking-[0.18em] uppercase text-cyan-400/80">
+                          Sales Order Baru
+                        </span>
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 tracking-wider">
+                          MASUK
+                        </span>
+                      </div>
+                      <div className="flex items-baseline gap-2 min-w-0">
+                        <span className="text-white font-mono font-bold text-sm tracking-wide shrink-0">
+                          {activeToast.soNumber}
+                        </span>
+                        <span className="text-slate-400 text-xs shrink-0">·</span>
+                        <span className="text-slate-200 text-sm truncate">{activeToast.customer}</span>
+                      </div>
+                    </div>
+
+                    {/* Timestamp + close */}
+                    <div className="flex flex-col items-end gap-1.5 shrink-0">
+                      <button
+                        onClick={dismissToast}
+                        className="text-slate-600 hover:text-slate-300 transition-colors leading-none w-5 h-5 flex items-center justify-center rounded hover:bg-slate-700/50"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                      <span className="text-slate-600 text-[10px] font-mono">
+                        {new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <button
-                  onClick={dismissToast}
-                  className="text-slate-500 hover:text-slate-300 transition-colors text-base leading-none px-1"
-                >
-                  ×
-                </button>
+
+                {/* Bottom progress bar — countdown visual */}
+                <motion.div
+                  className="absolute bottom-0 left-0 h-[2px] bg-gradient-to-r from-cyan-500 to-cyan-300"
+                  initial={{ width: '100%' }}
+                  animate={{ width: '0%' }}
+                  transition={{ duration: TOAST_DURATION_MS / 1000, ease: 'linear' }}
+                />
               </div>
             </motion.div>
           )}
@@ -1145,7 +1189,8 @@ const SchedulePage = () => {
                           {/* Status */}
                           <div className="flex items-center justify-center">
                             <span
-                              className={`inline-flex items-center justify-center w-full px-3 py-1.5 rounded border-2 text-xs font-bold uppercase tracking-wider ${statusConfig.className} ${statusConfig.glow}`}
+                              className={`inline-flex items-center justify-center w-full px-2 py-1.5 rounded border-2 font-bold uppercase tracking-wide whitespace-nowrap ${statusConfig.className} ${statusConfig.glow}`}
+                              style={{ fontSize: formatStatusLabel(order.status).length > 12 ? '9px' : '11px' }}
                             >
                               {formatStatusLabel(order.status)}
                             </span>
