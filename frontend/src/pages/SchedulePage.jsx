@@ -91,7 +91,7 @@ const SchedulePage = () => {
   const [month, setMonth] = useState(() => toYyyyMm(new Date()))
   const [filterStatus, setFilterStatus] = useState('active')
   const [sortBy, setSortBy] = useState('time')
-  const [sortDir, setSortDir] = useState('desc')
+  const [sortDir, setSortDir] = useState('asc')
   const [stats, setStats] = useState({
     total: 0,
     completed: 0,
