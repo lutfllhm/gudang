@@ -45,29 +45,34 @@ const MARQUEE_MAX_DURATION_SEC = 7200
 
 const STATUS_GROUP = {
   // disamakan dengan Accurate + status dari app (QUEUE/PROCEED/WATING)
-  completed: ['completed', 'terproses', 'selesai', 'proceed', 'closed', 'close', 'finished', 'done'],
+  completed: ['completed', 'terproses', 'selesai', 'proceed', 'closed', 'close', 'finished', 'done', 'fully processed'],
   processing: [
     'processing', 
     'sebagian terproses', 
     'sebagian diproses', 
+    'sebagian_terproses',
+    'sebagian_diproses',
     'diproses',
     'partial',
     'partially',
     'in progress',
-    'in_progress'
+    'in_progress',
+    'partially processed',
+    'partially_processed',
   ],
   pending: [
     'pending',
     'belum terproses',
     'menunggu proses',
     'menunggu diproses',
+    'menunggu_diproses',
     'dipesan',
     'queue',
     'waiting',
     'open',
     'opened',
     'new',
-    'draft'
+    'draft',
   ],
 }
 

@@ -249,35 +249,61 @@ class SalesOrderService {
    */
   static transformAccurateOrder(accurateOrder) {
     // Ambil status dari semua kemungkinan field response API Accurate
-    const docStatus = accurateOrder?.documentStatus;
-    const statusObj = accurateOrder?.status;
+    // Accurate Online bisa mengirim status sebagai object {id, name} atau string langsung
+    const extractStatusStr = (val) => {
+      if (val == null) return null;
+      if (typeof val === 'object') return val.name ?? val.code ?? val.value ?? null;
+      return String(val).trim() || null;
+    };
+
     const rawStatus =
-      (typeof docStatus === 'object' && docStatus !== null ? (docStatus.name ?? docStatus.code ?? docStatus) : docStatus) ??
-      accurateOrder?.documentStatusName ??
-      (typeof statusObj === 'object' && statusObj !== null ? (statusObj.name ?? statusObj.code ?? statusObj) : statusObj) ??
-      accurateOrder?.statusName ??
-      accurateOrder?.status_label ??
-      accurateOrder?.state ??
-      accurateOrder?.status_code ??
-      accurateOrder?.statusCode;
+      extractStatusStr(accurateOrder?.documentStatus) ??
+      extractStatusStr(accurateOrder?.documentStatusName) ??
+      extractStatusStr(accurateOrder?.transStatusName) ??
+      extractStatusStr(accurateOrder?.statusName) ??
+      extractStatusStr(accurateOrder?.status_label) ??
+      extractStatusStr(accurateOrder?.state) ??
+      extractStatusStr(accurateOrder?.statusCode) ??
+      extractStatusStr(accurateOrder?.status_code) ??
+      extractStatusStr(accurateOrder?.status);
 
     const rawStr = rawStatus == null ? '' : String(rawStatus).trim();
     const normalizedStatus = rawStr.toUpperCase();
 
-    // Log untuk debugging - lihat status apa yang datang dari Accurate
-    logger.debug('Accurate order status mapping', {
+    // Log INFO (bukan debug) agar selalu muncul di log - untuk diagnosa status Accurate
+    logger.info('Accurate order status mapping', {
       orderId: accurateOrder?.id,
-      transNumber: accurateOrder?.transNumber,
+      transNumber: accurateOrder?.transNumber ?? accurateOrder?.number,
       rawStatus: rawStr,
       normalizedStatus,
-      docStatus: accurateOrder?.documentStatus,
-      statusObj: accurateOrder?.status
+      allStatusFields: {
+        documentStatus: accurateOrder?.documentStatus,
+        documentStatusName: accurateOrder?.documentStatusName,
+        transStatusName: accurateOrder?.transStatusName,
+        statusName: accurateOrder?.statusName,
+        status: accurateOrder?.status,
+        state: accurateOrder?.state,
+      }
     });
 
-    // Gunakan teks persis dari Accurate jika sudah salah satu dari 3 status; kalau tidak, map lalu pakai label baku
-    const completedSet = ['CLOSED', 'CLOSE', 'COMPLETED', 'COMPLETE', 'FINISHED', 'DONE', 'SELESAI', 'TERPROSES'];
-    const partialSet = ['PARTIAL', 'PARTIALLY', 'PARTIAL_COMPLETED', 'PARTIAL_COMPLETE', 'SEBAGIAN', 'SEBAGIAN_TERPROSES', 'SEBAGIAN TERPROSES', 'SEBAGIAN_DIPROSES', 'SEBAGIAN DIPROSES', 'DIPROSES', 'IN PROGRESS', 'IN_PROGRESS', 'PROCESSING'];
-    const pendingSet = ['DIPESAN', 'OPEN', 'OPENED', 'PENDING', 'MENUNGGU', 'MENUNGGU PROSES', 'MENUNGGU DIPROSES', 'MENUNGGU_DIPROSES', 'NEW', 'DRAFT'];
+    // Mapping status Accurate -> label baku aplikasi
+    // Accurate Online umumnya: OPEN/DIPESAN = menunggu, PARTIAL/SEBAGIAN = sebagian, CLOSED/TERPROSES = selesai
+    const completedSet = [
+      'CLOSED', 'CLOSE', 'COMPLETED', 'COMPLETE', 'FINISHED', 'DONE',
+      'SELESAI', 'TERPROSES', 'FULLY PROCESSED', 'FULLY_PROCESSED'
+    ];
+    const partialSet = [
+      'PARTIAL', 'PARTIALLY', 'PARTIAL_COMPLETED', 'PARTIAL_COMPLETE',
+      'SEBAGIAN', 'SEBAGIAN_TERPROSES', 'SEBAGIAN TERPROSES',
+      'SEBAGIAN_DIPROSES', 'SEBAGIAN DIPROSES', 'DIPROSES',
+      'IN PROGRESS', 'IN_PROGRESS', 'PROCESSING',
+      'PARTIALLY PROCESSED', 'PARTIALLY_PROCESSED'
+    ];
+    const pendingSet = [
+      'DIPESAN', 'OPEN', 'OPENED', 'PENDING', 'MENUNGGU',
+      'MENUNGGU PROSES', 'MENUNGGU DIPROSES', 'MENUNGGU_DIPROSES',
+      'NEW', 'DRAFT', 'WAITING', 'QUEUE'
+    ];
 
     let status = 'Menunggu diproses';
     if (completedSet.includes(normalizedStatus)) {
@@ -287,11 +313,11 @@ class SalesOrderService {
     } else if (pendingSet.includes(normalizedStatus)) {
       status = 'Menunggu diproses';
     } else if (rawStr) {
-      // Nilai dari Accurate yang tidak kita kenal: simpan apa adanya agar aplikasi ikut Accurate
+      // Nilai dari Accurate yang tidak kita kenal: simpan apa adanya
       status = rawStr;
       if (!SalesOrderService.unmappedAccurateStatuses.has(normalizedStatus)) {
         SalesOrderService.unmappedAccurateStatuses.add(normalizedStatus);
-        logger.info('Accurate sales order status (ditampilkan as-is)', {
+        logger.warn('UNMAPPED Accurate status - perlu ditambahkan ke mapping!', {
           accurateOrderId: accurateOrder?.id,
           rawStatus: rawStr,
           normalizedStatus
@@ -299,9 +325,9 @@ class SalesOrderService {
       }
     }
 
-    logger.debug('Status mapping result', {
+    logger.info('Status mapping result', {
       orderId: accurateOrder?.id,
-      transNumber: accurateOrder?.transNumber,
+      transNumber: accurateOrder?.transNumber ?? accurateOrder?.number,
       rawStatus: rawStr,
       mappedStatus: status
     });
@@ -338,7 +364,7 @@ class SalesOrderService {
 
     return {
       so_id: String(accurateOrder.id || accurateOrder.orderId),
-      nomor_so: accurateOrder.number || accurateOrder.orderNumber || '',
+      nomor_so: accurateOrder.number || accurateOrder.transNumber || accurateOrder.orderNumber || accurateOrder.soNumber || '',
       tanggal_so: tanggalSo,
       customer_id: String(accurateOrder.customerId || ''),
       nama_pelanggan: customerName,
