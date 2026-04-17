@@ -124,6 +124,8 @@ const SchedulePage = () => {
 
   const [newSOToasts, setNewSOToasts] = useState([])
   const [overdueReminder, setOverdueReminder] = useState(null) // { count, orders }
+  const [activeToast, setActiveToast] = useState(null) // satu toast aktif sekaligus
+  const toastQueueRef = useRef([])
   const isFirstLoad = useRef(true)
   const fetchRequestId = useRef(0)
   const marqueeRef = useRef(null)
@@ -189,7 +191,11 @@ const SchedulePage = () => {
 
       // Setelah chime selesai (~6 detik), coba speech synthesis
       setTimeout(() => {
-        if (!window.speechSynthesis) return
+        if (!window.speechSynthesis) {
+          // Tidak ada speech — hilangkan banner setelah jeda singkat
+          setTimeout(() => setOverdueReminder(null), 3000)
+          return
+        }
         const last5 = overdueOrders.slice(-5)
         const soList = last5.map((o) => {
           const no = o.transNumber || o.nomor_so || o.so_id || ''
@@ -206,10 +212,23 @@ const SchedulePage = () => {
         const voices = window.speechSynthesis.getVoices()
         const idVoice = voices.find((v) => v.lang.startsWith('id'))
         if (idVoice) utterance.voice = idVoice
+        // Hilangkan banner setelah speech selesai
+        utterance.onend = () => {
+          setTimeout(() => setOverdueReminder(null), 1500)
+        }
+        utterance.onerror = () => {
+          setTimeout(() => setOverdueReminder(null), 1500)
+        }
         window.speechSynthesis.speak(utterance)
+
+        // Fallback: kalau speech tidak trigger onend (browser bug), hilangkan setelah 30 detik
+        setTimeout(() => setOverdueReminder(null), 30000)
       }, 6000)
 
-    } catch (_) {}
+    } catch (_) {
+      // Kalau AudioContext gagal, tetap hilangkan banner setelah 5 detik
+      setTimeout(() => setOverdueReminder(null), 5000)
+    }
   }, [])
 
   // Cek SO yang telat dan jalankan reminder jika sudah waktunya
@@ -241,9 +260,23 @@ const SchedulePage = () => {
     }
   }, [playOverdueReminder])
 
-  const dismissToast = useCallback((id) => {
-    setNewSOToasts((prev) => prev.filter((t) => t.id !== id))
+  const showNextToast = useCallback(() => {
+    if (toastQueueRef.current.length === 0) {
+      setActiveToast(null)
+      return
+    }
+    const next = toastQueueRef.current.shift()
+    setActiveToast(next)
+    setTimeout(() => {
+      setActiveToast(null)
+      setTimeout(showNextToast, 400) // jeda antar toast
+    }, TOAST_DURATION_MS)
   }, [])
+
+  const dismissToast = useCallback(() => {
+    setActiveToast(null)
+    setTimeout(showNextToast, 400)
+  }, [showNextToast])
 
   const fetchOrders = useCallback(async ({ silent = false } = {}) => {
     const requestId = ++fetchRequestId.current
@@ -332,14 +365,13 @@ const SchedulePage = () => {
             soNumber: o.transNumber || o.nomor_so || o.so_id,
             customer: o.customerName || o.nama_pelanggan || '—',
           }))
-          // Munculkan bergantian dengan jeda 1.5 detik per toast
-          toasts.forEach((t, i) => {
-            setTimeout(() => {
-              if (i === 0) playNotificationSound()
-              setNewSOToasts((prev) => [...prev, t])
-              setTimeout(() => dismissToast(t.id), TOAST_DURATION_MS)
-            }, i * 1500)
-          })
+          // Masukkan ke queue, tampilkan satu per satu
+          const wasEmpty = toastQueueRef.current.length === 0 && !activeToast
+          toastQueueRef.current.push(...toasts)
+          if (wasEmpty) {
+            if (toasts.length > 0) playNotificationSound()
+            showNextToast()
+          }
         }
       } else {
         isFirstLoad.current = false
@@ -381,7 +413,7 @@ const SchedulePage = () => {
       if (silent) setRefreshing(false)
       else setLoading(false)
     }
-  }, [month, playNotificationSound, dismissToast, checkAndTriggerOverdueReminder])
+  }, [month, playNotificationSound, dismissToast, checkAndTriggerOverdueReminder, showNextToast, activeToast])
 
   useEffect(() => {
     fetchOrders()
@@ -584,87 +616,85 @@ const SchedulePage = () => {
         }}
       />
 
-      {/* Toast Notifikasi SO Baru */}
-      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2 pointer-events-none">
-        <AnimatePresence>
-          {newSOToasts.map((toast) => (
-            <motion.div
-              key={toast.id}
-              initial={{ opacity: 0, y: -24, scale: 0.92 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -16, scale: 0.92 }}
-              transition={{ duration: 0.3 }}
-              className="pointer-events-auto flex items-center gap-3 px-5 py-3 rounded-xl bg-cyan-500/10 border border-cyan-400/50 backdrop-blur-md shadow-lg shadow-cyan-500/10"
-            >
-              <span className="flex h-2.5 w-2.5 shrink-0">
-                <span className="animate-ping absolute inline-flex h-2.5 w-2.5 rounded-full bg-cyan-400 opacity-60" />
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-400" />
-              </span>
-              <div className="text-sm">
-                <span className="font-bold text-cyan-300">SO Baru Masuk</span>
-                <span className="text-slate-300 ml-2 font-mono">{toast.soNumber}</span>
-                <span className="text-slate-400 ml-2">· {toast.customer}</span>
-              </div>
-              <button
-                onClick={() => dismissToast(toast.id)}
-                className="ml-2 text-slate-500 hover:text-slate-300 transition-colors text-lg leading-none"
-              >
-                ×
-              </button>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
+      {/* ── Notifikasi area: tengah atas, di bawah header ── */}
+      <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2 w-full max-w-2xl px-4 pointer-events-none">
 
-      {/* Banner Reminder SO Telat */}
-      <AnimatePresence>
-        {overdueReminder && (
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 40 }}
-            transition={{ duration: 0.4 }}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[90vw] max-w-3xl pointer-events-auto"
-          >
-            <div className="flex items-start gap-4 px-5 py-4 rounded-xl bg-red-950/90 border-2 border-red-500/70 backdrop-blur-md shadow-2xl shadow-red-900/40">
-              <div className="flex-shrink-0 mt-0.5">
-                <span className="relative flex h-4 w-4">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-60" />
-                  <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500" />
+        {/* Banner Reminder SO Telat — muncul saat suara, hilang otomatis */}
+        <AnimatePresence>
+          {overdueReminder && (
+            <motion.div
+              key="overdue-banner"
+              initial={{ opacity: 0, y: -16, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -12, scale: 0.96 }}
+              transition={{ duration: 0.35 }}
+              className="pointer-events-auto w-full"
+            >
+              <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-red-950/95 border-2 border-red-500/60 backdrop-blur-md shadow-2xl shadow-red-900/50">
+                <span className="relative flex h-3.5 w-3.5 shrink-0 mt-0.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-70" />
+                  <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-red-500" />
                 </span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-red-300 font-bold text-sm mb-1">
-                  Perhatian — {overdueReminder.count} SO belum diproses &gt; {OVERDUE_DAYS} hari
-                </p>
-                <div className="flex flex-wrap gap-x-4 gap-y-1">
-                  {overdueReminder.orders.slice(-5).map((o, i) => (
-                    <span key={i} className="text-xs text-red-200 font-mono">
-                      {o.transNumber || o.nomor_so} · <span className="text-red-300/80">{o.customerName || o.nama_pelanggan}</span>
-                    </span>
-                  ))}
+                <div className="flex-1 min-w-0">
+                  <p className="text-red-200 font-bold text-sm leading-tight">
+                    Perhatian — {overdueReminder.count} SO belum diproses &gt; {OVERDUE_DAYS} hari
+                  </p>
+                  <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1">
+                    {overdueReminder.orders.slice(-5).map((o, i) => (
+                      <span key={i} className="text-[11px] text-red-200/90 font-mono">
+                        {o.transNumber || o.nomor_so}
+                        <span className="text-red-400/70 mx-1">·</span>
+                        <span className="text-red-300/80 font-sans">{o.customerName || o.nama_pelanggan}</span>
+                      </span>
+                    ))}
+                  </div>
+                  <p className="text-red-400 text-[11px] font-medium mt-1.5 italic">Mohon segera ditindaklanjuti</p>
                 </div>
-                <p className="text-red-400/80 text-xs mt-1.5">Mohon segera ditindaklanjuti</p>
-              </div>
-              <div className="flex flex-col gap-2 flex-shrink-0">
                 <button
                   onClick={() => playOverdueReminder(overdueReminder.orders)}
-                  className="px-3 py-1.5 rounded-lg bg-red-500/20 border border-red-400/40 text-red-300 text-xs font-medium hover:bg-red-500/30 transition-colors"
-                  title="Putar ulang suara"
+                  className="shrink-0 px-2.5 py-1.5 rounded-lg bg-red-500/20 border border-red-400/40 text-red-300 text-[11px] font-medium hover:bg-red-500/30 transition-colors"
+                  title="Putar ulang"
                 >
-                  🔊 Putar
-                </button>
-                <button
-                  onClick={() => setOverdueReminder(null)}
-                  className="px-3 py-1.5 rounded-lg bg-slate-700/60 border border-slate-600/40 text-slate-400 text-xs font-medium hover:bg-slate-600/60 transition-colors"
-                >
-                  Tutup
+                  🔊
                 </button>
               </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Toast SO Baru — satu per satu */}
+        <AnimatePresence mode="wait">
+          {activeToast && (
+            <motion.div
+              key={activeToast.id}
+              initial={{ opacity: 0, y: -12, scale: 0.94 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -8, scale: 0.94 }}
+              transition={{ duration: 0.28 }}
+              className="pointer-events-auto w-full"
+            >
+              <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-cyan-950/90 border border-cyan-400/40 backdrop-blur-md shadow-lg shadow-cyan-900/30">
+                <span className="relative flex h-2.5 w-2.5 shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-60" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-400" />
+                </span>
+                <div className="flex-1 text-sm">
+                  <span className="font-bold text-cyan-300">SO Baru Masuk</span>
+                  <span className="text-slate-200 ml-2 font-mono text-[13px]">{activeToast.soNumber}</span>
+                  <span className="text-slate-400 ml-2 text-[12px]">· {activeToast.customer}</span>
+                </div>
+                <button
+                  onClick={dismissToast}
+                  className="text-slate-500 hover:text-slate-300 transition-colors text-base leading-none px-1"
+                >
+                  ×
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+      </div>
 
       <div className="relative z-10 h-screen flex flex-col p-2 w-full overflow-hidden">
         {/* Top bar - Compact */}
@@ -1043,15 +1073,6 @@ const SchedulePage = () => {
             )}
           </div>
           <div className="flex items-center gap-2">
-            {overdueReminder && (
-              <button
-                onClick={() => playOverdueReminder(overdueReminder.orders)}
-                className="px-2 py-1 rounded bg-red-500/15 border border-red-400/30 text-red-400 text-[10px] font-medium hover:bg-red-500/25 transition-colors"
-                title="Putar ulang reminder suara"
-              >
-                🔊 Reminder
-              </button>
-            )}
             <span className="text-slate-500 text-[10px]">
               iWare · Warehouse Management
             </span>
