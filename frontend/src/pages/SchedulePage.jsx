@@ -157,30 +157,37 @@ const SchedulePage = () => {
       if (!AudioCtx) return
       const ctx = new AudioCtx()
 
-      // Sequence: 3x beep keras lalu jeda, ulangi 2x
-      const playBeepSequence = (startTime) => {
-        const beeps = [0, 0.35, 0.7, 1.4, 1.75, 2.1]
-        beeps.forEach((offset) => {
+      // Nada khas pengumuman stasiun: Ding-Dong-Ding-Dong (4 nada)
+      // Frekuensi mirip chime stasiun kereta Indonesia
+      const chimeNotes = [
+        { freq: 1046.50, time: 0.0 },   // C6  - Ding
+        { freq: 783.99,  time: 0.55 },  // G5  - Dong
+        { freq: 880.00,  time: 1.1 },   // A5  - Ding
+        { freq: 659.25,  time: 1.65 },  // E5  - Dong
+      ]
+
+      const playChime = (startOffset) => {
+        chimeNotes.forEach(({ freq, time }) => {
           const osc = ctx.createOscillator()
           const gain = ctx.createGain()
           osc.connect(gain)
           gain.connect(ctx.destination)
-          osc.type = 'square'
-          osc.frequency.setValueAtTime(880, ctx.currentTime + startTime + offset)
-          osc.frequency.setValueAtTime(660, ctx.currentTime + startTime + offset + 0.12)
-          gain.gain.setValueAtTime(0, ctx.currentTime + startTime + offset)
-          gain.gain.linearRampToValueAtTime(0.6, ctx.currentTime + startTime + offset + 0.01)
-          gain.gain.setValueAtTime(0.6, ctx.currentTime + startTime + offset + 0.18)
-          gain.gain.linearRampToValueAtTime(0, ctx.currentTime + startTime + offset + 0.28)
-          osc.start(ctx.currentTime + startTime + offset)
-          osc.stop(ctx.currentTime + startTime + offset + 0.3)
+          osc.type = 'sine'
+          osc.frequency.setValueAtTime(freq, ctx.currentTime + startOffset + time)
+          gain.gain.setValueAtTime(0, ctx.currentTime + startOffset + time)
+          gain.gain.linearRampToValueAtTime(0.7, ctx.currentTime + startOffset + time + 0.02)
+          gain.gain.setValueAtTime(0.7, ctx.currentTime + startOffset + time + 0.15)
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + startOffset + time + 0.9)
+          osc.start(ctx.currentTime + startOffset + time)
+          osc.stop(ctx.currentTime + startOffset + time + 1.0)
         })
       }
 
-      playBeepSequence(0)
-      playBeepSequence(3.2)
+      // Mainkan 2x chime seperti di stasiun
+      playChime(0)
+      playChime(2.8)
 
-      // Setelah beep selesai (~7 detik), coba speech synthesis
+      // Setelah chime selesai (~6 detik), coba speech synthesis
       setTimeout(() => {
         if (!window.speechSynthesis) return
         const last5 = overdueOrders.slice(-5)
@@ -200,7 +207,7 @@ const SchedulePage = () => {
         const idVoice = voices.find((v) => v.lang.startsWith('id'))
         if (idVoice) utterance.voice = idVoice
         window.speechSynthesis.speak(utterance)
-      }, 7000)
+      }, 6000)
 
     } catch (_) {}
   }, [])
