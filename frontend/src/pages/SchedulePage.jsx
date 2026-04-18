@@ -368,11 +368,12 @@ const SchedulePage = () => {
 
   // Cek SO yang telat dan jalankan reminder jika sudah waktunya
   // Cek SO yang telat dan jalankan reminder hanya pada jam 14:50 WIB
-  const checkAndTriggerOverdueReminder = useCallback((allOrders) => {
+  // Menggunakan displayOrders (data terbaru yang ditampilkan di schedule)
+  const checkAndTriggerOverdueReminder = useCallback((ordersToCheck) => {
     const now = Date.now()
     const threeDaysMs = OVERDUE_DAYS * 24 * 60 * 60 * 1000
 
-    const overdueOrders = allOrders.filter((o) => {
+    const overdueOrders = ordersToCheck.filter((o) => {
       const group = getOrderStatusGroup(o)
       if (group !== 'pending' && group !== 'processing') return false
       const dateStr = o.transDate || o.tanggal_so
@@ -381,7 +382,7 @@ const SchedulePage = () => {
       return now - orderDate >= threeDaysMs
     })
 
-    console.log(`[Reminder] Ditemukan ${overdueOrders.length} SO overdue (>= ${OVERDUE_DAYS} hari)`)
+    console.log(`[Reminder] Mengecek dari ${ordersToCheck.length} SO di schedule → Ditemukan ${overdueOrders.length} SO overdue (>= ${OVERDUE_DAYS} hari)`)
 
     if (overdueOrders.length === 0) {
       setOverdueReminder(null)
@@ -406,11 +407,11 @@ const SchedulePage = () => {
     const isReminderHour = !!matchedTime
 
     if (isReminderHour && !alreadyPlayed) {
-      console.log(`[Reminder] Memulai reminder untuk ${overdueOrders.length} SO overdue`)
+      console.log(`[Reminder] ✅ Memulai reminder untuk ${overdueOrders.length} SO overdue dari data schedule terbaru`)
       lastReminderRef.current = reminderKey
       playOverdueReminder(overdueOrders)
     } else if (isReminderHour && alreadyPlayed) {
-      console.log('[Reminder] Reminder sudah diputar untuk jam ini, skip')
+      console.log('[Reminder] ⏭️ Reminder sudah diputar untuk jam ini, skip')
     }
   }, [playOverdueReminder])
 
@@ -610,7 +611,12 @@ const SchedulePage = () => {
       })
 
       // Cek SO yang telat >= 3 hari dan trigger reminder suara
-      checkAndTriggerOverdueReminder(allOrders)
+      // Gunakan displayOrdersRef.current (data terbaru yang ditampilkan di schedule)
+      // Ini memastikan reminder selalu mengikuti data terbaru termasuk SO baru yang masuk
+      const currentDisplayOrders = displayOrdersRef.current.length > 0 
+        ? displayOrdersRef.current 
+        : allOrders
+      checkAndTriggerOverdueReminder(currentDisplayOrders)
     } catch (error) {
       console.error('[SchedulePage] Failed to fetch orders:', error)
     } finally {
@@ -645,6 +651,14 @@ const SchedulePage = () => {
     const refreshInterval = setInterval(() => fetchOrders({ silent: true }), AUTO_REFRESH_MS)
     return () => clearInterval(refreshInterval)
   }, [fetchOrders])
+
+  // Cek reminder setiap kali displayOrders berubah (termasuk saat SO baru masuk)
+  // Ini memastikan reminder selalu up-to-date dengan data terbaru di schedule
+  useEffect(() => {
+    if (displayOrders.length > 0 && !isFirstLoad.current) {
+      checkAndTriggerOverdueReminder(displayOrders)
+    }
+  }, [displayOrders, checkAndTriggerOverdueReminder])
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
