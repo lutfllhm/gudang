@@ -36,10 +36,10 @@ const TOAST_DURATION_MS = 15000
 const KNOWN_SO_KEY = 'schedule_known_so_ids'
 const INITIAL_LIMIT = 5000
 const OVERDUE_DAYS = 3
-// Jam reminder WIB (UTC+7): 13:13
+// Jam reminder WIB (UTC+7): 13:36
 // Format: { hour, minute } — trigger dalam window ±2 menit dari waktu yang ditentukan
 const REMINDER_TIMES_WIB = [
-  { hour: 13, minute: 13 },
+  { hour: 13, minute: 36 },
 ]
 // Safety cap so we don't accidentally request an absurdly huge payload.
 // If total is bigger than this cap, we fall back to page-by-page fetching.
@@ -130,6 +130,7 @@ const SchedulePage = () => {
   const [overdueReminder, setOverdueReminder] = useState(null) // { count, orders }
   const [activeToast, setActiveToast] = useState(null) // satu toast aktif sekaligus
   const toastQueueRef = useRef([])
+  const isReminderActiveRef = useRef(false) // true saat reminder sedang diputar
   const isFirstLoad = useRef(true)
   const fetchRequestId = useRef(0)
   const marqueeRef = useRef(null)
@@ -312,6 +313,8 @@ const SchedulePage = () => {
     if (!overdueOrders || overdueOrders.length === 0) return
 
     try {
+      isReminderActiveRef.current = true
+
       // 1. Bunyikan bel stasiun dulu, tunggu selesai
       await playStationChime()
 
@@ -327,8 +330,12 @@ const SchedulePage = () => {
     } catch (error) {
       console.error('[playOverdueReminder] Error:', error)
       setTimeout(() => setOverdueReminder(null), 5000)
+    } finally {
+      isReminderActiveRef.current = false
+      // Setelah reminder selesai, cek apakah ada toast yang menunggu
+      setTimeout(showNextToast, 600)
     }
-  }, [playStationChime, playAllTTSSegments])
+  }, [playStationChime, playAllTTSSegments, showNextToast])
 
   // Putar ulang TTS saja (tanpa bel) untuk tombol di banner
   const replayTTS = useCallback(async (overdueOrders) => {
@@ -380,6 +387,8 @@ const SchedulePage = () => {
   }, [playOverdueReminder])
 
   const showNextToast = useCallback(() => {
+    // Tunda toast kalau reminder sedang diputar
+    if (isReminderActiveRef.current) return
     if (toastQueueRef.current.length === 0) {
       setActiveToast(null)
       return
@@ -388,7 +397,7 @@ const SchedulePage = () => {
     setActiveToast(next)
     setTimeout(() => {
       setActiveToast(null)
-      setTimeout(showNextToast, 400) // jeda antar toast
+      setTimeout(showNextToast, 400)
     }, TOAST_DURATION_MS)
   }, [])
 
@@ -769,226 +778,6 @@ const SchedulePage = () => {
         }}
       />
 
-      {/* ── Banner Reminder SO Telat — posisi tengah layar, tidak menutupi tabel ── */}
-      <AnimatePresence>
-        {overdueReminder && (
-          <motion.div
-            key="overdue-banner"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.35, ease: 'easeOut' }}
-            className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
-            style={{ top: '64px' }} // mulai dari bawah header, tidak melewati garis putih
-          >
-            <div className="pointer-events-auto w-full max-w-lg mx-4">
-              {/* Outer glow effect */}
-              <div className="relative rounded-2xl overflow-hidden shadow-2xl"
-                style={{ boxShadow: '0 0 0 1px rgba(239,68,68,0.4), 0 0 48px rgba(239,68,68,0.2), 0 16px 48px rgba(0,0,0,0.8)' }}
-              >
-                {/* Animated top border */}
-                <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-red-400 to-transparent animate-pulse" />
-
-                {/* Background */}
-                <div className="bg-gradient-to-b from-red-950/98 to-slate-950/98 backdrop-blur-xl px-5 py-4">
-
-                  {/* Header row */}
-                  <div className="flex items-center justify-between gap-4 mb-3">
-                    <div className="flex items-center gap-3">
-                      {/* Pulsing alert icon */}
-                      <div className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-red-500/15 border border-red-500/30">
-                        <span className="animate-ping absolute inline-flex w-full h-full rounded-xl bg-red-500/20" />
-                        <svg className="w-5 h-5 text-red-400 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-                        </svg>
-                      </div>
-
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-red-400/80">
-                            Peringatan Sistem
-                          </span>
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-red-500/20 text-red-300 border border-red-500/30 tracking-wider">
-                            OVERDUE
-                          </span>
-                        </div>
-                        <p className="text-white font-bold text-base leading-tight mt-0.5">
-                          {overdueReminder.count} Sales Order Belum Diproses
-                          <span className="text-red-400 ml-2 font-semibold text-sm">&gt; {OVERDUE_DAYS} Hari</span>
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Replay button */}
-                    <button
-                      onClick={() => replayTTS(overdueReminder.orders)}
-                      className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-500/15 border border-red-400/30 text-red-300 text-xs font-semibold hover:bg-red-500/25 hover:border-red-400/50 transition-all"
-                      title="Putar ulang pengumuman"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
-                      </svg>
-                      Putar Ulang
-                    </button>
-                  </div>
-
-                  {/* Divider */}
-                  <div className="h-px bg-gradient-to-r from-transparent via-red-500/30 to-transparent mb-3" />
-
-                  {/* SO list — tampilkan 5 digit terakhir SO + nama customer, highlight saat dibacakan */}
-                  <div
-                    ref={soListRef}
-                    className="max-h-28 overflow-y-auto pr-1 space-y-1"
-                    style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(239,68,68,0.3) transparent' }}
-                  >
-                    {overdueReminder.orders.map((o, i) => {
-                      const soNumber = o.transNumber || o.nomor_so || ''
-                      const soSuffix = soNumber ? soNumber.slice(-5) : '—'
-                      const customer = o.customerName || o.nama_pelanggan || '—'
-                      const isActive = activeSOIndex === i
-
-                      // Hitung berapa hari telat
-                      const dateStr = o.transDate || o.tanggal_so
-                      const daysLate = dateStr
-                        ? Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24))
-                        : null
-
-                      return (
-                        <div
-                          key={i}
-                          className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border transition-all duration-300 ${
-                            isActive
-                              ? 'bg-red-500/25 border-red-400/60 shadow-[0_0_8px_rgba(239,68,68,0.3)]'
-                              : 'bg-red-500/8 border-red-500/15 hover:bg-red-500/12'
-                          }`}
-                        >
-                          <span className="text-red-500/60 text-[10px] font-mono w-5 text-right shrink-0">{i + 1}.</span>
-                          <span className={`font-mono text-xs shrink-0 ${isActive ? 'text-red-300 font-bold' : 'text-red-400/70'}`}>
-                            {soSuffix}
-                          </span>
-                          <span className="text-slate-400/40 text-[10px] shrink-0">·</span>
-                          <span className={`text-xs font-medium truncate flex-1 ${isActive ? 'text-white font-semibold' : 'text-white/80'}`}>
-                            {customer}
-                          </span>
-                          {daysLate !== null && (
-                            <span className={`shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded font-mono ${
-                              daysLate >= 14 ? 'bg-red-600/40 text-red-200' :
-                              daysLate >= 7  ? 'bg-orange-500/30 text-orange-300' :
-                                               'bg-yellow-500/20 text-yellow-300'
-                            }`}>
-                              {daysLate}h
-                            </span>
-                          )}
-                          {isActive && (
-                            <span className="shrink-0 flex items-center gap-1">
-                              <span className="w-1 h-1 rounded-full bg-red-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-                              <span className="w-1 h-1 rounded-full bg-red-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-                              <span className="w-1 h-1 rounded-full bg-red-400 animate-bounce" style={{ animationDelay: '300ms' }} />
-                            </span>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-
-                  {/* Footer */}
-                  <div className="mt-3 flex items-center justify-between">
-                    <p className="text-red-400/70 text-[11px] font-medium flex items-center gap-1.5">
-                      <span className="inline-block w-1 h-1 rounded-full bg-red-400 animate-pulse" />
-                      Mohon segera ditindaklanjuti
-                    </p>
-                    <span className="text-slate-600 text-[10px] font-mono">
-                      {new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Animated bottom border */}
-                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-red-600/60 to-transparent" />
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ── Toast SO Baru — pojok kanan atas ── */}
-      <div className="fixed top-20 right-4 z-50 w-80 pointer-events-none">
-        <AnimatePresence mode="wait">
-          {activeToast && (
-            <motion.div
-              key={activeToast.id}
-              initial={{ opacity: 0, x: 40, scale: 0.96 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: 40, scale: 0.96 }}
-              transition={{ duration: 0.32, ease: 'easeOut' }}
-              className="pointer-events-auto w-full"
-            >
-              <div className="relative rounded-2xl overflow-hidden"
-                style={{ boxShadow: '0 0 0 1px rgba(6,182,212,0.35), 0 0 24px rgba(6,182,212,0.1), 0 8px 24px rgba(0,0,0,0.5)' }}
-              >
-                {/* Animated top border */}
-                <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent animate-pulse" />
-
-                <div className="bg-gradient-to-r from-cyan-950/95 via-slate-900/95 to-slate-950/95 backdrop-blur-xl px-4 py-3">
-                  <div className="flex items-center gap-3">
-
-                    {/* Icon */}
-                    <div className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-cyan-500/15 border border-cyan-500/25 shrink-0">
-                      <span className="animate-ping absolute inline-flex w-full h-full rounded-xl bg-cyan-500/15" />
-                      <svg className="w-4.5 h-4.5 text-cyan-400 relative z-10 w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
-                      </svg>
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <span className="text-[10px] font-bold tracking-[0.18em] uppercase text-cyan-400/80">
-                          Sales Order Baru
-                        </span>
-                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 tracking-wider">
-                          MASUK
-                        </span>
-                      </div>
-                      <div className="flex items-baseline gap-2 min-w-0">
-                        <span className="text-white font-mono font-bold text-sm tracking-wide shrink-0">
-                          {activeToast.soNumber}
-                        </span>
-                        <span className="text-slate-400 text-xs shrink-0">·</span>
-                        <span className="text-slate-200 text-sm truncate">{activeToast.customer}</span>
-                      </div>
-                    </div>
-
-                    {/* Timestamp + close */}
-                    <div className="flex flex-col items-end gap-1.5 shrink-0">
-                      <button
-                        onClick={dismissToast}
-                        className="text-slate-600 hover:text-slate-300 transition-colors leading-none w-5 h-5 flex items-center justify-center rounded hover:bg-slate-700/50"
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                      <span className="text-slate-600 text-[10px] font-mono">
-                        {new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Bottom progress bar — countdown visual */}
-                <motion.div
-                  className="absolute bottom-0 left-0 h-[2px] bg-gradient-to-r from-cyan-500 to-cyan-300"
-                  initial={{ width: '100%' }}
-                  animate={{ width: '0%' }}
-                  transition={{ duration: TOAST_DURATION_MS / 1000, ease: 'linear' }}
-                />
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
       <div className="relative z-10 h-screen flex flex-col p-2 w-full overflow-hidden">
         {/* Top bar - Compact */}
         <header className="flex items-center justify-between mb-1.5 flex-shrink-0">
@@ -1047,6 +836,161 @@ const SchedulePage = () => {
               Live
             </p>
           </div>
+
+          {/* ── Toast SO Baru — muncul di tengah header setelah reminder selesai ── */}
+          <AnimatePresence>
+            {!overdueReminder && activeToast && (
+              <motion.div
+                key={activeToast.id}
+                initial={{ opacity: 0, scale: 0.92, y: -4 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.92, y: -4 }}
+                transition={{ duration: 0.3, ease: 'easeOut' }}
+                className="flex-1 mx-4 pointer-events-auto"
+              >
+                <div className="relative rounded-xl overflow-hidden"
+                  style={{ boxShadow: '0 0 0 1px rgba(6,182,212,0.4), 0 0 20px rgba(6,182,212,0.12)' }}
+                >
+                  <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent animate-pulse" />
+                  <div className="bg-gradient-to-r from-cyan-950/98 to-slate-950/98 backdrop-blur-xl px-3 py-2">
+                    <div className="flex items-center gap-3">
+                      {/* Icon */}
+                      <div className="relative flex items-center justify-center w-7 h-7 rounded-lg bg-cyan-500/15 border border-cyan-500/30 shrink-0">
+                        <span className="animate-ping absolute inline-flex w-full h-full rounded-lg bg-cyan-500/20" />
+                        <svg className="w-4 h-4 text-cyan-400 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
+                        </svg>
+                      </div>
+                      {/* Label */}
+                      <div className="flex-shrink-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[9px] font-bold tracking-[0.18em] uppercase text-cyan-400/80">SO Baru</span>
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">MASUK</span>
+                        </div>
+                        <span className="text-white font-mono font-bold text-sm">{activeToast.soNumber}</span>
+                      </div>
+                      <span className="text-slate-500 text-xs shrink-0">·</span>
+                      {/* Customer */}
+                      <span className="text-slate-200 text-sm truncate flex-1">{activeToast.customer}</span>
+                      {/* Progress bar + close */}
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button onClick={dismissToast} className="text-slate-500 hover:text-slate-300 transition-colors">
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                    {/* Progress bar countdown */}
+                    <motion.div
+                      className="absolute bottom-0 left-0 h-[2px] bg-gradient-to-r from-cyan-500 to-cyan-300"
+                      initial={{ width: '100%' }}
+                      animate={{ width: '0%' }}
+                      transition={{ duration: TOAST_DURATION_MS / 1000, ease: 'linear' }}
+                    />
+                  </div>
+                  <div className="absolute bottom-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-cyan-600/60 to-transparent" />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          <AnimatePresence>
+            {overdueReminder && (
+              <motion.div
+                key="overdue-banner"
+                initial={{ opacity: 0, scale: 0.92, y: -4 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.92, y: -4 }}
+                transition={{ duration: 0.3, ease: 'easeOut' }}
+                className="flex-1 mx-4 pointer-events-auto"
+              >
+                <div className="relative rounded-xl overflow-hidden"
+                  style={{ boxShadow: '0 0 0 1px rgba(239,68,68,0.4), 0 0 20px rgba(239,68,68,0.15)' }}
+                >
+                  <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-red-400 to-transparent animate-pulse" />
+                  <div className="bg-gradient-to-r from-red-950/98 to-slate-950/98 backdrop-blur-xl px-3 py-2">
+                    <div className="flex items-center gap-3">
+                      {/* Alert icon */}
+                      <div className="relative flex items-center justify-center w-7 h-7 rounded-lg bg-red-500/15 border border-red-500/30 shrink-0">
+                        <span className="animate-ping absolute inline-flex w-full h-full rounded-lg bg-red-500/20" />
+                        <svg className="w-4 h-4 text-red-400 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                        </svg>
+                      </div>
+
+                      {/* Title + count */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[9px] font-bold tracking-[0.18em] uppercase text-red-400/80">Peringatan</span>
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-red-500/20 text-red-300 border border-red-500/30">OVERDUE</span>
+                        </div>
+                        <p className="text-white font-bold text-sm leading-tight">
+                          {overdueReminder.count} SO Belum Diproses
+                          <span className="text-red-400 ml-1.5 font-semibold text-xs">&gt; {OVERDUE_DAYS} Hari</span>
+                        </p>
+                      </div>
+
+                      {/* SO list — wrap tanpa scroll */}
+                      <div
+                        ref={soListRef}
+                        className="flex items-center gap-1.5 flex-wrap flex-1 min-w-0"
+                      >
+                        {overdueReminder.orders.map((o, i) => {
+                          const soNumber = o.transNumber || o.nomor_so || ''
+                          const soSuffix = soNumber ? soNumber.slice(-5) : '—'
+                          const customer = o.customerName || o.nama_pelanggan || '—'
+                          const isActive = activeSOIndex === i
+                          const dateStr = o.transDate || o.tanggal_so
+                          const daysLate = dateStr
+                            ? Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24))
+                            : null
+                          return (
+                            <div
+                              key={i}
+                              className={`shrink-0 flex items-center gap-1 px-2 py-1 rounded-lg border text-[10px] transition-all duration-300 ${
+                                isActive
+                                  ? 'bg-red-500/30 border-red-400/60 shadow-[0_0_6px_rgba(239,68,68,0.4)]'
+                                  : 'bg-red-500/8 border-red-500/20'
+                              }`}
+                            >
+                              <span className={`font-mono font-bold ${isActive ? 'text-red-200' : 'text-red-400/80'}`}>{soSuffix}</span>
+                              <span className="text-slate-400/60">·</span>
+                              <span className={`max-w-[80px] truncate ${isActive ? 'text-white font-semibold' : 'text-white/70'}`}>{customer}</span>
+                              {daysLate !== null && (
+                                <span className={`font-bold font-mono ml-0.5 ${
+                                  daysLate >= 14 ? 'text-red-300' : daysLate >= 7 ? 'text-orange-300' : 'text-yellow-300'
+                                }`}>{daysLate}h</span>
+                              )}
+                              {isActive && (
+                                <span className="flex items-center gap-0.5 ml-0.5">
+                                  <span className="w-0.5 h-0.5 rounded-full bg-red-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                                  <span className="w-0.5 h-0.5 rounded-full bg-red-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                                  <span className="w-0.5 h-0.5 rounded-full bg-red-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                                </span>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+
+                      {/* Replay button */}
+                      <button
+                        onClick={() => replayTTS(overdueReminder.orders)}
+                        className="shrink-0 flex items-center gap-1 px-2 py-1.5 rounded-lg bg-red-500/15 border border-red-400/30 text-red-300 text-[10px] font-semibold hover:bg-red-500/25 transition-all"
+                        title="Putar ulang"
+                      >
+                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                  <div className="absolute bottom-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-red-600/60 to-transparent" />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <div className="flex flex-col items-end">
             <span className="text-2xl font-mono font-semibold tabular-nums text-slate-100 tracking-tight">
               {currentTime.toLocaleTimeString('id-ID', {
