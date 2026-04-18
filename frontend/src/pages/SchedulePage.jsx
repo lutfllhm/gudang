@@ -35,10 +35,10 @@ const TOAST_DURATION_MS = 15000
 const KNOWN_SO_KEY = 'schedule_known_so_ids'
 const INITIAL_LIMIT = 5000
 const OVERDUE_DAYS = 3
-// Jam reminder WIB (UTC+7): 14:37
+// Jam reminder WIB (UTC+7): 14:50
 // Format: { hour, minute } — trigger dalam window ±2 menit dari waktu yang ditentukan
 const REMINDER_TIMES_WIB = [
-  { hour: 14, minute: 37 },
+  { hour: 14, minute: 50 },
 ]
 // Safety cap so we don't accidentally request an absurdly huge payload.
 // If total is bigger than this cap, we fall back to page-by-page fetching.
@@ -232,12 +232,13 @@ const SchedulePage = () => {
       // Pastikan setiap SO dibacakan, minimal dengan nomor urut jika data tidak lengkap
       if (soSuffix && customer) {
         // Ada nomor SO dan customer
-        const soText = `Nomor SO ${soSuffix.split('').join(' ')}, ${customer}.`
-        segments.push(soText)
+        // Nomor SO dieja per digit, customer dibacakan natural
+        const soDigits = soSuffix.split('').join(' ')
+        segments.push(`Nomor SO ${soDigits}, untuk ${customer}.`)
       } else if (soSuffix) {
         // Hanya ada nomor SO
-        const soText = `Nomor SO ${soSuffix.split('').join(' ')}.`
-        segments.push(soText)
+        const soDigits = soSuffix.split('').join(' ')
+        segments.push(`Nomor SO ${soDigits}.`)
       } else if (customer) {
         // Hanya ada customer
         segments.push(`Sales order untuk ${customer}.`)
@@ -366,7 +367,7 @@ const SchedulePage = () => {
   }, [playAllTTSSegments])
 
   // Cek SO yang telat dan jalankan reminder jika sudah waktunya
-  // Cek SO yang telat dan jalankan reminder hanya pada jam 14:37 WIB
+  // Cek SO yang telat dan jalankan reminder hanya pada jam 14:50 WIB
   const checkAndTriggerOverdueReminder = useCallback((allOrders) => {
     const now = Date.now()
     const threeDaysMs = OVERDUE_DAYS * 24 * 60 * 60 * 1000
