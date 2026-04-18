@@ -6,7 +6,6 @@ import {
   useRef,
   useLayoutEffect,
 } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import DashboardLayout from '../components/DashboardLayout'
 import usePageTitle from '../hooks/usePageTitle'
@@ -36,10 +35,10 @@ const TOAST_DURATION_MS = 15000
 const KNOWN_SO_KEY = 'schedule_known_so_ids'
 const INITIAL_LIMIT = 5000
 const OVERDUE_DAYS = 3
-// Jam reminder WIB (UTC+7): 14:01
+// Jam reminder WIB (UTC+7): 14:20
 // Format: { hour, minute } — trigger dalam window ±2 menit dari waktu yang ditentukan
 const REMINDER_TIMES_WIB = [
-  { hour: 14, minute: 1 },
+  { hour: 14, minute: 20 },
 ]
 // Safety cap so we don't accidentally request an absurdly huge payload.
 // If total is bigger than this cap, we fall back to page-by-page fetching.
@@ -108,7 +107,6 @@ const getOrderStatusGroup = (order) => {
 
 const SchedulePage = () => {
   usePageTitle('Schedule SO')
-  const navigate = useNavigate()
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -202,7 +200,7 @@ const SchedulePage = () => {
       const blobUrl = URL.createObjectURL(blob)
       const audio = new Audio(blobUrl)
       audio.volume = 1.0
-      audio.playbackRate = 1.15
+      audio.playbackRate = 1.50
       return new Promise((resolve) => {
         audio.onended = () => { URL.revokeObjectURL(blobUrl); resolve() }
         audio.onerror = () => { URL.revokeObjectURL(blobUrl); resolve() }
@@ -932,48 +930,70 @@ const SchedulePage = () => {
                         </p>
                       </div>
 
-                      {/* SO list — scroll vertikal, max height agar tidak meluber */}
-                      <div
-                        ref={soListRef}
-                        className="flex items-center gap-1.5 flex-wrap flex-1 min-w-0 max-h-16 overflow-y-auto"
-                        style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(239,68,68,0.3) transparent' }}
-                      >
-                        {overdueReminder.orders.map((o, i) => {
-                          const soNumber = o.transNumber || o.nomor_so || ''
-                          const soSuffix = soNumber ? soNumber.slice(-5) : '—'
-                          const customer = o.customerName || o.nama_pelanggan || '—'
-                          const isActive = activeSOIndex === i
-                          const dateStr = o.transDate || o.tanggal_so
-                          const daysLate = dateStr
-                            ? Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24))
-                            : null
-                          return (
-                            <div
-                              key={i}
-                              className={`shrink-0 flex items-center gap-1 px-2 py-1 rounded-lg border text-[10px] transition-all duration-300 ${
-                                isActive
-                                  ? 'bg-red-500/30 border-red-400/60 shadow-[0_0_6px_rgba(239,68,68,0.4)]'
-                                  : 'bg-red-500/8 border-red-500/20'
-                              }`}
-                            >
-                              <span className={`font-mono font-bold ${isActive ? 'text-red-200' : 'text-red-400/80'}`}>{soSuffix}</span>
-                              <span className="text-slate-400/60">·</span>
-                              <span className={`max-w-[80px] truncate ${isActive ? 'text-white font-semibold' : 'text-white/70'}`}>{customer}</span>
-                              {daysLate !== null && (
-                                <span className={`font-bold font-mono ml-0.5 ${
-                                  daysLate >= 14 ? 'text-red-300' : daysLate >= 7 ? 'text-orange-300' : 'text-yellow-300'
-                                }`}>{daysLate}h</span>
-                              )}
-                              {isActive && (
-                                <span className="flex items-center gap-0.5 ml-0.5">
-                                  <span className="w-0.5 h-0.5 rounded-full bg-red-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-                                  <span className="w-0.5 h-0.5 rounded-full bg-red-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-                                  <span className="w-0.5 h-0.5 rounded-full bg-red-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                      {/* SO list — tampil satu per satu saat dibacakan */}
+                      <div ref={soListRef} className="flex-1 min-w-0 overflow-hidden">
+                        <AnimatePresence mode="wait">
+                          {overdueReminder.orders.map((o, i) => {
+                            if (activeSOIndex !== i) return null
+                            const soNumber = o.transNumber || o.nomor_so || ''
+                            const soSuffix = soNumber ? soNumber.slice(-5) : '—'
+                            const customer = o.customerName || o.nama_pelanggan || '—'
+                            const dateStr = o.transDate || o.tanggal_so
+                            const daysLate = dateStr
+                              ? Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24))
+                              : null
+                            return (
+                              <motion.div
+                                key={i}
+                                initial={{ opacity: 0, x: 16 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -16 }}
+                                transition={{ duration: 0.25, ease: 'easeOut' }}
+                                className="flex items-center gap-2"
+                              >
+                                {/* Nomor urut */}
+                                <span className="text-red-500/50 text-[10px] font-mono shrink-0">
+                                  {i + 1}/{overdueReminder.orders.length}
                                 </span>
-                              )}
-                            </div>
-                          )
-                        })}
+                                {/* SO number */}
+                                <span className="font-mono font-bold text-red-200 text-xs shrink-0">{soSuffix}</span>
+                                <span className="text-slate-500 text-[10px] shrink-0">·</span>
+                                {/* Customer */}
+                                <span className="text-white font-semibold text-xs truncate">{customer}</span>
+                                {/* Days late */}
+                                {daysLate !== null && (
+                                  <span className={`shrink-0 text-[10px] font-bold font-mono px-1.5 py-0.5 rounded ${
+                                    daysLate >= 14 ? 'bg-red-600/40 text-red-200' :
+                                    daysLate >= 7  ? 'bg-orange-500/30 text-orange-300' :
+                                                     'bg-yellow-500/20 text-yellow-300'
+                                  }`}>{daysLate}h</span>
+                                )}
+                                {/* Speaking indicator */}
+                                <span className="flex items-center gap-0.5 shrink-0">
+                                  <span className="w-0.5 h-2.5 rounded-full bg-red-400 animate-[bounce_0.6s_ease-in-out_infinite]" style={{ animationDelay: '0ms' }} />
+                                  <span className="w-0.5 h-3.5 rounded-full bg-red-400 animate-[bounce_0.6s_ease-in-out_infinite]" style={{ animationDelay: '100ms' }} />
+                                  <span className="w-0.5 h-2 rounded-full bg-red-400 animate-[bounce_0.6s_ease-in-out_infinite]" style={{ animationDelay: '200ms' }} />
+                                  <span className="w-0.5 h-3 rounded-full bg-red-400 animate-[bounce_0.6s_ease-in-out_infinite]" style={{ animationDelay: '300ms' }} />
+                                </span>
+                              </motion.div>
+                            )
+                          })}
+                          {/* Saat intro/outro (activeSOIndex === -1), tampilkan total count */}
+                          {activeSOIndex === -1 && (
+                            <motion.div
+                              key="idle"
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              exit={{ opacity: 0 }}
+                              transition={{ duration: 0.2 }}
+                              className="flex items-center gap-2"
+                            >
+                              <span className="text-red-400/60 text-xs font-mono">
+                                {overdueReminder.orders.length} SO menunggu...
+                              </span>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
 
                       {/* Replay button */}
