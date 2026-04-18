@@ -44,6 +44,14 @@ if (config.env !== 'test') {
 
 // Rate limiting
 app.use('/api', apiLimiter);
+// TTS endpoint butuh limit lebih longgar karena dipanggil berulang saat reminder
+const ttsLimiter = require('express-rate-limit')({
+  windowMs: 60 * 1000, // 1 menit
+  max: 200,            // maks 200 request TTS per menit (cukup untuk 100 SO)
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use('/api/tts', ttsLimiter);
 
 // Health check endpoints
 app.get('/health', (req, res) => {

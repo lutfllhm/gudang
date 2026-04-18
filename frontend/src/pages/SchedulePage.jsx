@@ -193,21 +193,32 @@ const SchedulePage = () => {
   const soListRef = useRef(null)
 
   // Helper: fetch satu segmen teks dari backend TTS dan play, return Promise resolve saat selesai
-  const fetchAndPlayTTS = useCallback(async (text, token) => {
-    const response = await fetch(`${api.defaults.baseURL}/tts?text=${encodeURIComponent(text)}`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    })
-    if (!response.ok) throw new Error('TTS fetch failed')
-    const blob = await response.blob()
-    const blobUrl = URL.createObjectURL(blob)
-    const audio = new Audio(blobUrl)
-    audio.volume = 1.0
-    audio.playbackRate = 1.2  // percepat playback 1.2x
-    return new Promise((resolve) => {
-      audio.onended = () => { URL.revokeObjectURL(blobUrl); resolve() }
-      audio.onerror = () => { URL.revokeObjectURL(blobUrl); resolve() }
-      audio.play().catch(() => resolve())
-    })
+  // Retry 1x kalau gagal agar tidak skip diam-diam
+  const fetchAndPlayTTS = useCallback(async (text, token, retryCount = 0) => {
+    try {
+      const response = await fetch(`${api.defaults.baseURL}/tts?text=${encodeURIComponent(text)}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      if (!response.ok) throw new Error(`TTS HTTP ${response.status}`)
+      const blob = await response.blob()
+      const blobUrl = URL.createObjectURL(blob)
+      const audio = new Audio(blobUrl)
+      audio.volume = 1.0
+      audio.playbackRate = 1.15
+      return new Promise((resolve) => {
+        audio.onended = () => { URL.revokeObjectURL(blobUrl); resolve() }
+        audio.onerror = () => { URL.revokeObjectURL(blobUrl); resolve() }
+        audio.play().catch(() => { URL.revokeObjectURL(blobUrl); resolve() })
+      })
+    } catch (err) {
+      console.warn(`[TTS] Gagal segmen "${text.slice(0, 40)}..." (attempt ${retryCount + 1}):`, err.message)
+      if (retryCount < 1) {
+        // tunggu sebentar lalu retry sekali
+        await new Promise((r) => setTimeout(r, 800))
+        return fetchAndPlayTTS(text, token, retryCount + 1)
+      }
+      // Setelah retry tetap gagal, lanjut ke segmen berikutnya
+    }
   }, [])
 
   // Pecah array SO menjadi segmen-segmen teks ≤ 180 karakter agar tidak terpotong Google TTS
@@ -762,23 +773,22 @@ const SchedulePage = () => {
         }}
       />
 
-      {/* ── Notifikasi area: tengah atas, di bawah header ── */}
-      <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2 w-full max-w-3xl px-4 pointer-events-none">
-
-        {/* Banner Reminder SO Telat — muncul saat suara, hilang otomatis */}
-        <AnimatePresence>
-          {overdueReminder && (
-            <motion.div
-              key="overdue-banner"
-              initial={{ opacity: 0, y: -20, scale: 0.97 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -16, scale: 0.97 }}
-              transition={{ duration: 0.4, ease: 'easeOut' }}
-              className="pointer-events-auto w-full"
-            >
+      {/* ── Banner Reminder SO Telat — posisi tengah layar, tidak menutupi tabel ── */}
+      <AnimatePresence>
+        {overdueReminder && (
+          <motion.div
+            key="overdue-banner"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.35, ease: 'easeOut' }}
+            className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
+            style={{ top: '64px' }} // mulai dari bawah header, tidak melewati garis putih
+          >
+            <div className="pointer-events-auto w-full max-w-lg mx-4">
               {/* Outer glow effect */}
               <div className="relative rounded-2xl overflow-hidden shadow-2xl"
-                style={{ boxShadow: '0 0 0 1px rgba(239,68,68,0.4), 0 0 32px rgba(239,68,68,0.15), 0 8px 32px rgba(0,0,0,0.6)' }}
+                style={{ boxShadow: '0 0 0 1px rgba(239,68,68,0.4), 0 0 48px rgba(239,68,68,0.2), 0 16px 48px rgba(0,0,0,0.8)' }}
               >
                 {/* Animated top border */}
                 <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-red-400 to-transparent animate-pulse" />
@@ -840,6 +850,13 @@ const SchedulePage = () => {
                       const soSuffix = soNumber ? soNumber.slice(-5) : '—'
                       const customer = o.customerName || o.nama_pelanggan || '—'
                       const isActive = activeSOIndex === i
+
+                      // Hitung berapa hari telat
+                      const dateStr = o.transDate || o.tanggal_so
+                      const daysLate = dateStr
+                        ? Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24))
+                        : null
+
                       return (
                         <div
                           key={i}
@@ -854,11 +871,20 @@ const SchedulePage = () => {
                             {soSuffix}
                           </span>
                           <span className="text-slate-400/40 text-[10px] shrink-0">·</span>
-                          <span className={`text-xs font-medium truncate ${isActive ? 'text-white font-semibold' : 'text-white/80'}`}>
+                          <span className={`text-xs font-medium truncate flex-1 ${isActive ? 'text-white font-semibold' : 'text-white/80'}`}>
                             {customer}
                           </span>
+                          {daysLate !== null && (
+                            <span className={`shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded font-mono ${
+                              daysLate >= 14 ? 'bg-red-600/40 text-red-200' :
+                              daysLate >= 7  ? 'bg-orange-500/30 text-orange-300' :
+                                               'bg-yellow-500/20 text-yellow-300'
+                            }`}>
+                              {daysLate}h
+                            </span>
+                          )}
                           {isActive && (
-                            <span className="ml-auto shrink-0 flex items-center gap-1">
+                            <span className="shrink-0 flex items-center gap-1">
                               <span className="w-1 h-1 rounded-full bg-red-400 animate-bounce" style={{ animationDelay: '0ms' }} />
                               <span className="w-1 h-1 rounded-full bg-red-400 animate-bounce" style={{ animationDelay: '150ms' }} />
                               <span className="w-1 h-1 rounded-full bg-red-400 animate-bounce" style={{ animationDelay: '300ms' }} />
@@ -884,11 +910,13 @@ const SchedulePage = () => {
                 {/* Animated bottom border */}
                 <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-red-600/60 to-transparent" />
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-        {/* Toast SO Baru — satu per satu */}
+      {/* ── Toast SO Baru — pojok kanan atas ── */}
+      <div className="fixed top-20 right-4 z-50 w-80 pointer-events-none">
         <AnimatePresence mode="wait">
           {activeToast && (
             <motion.div
@@ -963,7 +991,6 @@ const SchedulePage = () => {
             </motion.div>
           )}
         </AnimatePresence>
-
       </div>
 
       <div className="relative z-10 h-screen flex flex-col p-2 w-full overflow-hidden">

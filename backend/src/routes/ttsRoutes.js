@@ -4,29 +4,30 @@ const https = require('https');
 const { authenticate } = require('../middleware/auth');
 
 const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY || '';
-const ELEVENLABS_VOICE_ID = process.env.ELEVENLABS_VOICE_ID || 'EXAVITQu4vr4xnSDxMaL'; // default: "Bella" multilingual
+const ELEVENLABS_VOICE_ID = process.env.ELEVENLABS_VOICE_ID || 'EXAVITQu4vr4xnSDxMaL';
 const ELEVENLABS_MODEL   = process.env.ELEVENLABS_MODEL   || 'eleven_multilingual_v2';
 
 /**
- * ElevenLabs TTS — suara natural/profesional
- * POST https://api.elevenlabs.io/v1/text-to-speech/:voice_id
+ * ElevenLabs TTS
  */
 function elevenLabsTTS(text, res) {
   const body = JSON.stringify({
     text,
     model_id: ELEVENLABS_MODEL,
     voice_settings: {
-      stability: 0.45,        // lebih rendah = lebih ekspresif & cepat
+      stability: 0.45,
       similarity_boost: 0.80,
-      style: 0.20,            // lebih netral untuk announcement
+      style: 0.20,
       use_speaker_boost: true,
-      speed: 1.15,            // 1.0 = normal, 1.15 = 15% lebih cepat
+      // catatan: field "speed" tidak ada di voice_settings ElevenLabs
+      // kecepatan diatur dari sisi frontend via audio.playbackRate
     },
   });
 
   const options = {
     hostname: 'api.elevenlabs.io',
-    path: `/v1/text-to-speech/${ELEVENLABS_VOICE_ID}`,
+    // optimize_streaming_latency=3 = latency paling rendah
+    path: `/v1/text-to-speech/${ELEVENLABS_VOICE_ID}?optimize_streaming_latency=3`,
     method: 'POST',
     headers: {
       'xi-api-key': ELEVENLABS_API_KEY,
@@ -38,11 +39,10 @@ function elevenLabsTTS(text, res) {
 
   const request = https.request(options, (upstream) => {
     if (upstream.statusCode !== 200) {
-      // Baca error body lalu fallback ke Google TTS
       let errBody = '';
       upstream.on('data', (chunk) => { errBody += chunk; });
       upstream.on('end', () => {
-        console.error('[TTS] ElevenLabs error', upstream.statusCode, errBody);
+        console.error('[TTS] ElevenLabs error', upstream.statusCode, errBody.slice(0, 200));
         googleTTS(text, res);
       });
       return;
@@ -53,14 +53,18 @@ function elevenLabsTTS(text, res) {
     upstream.on('error', () => googleTTS(text, res));
   });
 
-  request.on('error', () => googleTTS(text, res));
-  request.setTimeout(15000, () => { request.destroy(); googleTTS(text, res); });
+  request.on('error', (err) => {
+    console.error('[TTS] ElevenLabs request error:', err.message);
+    googleTTS(text, res);
+  });
+  // timeout lebih panjang untuk antisipasi banyak request berurutan
+  request.setTimeout(30000, () => { request.destroy(); googleTTS(text, res); });
   request.write(body);
   request.end();
 }
 
 /**
- * Google Translate TTS — fallback gratis tanpa API key
+ * Google Translate TTS — fallback
  */
 function googleTTS(text, res) {
   const encoded = encodeURIComponent(text.slice(0, 200));
@@ -81,7 +85,7 @@ function googleTTS(text, res) {
   });
 
   request.on('error', () => res.status(502).json({ success: false, message: 'TTS fetch failed' }));
-  request.setTimeout(10000, () => { request.destroy(); res.status(504).json({ success: false, message: 'TTS timeout' }); });
+  request.setTimeout(15000, () => { request.destroy(); res.status(504).json({ success: false, message: 'TTS timeout' }); });
 }
 
 // GET /api/tts?text=...
