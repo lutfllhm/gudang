@@ -142,18 +142,45 @@ const SchedulePage = () => {
 
   const playNotificationSound = useCallback(() => {
     try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)()
-      const osc = ctx.createOscillator()
-      const gain = ctx.createGain()
-      osc.connect(gain)
-      gain.connect(ctx.destination)
-      osc.type = 'sine'
-      osc.frequency.setValueAtTime(880, ctx.currentTime)
-      osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.3)
-      gain.gain.setValueAtTime(0.4, ctx.currentTime)
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5)
-      osc.start(ctx.currentTime)
-      osc.stop(ctx.currentTime + 0.5)
+      const AudioCtx = window.AudioContext || window.webkitAudioContext
+      if (!AudioCtx) return
+      const ctx = new AudioCtx()
+
+      // 3 nada ascending — seperti notifikasi hotel/lounge profesional
+      const notes = [
+        { freq: 783.99, time: 0.0  },  // G5
+        { freq: 987.77, time: 0.18 },  // B5
+        { freq: 1318.5, time: 0.36 },  // E6
+      ]
+
+      notes.forEach(({ freq, time }) => {
+        const osc  = ctx.createOscillator()
+        const gain = ctx.createGain()
+        // Sedikit reverb feel: gabung sine + triangle
+        const osc2  = ctx.createOscillator()
+        const gain2 = ctx.createGain()
+
+        osc.connect(gain);   gain.connect(ctx.destination)
+        osc2.connect(gain2); gain2.connect(ctx.destination)
+
+        osc.type  = 'sine'
+        osc2.type = 'triangle'
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + time)
+        osc2.frequency.setValueAtTime(freq, ctx.currentTime + time)
+
+        // Attack → sustain → fade
+        gain.gain.setValueAtTime(0, ctx.currentTime + time)
+        gain.gain.linearRampToValueAtTime(0.55, ctx.currentTime + time + 0.02)
+        gain.gain.setValueAtTime(0.55, ctx.currentTime + time + 0.08)
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + time + 0.7)
+
+        gain2.gain.setValueAtTime(0, ctx.currentTime + time)
+        gain2.gain.linearRampToValueAtTime(0.15, ctx.currentTime + time + 0.02)
+        gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + time + 0.5)
+
+        osc.start(ctx.currentTime + time);  osc.stop(ctx.currentTime + time + 0.8)
+        osc2.start(ctx.currentTime + time); osc2.stop(ctx.currentTime + time + 0.6)
+      })
     } catch (_) {}
   }, [])
 
