@@ -16,10 +16,11 @@ function elevenLabsTTS(text, res) {
     text,
     model_id: ELEVENLABS_MODEL,
     voice_settings: {
-      stability: 0.55,        // 0–1: lebih tinggi = lebih stabil/konsisten
-      similarity_boost: 0.80, // 0–1: lebih tinggi = lebih mirip suara asli
-      style: 0.30,            // 0–1: ekspresi/intonasi (0 = netral/announcement)
+      stability: 0.45,        // lebih rendah = lebih ekspresif & cepat
+      similarity_boost: 0.80,
+      style: 0.20,            // lebih netral untuk announcement
       use_speaker_boost: true,
+      speed: 1.15,            // 1.0 = normal, 1.15 = 15% lebih cepat
     },
   });
 

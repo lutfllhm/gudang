@@ -156,6 +156,10 @@ const SchedulePage = () => {
     } catch (_) {}
   }, [])
 
+  // index SO yang sedang dibacakan (-1 = tidak ada / intro/outro)
+  const [activeSOIndex, setActiveSOIndex] = useState(-1)
+  const soListRef = useRef(null)
+
   // Helper: fetch satu segmen teks dari backend TTS dan play, return Promise resolve saat selesai
   const fetchAndPlayTTS = useCallback(async (text, token) => {
     const response = await fetch(`${api.defaults.baseURL}/tts?text=${encodeURIComponent(text)}`, {
@@ -166,6 +170,7 @@ const SchedulePage = () => {
     const blobUrl = URL.createObjectURL(blob)
     const audio = new Audio(blobUrl)
     audio.volume = 1.0
+    audio.playbackRate = 1.2  // percepat playback 1.2x
     return new Promise((resolve) => {
       audio.onended = () => { URL.revokeObjectURL(blobUrl); resolve() }
       audio.onerror = () => { URL.revokeObjectURL(blobUrl); resolve() }
@@ -192,17 +197,29 @@ const SchedulePage = () => {
     return segments
   }, [])
 
-  // Play semua segmen TTS satu per satu secara berurutan
+  // Play semua segmen TTS satu per satu secara berurutan, sync highlight index
   const playAllTTSSegments = useCallback(async (overdueOrders) => {
     const token = localStorage.getItem('accessToken')
     const segments = buildTTSSegments(overdueOrders)
-    for (const seg of segments) {
+
+    for (let i = 0; i < segments.length; i++) {
+      // segments[0] = intro, segments[1..n-1] = per SO, segments[n] = outro
+      const soIndex = (i === 0 || i === segments.length - 1) ? -1 : i - 1
+      setActiveSOIndex(soIndex)
+
+      // Auto scroll ke item yang sedang dibacakan
+      if (soIndex >= 0 && soListRef.current) {
+        const item = soListRef.current.children[soIndex]
+        if (item) item.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+      }
+
       try {
-        await fetchAndPlayTTS(seg, token)
+        await fetchAndPlayTTS(segments[i], token)
       } catch (_) {
         // lanjut ke segmen berikutnya meski ada error
       }
     }
+    setActiveSOIndex(-1)
   }, [fetchAndPlayTTS, buildTTSSegments])
 
   // Bel stasiun: Ding-Dong-Ding-Dong via AudioContext
@@ -758,16 +775,44 @@ const SchedulePage = () => {
                   {/* Divider */}
                   <div className="h-px bg-gradient-to-r from-transparent via-red-500/30 to-transparent mb-3" />
 
-                  {/* SO list — tampilkan nama customer saja */}
-                  <div className="max-h-28 overflow-y-auto pr-1 space-y-1"
+                  {/* SO list — tampilkan 5 digit terakhir SO + nama customer, highlight saat dibacakan */}
+                  <div
+                    ref={soListRef}
+                    className="max-h-28 overflow-y-auto pr-1 space-y-1"
                     style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(239,68,68,0.3) transparent' }}
                   >
-                    {overdueReminder.orders.map((o, i) => (
-                      <div key={i} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-red-500/8 border border-red-500/15 hover:bg-red-500/12 transition-colors">
-                        <span className="text-red-500/60 text-[10px] font-mono w-5 text-right shrink-0">{i + 1}.</span>
-                        <span className="text-white text-xs font-medium truncate">{o.customerName || o.nama_pelanggan}</span>
-                      </div>
-                    ))}
+                    {overdueReminder.orders.map((o, i) => {
+                      const soNumber = o.transNumber || o.nomor_so || ''
+                      const soSuffix = soNumber ? soNumber.slice(-5) : '—'
+                      const customer = o.customerName || o.nama_pelanggan || '—'
+                      const isActive = activeSOIndex === i
+                      return (
+                        <div
+                          key={i}
+                          className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border transition-all duration-300 ${
+                            isActive
+                              ? 'bg-red-500/25 border-red-400/60 shadow-[0_0_8px_rgba(239,68,68,0.3)]'
+                              : 'bg-red-500/8 border-red-500/15 hover:bg-red-500/12'
+                          }`}
+                        >
+                          <span className="text-red-500/60 text-[10px] font-mono w-5 text-right shrink-0">{i + 1}.</span>
+                          <span className={`font-mono text-xs shrink-0 ${isActive ? 'text-red-300 font-bold' : 'text-red-400/70'}`}>
+                            {soSuffix}
+                          </span>
+                          <span className="text-slate-400/40 text-[10px] shrink-0">·</span>
+                          <span className={`text-xs font-medium truncate ${isActive ? 'text-white font-semibold' : 'text-white/80'}`}>
+                            {customer}
+                          </span>
+                          {isActive && (
+                            <span className="ml-auto shrink-0 flex items-center gap-1">
+                              <span className="w-1 h-1 rounded-full bg-red-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                              <span className="w-1 h-1 rounded-full bg-red-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                              <span className="w-1 h-1 rounded-full bg-red-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                            </span>
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
 
                   {/* Footer */}
