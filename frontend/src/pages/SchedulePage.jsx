@@ -36,10 +36,10 @@ const TOAST_DURATION_MS = 15000
 const KNOWN_SO_KEY = 'schedule_known_so_ids'
 const INITIAL_LIMIT = 5000
 const OVERDUE_DAYS = 3
-// Jam reminder WIB (UTC+7): 13:36
+// Jam reminder WIB (UTC+7): 13:45
 // Format: { hour, minute } — trigger dalam window ±2 menit dari waktu yang ditentukan
 const REMINDER_TIMES_WIB = [
-  { hour: 13, minute: 36 },
+  { hour: 13, minute: 45 },
 ]
 // Safety cap so we don't accidentally request an absurdly huge payload.
 // If total is bigger than this cap, we fall back to page-by-page fetching.
@@ -131,6 +131,7 @@ const SchedulePage = () => {
   const [activeToast, setActiveToast] = useState(null) // satu toast aktif sekaligus
   const toastQueueRef = useRef([])
   const isReminderActiveRef = useRef(false) // true saat reminder sedang diputar
+  const showNextToastRef = useRef(null) // ref untuk hindari circular dependency
   const isFirstLoad = useRef(true)
   const fetchRequestId = useRef(0)
   const marqueeRef = useRef(null)
@@ -333,9 +334,9 @@ const SchedulePage = () => {
     } finally {
       isReminderActiveRef.current = false
       // Setelah reminder selesai, cek apakah ada toast yang menunggu
-      setTimeout(showNextToast, 600)
+      setTimeout(() => showNextToastRef.current?.(), 600)
     }
-  }, [playStationChime, playAllTTSSegments, showNextToast])
+  }, [playStationChime, playAllTTSSegments])
 
   // Putar ulang TTS saja (tanpa bel) untuk tombol di banner
   const replayTTS = useCallback(async (overdueOrders) => {
@@ -400,6 +401,7 @@ const SchedulePage = () => {
       setTimeout(showNextToast, 400)
     }, TOAST_DURATION_MS)
   }, [])
+  showNextToastRef.current = showNextToast
 
   const dismissToast = useCallback(() => {
     setActiveToast(null)
