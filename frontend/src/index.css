@@ -232,6 +232,12 @@
 
 .running-vertical {
   animation: marquee-vertical var(--marquee-duration, 600s) linear infinite;
+  /* Optimasi performa: hint browser untuk transform */
+  will-change: transform;
+  /* Gunakan GPU acceleration */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
 }
 
 .running-vertical:hover {

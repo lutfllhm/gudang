@@ -35,10 +35,10 @@ const TOAST_DURATION_MS = 15000
 const KNOWN_SO_KEY = 'schedule_known_so_ids'
 const INITIAL_LIMIT = 5000
 const OVERDUE_DAYS = 3
-// Jam reminder WIB (UTC+7): 14:20
+// Jam reminder WIB (UTC+7): 14:37
 // Format: { hour, minute } — trigger dalam window ±2 menit dari waktu yang ditentukan
 const REMINDER_TIMES_WIB = [
-  { hour: 14, minute: 20 },
+  { hour: 14, minute: 37 },
 ]
 // Safety cap so we don't accidentally request an absurdly huge payload.
 // If total is bigger than this cap, we fall back to page-by-page fetching.
@@ -223,13 +223,28 @@ const SchedulePage = () => {
     const segments = [intro]
 
     // Setiap SO jadi segmen sendiri: sebut 5 digit terakhir nomor SO lalu nama customer
-    overdueOrders.forEach((o) => {
+    // PENTING: Bacakan SEMUA SO tanpa kecuali
+    overdueOrders.forEach((o, index) => {
       const soNumber = o.transNumber || o.nomor_so || ''
       const soSuffix = soNumber ? soNumber.slice(-5) : ''
       const customer = o.customerName || o.nama_pelanggan || ''
-      const soText = soSuffix ? `Nomor SO ${soSuffix.split('').join(' ')},` : ''
-      const customerText = customer ? ` ${customer}.` : '.'
-      if (soText || customer) segments.push(`${soText}${customerText}`)
+      
+      // Pastikan setiap SO dibacakan, minimal dengan nomor urut jika data tidak lengkap
+      if (soSuffix && customer) {
+        // Ada nomor SO dan customer
+        const soText = `Nomor SO ${soSuffix.split('').join(' ')}, ${customer}.`
+        segments.push(soText)
+      } else if (soSuffix) {
+        // Hanya ada nomor SO
+        const soText = `Nomor SO ${soSuffix.split('').join(' ')}.`
+        segments.push(soText)
+      } else if (customer) {
+        // Hanya ada customer
+        segments.push(`Sales order untuk ${customer}.`)
+      } else {
+        // Tidak ada data lengkap, gunakan nomor urut
+        segments.push(`Sales order nomor ${index + 1}.`)
+      }
     })
 
     segments.push('Mohon segera ditindaklanjuti.')
@@ -241,10 +256,14 @@ const SchedulePage = () => {
     const token = localStorage.getItem('accessToken')
     const segments = buildTTSSegments(overdueOrders)
 
+    console.log(`[TTS] Akan membacakan ${overdueOrders.length} SO overdue dengan ${segments.length} segmen (termasuk intro & outro)`)
+
     for (let i = 0; i < segments.length; i++) {
       // segments[0] = intro, segments[1..n-1] = per SO, segments[n] = outro
       const soIndex = (i === 0 || i === segments.length - 1) ? -1 : i - 1
       setActiveSOIndex(soIndex)
+
+      console.log(`[TTS] Segmen ${i + 1}/${segments.length}: "${segments[i].slice(0, 50)}..."`)
 
       // Auto scroll ke item yang sedang dibacakan
       if (soIndex >= 0 && soListRef.current) {
@@ -258,6 +277,8 @@ const SchedulePage = () => {
         // lanjut ke segmen berikutnya meski ada error
       }
     }
+    
+    console.log('[TTS] Selesai membacakan semua segmen')
     setActiveSOIndex(-1)
   }, [fetchAndPlayTTS, buildTTSSegments])
 
@@ -345,7 +366,7 @@ const SchedulePage = () => {
   }, [playAllTTSSegments])
 
   // Cek SO yang telat dan jalankan reminder jika sudah waktunya
-  // Cek SO yang telat dan jalankan reminder hanya pada jam 08:50, 11:00, 14:00 WIB
+  // Cek SO yang telat dan jalankan reminder hanya pada jam 14:37 WIB
   const checkAndTriggerOverdueReminder = useCallback((allOrders) => {
     const now = Date.now()
     const threeDaysMs = OVERDUE_DAYS * 24 * 60 * 60 * 1000
@@ -359,6 +380,8 @@ const SchedulePage = () => {
       return now - orderDate >= threeDaysMs
     })
 
+    console.log(`[Reminder] Ditemukan ${overdueOrders.length} SO overdue (>= ${OVERDUE_DAYS} hari)`)
+
     if (overdueOrders.length === 0) {
       setOverdueReminder(null)
       return
@@ -370,6 +393,8 @@ const SchedulePage = () => {
     const minuteWIB = nowWIB.getUTCMinutes()
     const dateKey = nowWIB.toISOString().slice(0, 10) // YYYY-MM-DD
 
+    console.log(`[Reminder] Waktu sekarang: ${hourWIB}:${String(minuteWIB).padStart(2, '0')} WIB`)
+
     // Cari apakah waktu sekarang masuk window ±2 menit dari salah satu REMINDER_TIMES_WIB
     const matchedTime = REMINDER_TIMES_WIB.find(({ hour, minute }) => {
       if (hourWIB !== hour) return false
@@ -380,8 +405,11 @@ const SchedulePage = () => {
     const isReminderHour = !!matchedTime
 
     if (isReminderHour && !alreadyPlayed) {
+      console.log(`[Reminder] Memulai reminder untuk ${overdueOrders.length} SO overdue`)
       lastReminderRef.current = reminderKey
       playOverdueReminder(overdueOrders)
+    } else if (isReminderHour && alreadyPlayed) {
+      console.log('[Reminder] Reminder sudah diputar untuk jam ini, skip')
     }
   }, [playOverdueReminder])
 
@@ -480,6 +508,7 @@ const SchedulePage = () => {
       // Saat silent refresh: merge data baru ke state existing agar tabel tidak flicker
       // Saat first load / ganti bulan: replace semua
       if (silent) {
+        // Update orders state dengan merge
         setOrders((prev) => {
           const existingMap = new Map(prev.map((o) => [String(o.so_id || o.id || o.transNumber), o]))
           allOrders.forEach((o) => {
@@ -488,6 +517,22 @@ const SchedulePage = () => {
           })
           return Array.from(existingMap.values())
         })
+
+        // Update displayOrders dengan merge TANPA mengganggu animasi marquee
+        // Hanya update data existing, jangan replace array
+        const displayMap = new Map(
+          displayOrdersRef.current.map((o) => [String(o.so_id || o.id || o.transNumber), o])
+        )
+        allOrders.forEach((o) => {
+          const key = String(o.so_id || o.id || o.transNumber)
+          if (displayMap.has(key)) {
+            // Update data SO yang sudah ada (misal status berubah)
+            displayMap.set(key, o)
+          }
+        })
+        // Update ref tanpa trigger re-render yang mengganggu animasi
+        displayOrdersRef.current = Array.from(displayMap.values())
+        
       } else {
         setOrders(allOrders)
         // First load / ganti bulan: reset displayOrders sekalian
@@ -503,6 +548,8 @@ const SchedulePage = () => {
           return id && !knownIds.has(String(id))
         })
         if (newOrders.length > 0) {
+          console.log(`[SchedulePage] Ditemukan ${newOrders.length} SO baru`)
+          
           // Append SO baru ke displayOrders tanpa reset — animasi marquee tidak restart
           const existingDisplayMap = new Map(
             displayOrdersRef.current.map((o) => [String(o.so_id || o.id || o.transNumber), true])
@@ -512,6 +559,7 @@ const SchedulePage = () => {
             return !existingDisplayMap.has(key)
           })
           if (brandNewOrders.length > 0) {
+            console.log(`[SchedulePage] Menambahkan ${brandNewOrders.length} SO baru ke marquee (tanpa restart animasi)`)
             displayOrdersRef.current = [...displayOrdersRef.current, ...brandNewOrders]
             setDisplayOrders((prev) => [...prev, ...brandNewOrders])
           }
@@ -1235,9 +1283,12 @@ const SchedulePage = () => {
                 >
                   {[...filteredAndSortedOrders, ...filteredAndSortedOrders].map((order, index) => {
                     const statusConfig = getStatusConfig(order.status)
+                    // Gunakan key yang stabil berdasarkan ID unik SO, bukan index
+                    // Tambahkan suffix untuk duplikasi marquee (first/second loop)
+                    const uniqueKey = `${order.so_id || order.id || order.transNumber}-${index < filteredAndSortedOrders.length ? 'a' : 'b'}`
                     return (
                       <div
-                        key={`${order.id || order.transNumber || 'row'}-${index}`}
+                        key={uniqueKey}
                         className={`hover:bg-slate-800/40 transition-colors border-l-2 border-transparent hover:border-cyan-500/40 ${
                           index % 2 === 1 ? 'bg-slate-800/20' : ''
                         }`}
