@@ -932,10 +932,11 @@ const SchedulePage = () => {
                         </p>
                       </div>
 
-                      {/* SO list — wrap tanpa scroll */}
+                      {/* SO list — scroll vertikal, max height agar tidak meluber */}
                       <div
                         ref={soListRef}
-                        className="flex items-center gap-1.5 flex-wrap flex-1 min-w-0"
+                        className="flex items-center gap-1.5 flex-wrap flex-1 min-w-0 max-h-16 overflow-y-auto"
+                        style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(239,68,68,0.3) transparent' }}
                       >
                         {overdueReminder.orders.map((o, i) => {
                           const soNumber = o.transNumber || o.nomor_so || ''
