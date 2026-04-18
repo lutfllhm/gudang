@@ -36,8 +36,13 @@ const TOAST_DURATION_MS = 15000
 const KNOWN_SO_KEY = 'schedule_known_so_ids'
 const INITIAL_LIMIT = 5000
 const OVERDUE_DAYS = 3
-// Jam reminder WIB (UTC+7): 09:00, 11:00, 14:00
-const REMINDER_HOURS_WIB = [9, 11, 14]
+// Jam reminder WIB (UTC+7): 08:50, 11:00, 14:00
+// Format: { hour, minute } — trigger dalam window ±2 menit dari waktu yang ditentukan
+const REMINDER_TIMES_WIB = [
+  { hour: 8,  minute: 50 },
+  { hour: 11, minute: 0  },
+  { hour: 14, minute: 0  },
+]
 // Safety cap so we don't accidentally request an absurdly huge payload.
 // If total is bigger than this cap, we fall back to page-by-page fetching.
 const MAX_LIMIT = 50000
@@ -273,7 +278,7 @@ const SchedulePage = () => {
   }, [playAllTTSSegments])
 
   // Cek SO yang telat dan jalankan reminder jika sudah waktunya
-  // Cek SO yang telat dan jalankan reminder hanya pada jam 09:00, 11:00, 14:00 WIB
+  // Cek SO yang telat dan jalankan reminder hanya pada jam 08:50, 11:00, 14:00 WIB
   const checkAndTriggerOverdueReminder = useCallback((allOrders) => {
     const now = Date.now()
     const threeDaysMs = OVERDUE_DAYS * 24 * 60 * 60 * 1000
@@ -297,11 +302,15 @@ const SchedulePage = () => {
     const hourWIB = nowWIB.getUTCHours()
     const minuteWIB = nowWIB.getUTCMinutes()
     const dateKey = nowWIB.toISOString().slice(0, 10) // YYYY-MM-DD
-    const reminderKey = `${dateKey}-${hourWIB}` // unik per hari per jam
 
-    // Hanya trigger dalam window 0-2 menit setelah jam reminder
-    const isReminderHour = REMINDER_HOURS_WIB.includes(hourWIB) && minuteWIB < 2
+    // Cari apakah waktu sekarang masuk window ±2 menit dari salah satu REMINDER_TIMES_WIB
+    const matchedTime = REMINDER_TIMES_WIB.find(({ hour, minute }) => {
+      if (hourWIB !== hour) return false
+      return minuteWIB >= minute && minuteWIB < minute + 2
+    })
+    const reminderKey = matchedTime ? `${dateKey}-${matchedTime.hour}-${matchedTime.minute}` : ''
     const alreadyPlayed = lastReminderRef.current === reminderKey
+    const isReminderHour = !!matchedTime
 
     if (isReminderHour && !alreadyPlayed) {
       lastReminderRef.current = reminderKey
