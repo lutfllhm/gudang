@@ -139,6 +139,10 @@ const SchedulePage = () => {
   const marqueeRef = useRef(null)
   const [marqueeDurationSec, setMarqueeDurationSec] = useState(600)
   const lastReminderRef = useRef('') // format: "YYYY-MM-DD-HH" jam terakhir yang sudah diputar
+  // displayOrders: list yang dipakai marquee — hanya append saat SO baru, tidak replace
+  // sehingga animasi marquee tidak restart dari awal
+  const [displayOrders, setDisplayOrders] = useState([])
+  const displayOrdersRef = useRef([])
 
   const playNotificationSound = useCallback(() => {
     try {
@@ -464,12 +468,15 @@ const SchedulePage = () => {
           const existingMap = new Map(prev.map((o) => [String(o.so_id || o.id || o.transNumber), o]))
           allOrders.forEach((o) => {
             const key = String(o.so_id || o.id || o.transNumber)
-            existingMap.set(key, o) // update existing atau tambah baru
+            existingMap.set(key, o)
           })
           return Array.from(existingMap.values())
         })
       } else {
         setOrders(allOrders)
+        // First load / ganti bulan: reset displayOrders sekalian
+        displayOrdersRef.current = allOrders
+        setDisplayOrders(allOrders)
       }
 
       // Deteksi SO baru (skip saat first load)
@@ -480,12 +487,24 @@ const SchedulePage = () => {
           return id && !knownIds.has(String(id))
         })
         if (newOrders.length > 0) {
+          // Append SO baru ke displayOrders tanpa reset — animasi marquee tidak restart
+          const existingDisplayMap = new Map(
+            displayOrdersRef.current.map((o) => [String(o.so_id || o.id || o.transNumber), true])
+          )
+          const brandNewOrders = newOrders.filter((o) => {
+            const key = String(o.so_id || o.id || o.transNumber)
+            return !existingDisplayMap.has(key)
+          })
+          if (brandNewOrders.length > 0) {
+            displayOrdersRef.current = [...displayOrdersRef.current, ...brandNewOrders]
+            setDisplayOrders((prev) => [...prev, ...brandNewOrders])
+          }
+
           const toasts = newOrders.slice(0, 5).map((o, i) => ({
             id: `${o.so_id || o.id || o.transNumber}-${Date.now()}-${i}`,
             soNumber: o.transNumber || o.nomor_so || o.so_id,
             customer: o.customerName || o.nama_pelanggan || '—',
           }))
-          // Masukkan ke queue, tampilkan satu per satu
           const wasEmpty = toastQueueRef.current.length === 0 && !activeToast
           toastQueueRef.current.push(...toasts)
           if (wasEmpty) {
@@ -535,10 +554,17 @@ const SchedulePage = () => {
     }
   }, [month, playNotificationSound, dismissToast, checkAndTriggerOverdueReminder, showNextToast, activeToast])
 
+  // Reset displayOrders saat bulan berubah agar marquee mulai fresh
+  useEffect(() => {
+    displayOrdersRef.current = []
+    setDisplayOrders([])
+    isFirstLoad.current = true
+  }, [month])
+
   useEffect(() => {
     fetchOrders()
     const timeInterval = setInterval(() => setCurrentTime(new Date()), 1000)
-    
+
     // Auto fullscreen saat halaman dibuka
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch((err) => {
@@ -546,7 +572,7 @@ const SchedulePage = () => {
       })
       setIsFullscreen(true)
     }
-    
+
     return () => clearInterval(timeInterval)
   }, [fetchOrders])
 
@@ -647,18 +673,18 @@ const SchedulePage = () => {
   }
 
   const filteredAndSortedOrders = useMemo(() => {
-    let list = orders.filter((o) => {
+    // Pakai displayOrders agar marquee tidak restart saat SO baru append
+    let list = displayOrders.filter((o) => {
       if (filterStatus === 'all') return true
       if (filterStatus === 'active') {
-        // Hanya tampilkan pending dan processing, exclude completed
         const group = getOrderStatusGroup(o)
         return group === 'pending' || group === 'processing'
       }
       return getOrderStatusGroup(o) === filterStatus
     })
-    
+
     console.log('[SchedulePage] Filtered orders count:', list.length, 'Filter:', filterStatus)
-    
+
     const dir = sortDir === 'asc' ? 1 : -1
     list = [...list].sort((a, b) => {
       const tA = new Date(getOrderTimeValue(a)).getTime()
@@ -679,7 +705,7 @@ const SchedulePage = () => {
       }
     })
     return list
-  }, [orders, filterStatus, sortBy, sortDir])
+  }, [displayOrders, filterStatus, sortBy, sortDir])
 
   const updateMarqueeDuration = useCallback(() => {
     const el = marqueeRef.current
