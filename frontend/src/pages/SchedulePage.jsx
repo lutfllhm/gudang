@@ -177,10 +177,14 @@ const SchedulePage = () => {
     const intro = `Perhatian, terdapat ${overdueOrders.length} sales order yang belum diproses dan telah melewati batas waktu.`
     const segments = [intro]
 
-    // Setiap SO jadi segmen sendiri: sebut nama customer saja
+    // Setiap SO jadi segmen sendiri: sebut 5 digit terakhir nomor SO lalu nama customer
     overdueOrders.forEach((o) => {
+      const soNumber = o.transNumber || o.nomor_so || ''
+      const soSuffix = soNumber ? soNumber.slice(-5) : ''
       const customer = o.customerName || o.nama_pelanggan || ''
-      if (customer) segments.push(`${customer}.`)
+      const soText = soSuffix ? `Nomor SO ${soSuffix.split('').join(' ')},` : ''
+      const customerText = customer ? ` ${customer}.` : '.'
+      if (soText || customer) segments.push(`${soText}${customerText}`)
     })
 
     segments.push('Mohon segera ditindaklanjuti.')
