@@ -2,7 +2,6 @@ const SalesOrderService = require('../services/SalesOrderService');
 const QueueService = require('../services/QueueService');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { success, paginated } = require('../utils/response');
-const SalesOrderHistory = require('../models/SalesOrderHistory');
 
 class SalesOrderController {
   static getAll = asyncHandler(async (req, res) => {
@@ -25,28 +24,6 @@ class SalesOrderController {
   static getById = asyncHandler(async (req, res) => {
     const order = await SalesOrderService.getById(req.params.id);
     success(res, order);
-  });
-
-  static getHistory = asyncHandler(async (req, res) => {
-    const history = await SalesOrderHistory.findBySalesOrderId(req.params.id);
-    const transformedHistory = history.map(h => SalesOrderHistory.transformToApi(h));
-    success(res, transformedHistory);
-  });
-
-  static addHistory = asyncHandler(async (req, res) => {
-    const { status, description, invoiceNumber } = req.body;
-    const order = await SalesOrderService.getById(req.params.id);
-    
-    const historyId = await SalesOrderHistory.create({
-      sales_order_id: order.id,
-      so_id: order.soId,
-      status,
-      description,
-      invoice_number: invoiceNumber,
-      created_by: req.user?.nama || 'admin'
-    });
-
-    success(res, { id: historyId }, 'History added successfully');
   });
 
   static search = asyncHandler(async (req, res) => {
@@ -95,12 +72,6 @@ class SalesOrderController {
       started: true,
       message: 'Sales orders sync dimulai di background. Refresh halaman nanti untuk melihat hasil.'
     }, 'Sales orders sync started');
-  });
-
-  static deleteHistory = asyncHandler(async (req, res) => {
-    const { historyId } = req.params;
-    await SalesOrderHistory.deleteBySalesOrderId(historyId);
-    success(res, null, 'History deleted successfully');
   });
 }
 

@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react'
 import DashboardLayout from '../components/DashboardLayout'
 import LoadingSpinner from '../components/LoadingSpinner'
-import SalesOrderHistoryModal from '../components/SalesOrderHistoryModal'
 import usePageTitle from '../hooks/usePageTitle'
 import api from '../utils/api'
 import { formatCurrency, formatDate, debounce, getStatusColor } from '../utils/helpers'
-import { Search, RefreshCw, ShoppingCart, History } from 'lucide-react'
+import { Search, RefreshCw, ShoppingCart } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const toYyyyMm = (d) => {
@@ -29,9 +28,6 @@ const SalesOrdersPage = () => {
   const [syncing, setSyncing] = useState(false)
   const [search, setSearch] = useState('')
   const [month, setMonth] = useState('all') // Default ke 'all' untuk menampilkan semua data
-  const [selectedOrder, setSelectedOrder] = useState(null)
-  const [showHistoryModal, setShowHistoryModal] = useState(false)
-  const [orderHistories, setOrderHistories] = useState({}) // Store histories for each order
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 20,
@@ -42,36 +38,6 @@ const SalesOrdersPage = () => {
   useEffect(() => {
     fetchOrders()
   }, [pagination.page, search, month])
-
-  // Fetch history for orders with "Sebagian diproses" status
-  useEffect(() => {
-    const fetchHistoriesForOrders = async () => {
-      const partialOrders = orders.filter(order => {
-        const s = (order.status || '').toLowerCase().trim()
-        return s.includes('sebagian') || s.includes('partial')
-      })
-
-      for (const order of partialOrders) {
-        if (!orderHistories[order.id]) {
-          try {
-            const response = await api.get(`/sales-orders/${order.id}/history`)
-            if (response.data && response.data.success) {
-              setOrderHistories(prev => ({
-                ...prev,
-                [order.id]: response.data.data || []
-              }))
-            }
-          } catch (error) {
-            console.error(`Failed to fetch history for order ${order.id}:`, error)
-          }
-        }
-      }
-    }
-
-    if (orders.length > 0) {
-      fetchHistoriesForOrders()
-    }
-  }, [orders])
 
   const fetchOrders = async () => {
     try {
@@ -147,11 +113,6 @@ const SalesOrdersPage = () => {
   const handleMonthChange = (value) => {
     setMonth(value)
     setPagination({ ...pagination, page: 1 })
-  }
-
-  const handleShowHistory = (order) => {
-    setSelectedOrder(order)
-    setShowHistoryModal(true)
   }
 
   return (
@@ -240,12 +201,6 @@ const SalesOrdersPage = () => {
                       <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">
                         Status
                       </th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                        History Faktur Penjualan
-                      </th>
-                      <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">
-                        Actions
-                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-100">
@@ -295,68 +250,6 @@ const SalesOrdersPage = () => {
                             })()}
                           </span>
                         </td>
-                        <td className="px-6 py-5">
-                          {(() => {
-                            const s = (order.status || '').toLowerCase().trim()
-                            const isPartial = s.includes('sebagian') || s.includes('partial')
-                            const histories = orderHistories[order.id] || []
-                            
-                            if (!isPartial) {
-                              return <span className="text-gray-400 text-sm italic">-</span>
-                            }
-
-                            if (histories.length === 0) {
-                              return (
-                                <div className="text-xs text-gray-500 italic">
-                                  Belum ada history
-                                </div>
-                              )
-                            }
-
-                            return (
-                              <div className="space-y-2">
-                                {histories.slice(0, 2).map((history, idx) => (
-                                  <div key={history.id} className="text-xs border-l-2 border-blue-400 pl-2 py-1">
-                                    {history.invoiceNumber && (
-                                      <div className="font-bold text-blue-700">
-                                        {history.invoiceNumber}
-                                      </div>
-                                    )}
-                                    <div className="text-gray-700 line-clamp-2">
-                                      {history.description}
-                                    </div>
-                                    {history.createdBy && history.createdBy !== 'system' && (
-                                      <div className="text-gray-500 mt-1">
-                                        oleh {history.createdBy}
-                                      </div>
-                                    )}
-                                    <div className="text-gray-400 text-[10px] mt-1">
-                                      {formatDate(history.createdAt)} {new Date(history.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-                                    </div>
-                                  </div>
-                                ))}
-                                {histories.length > 2 && (
-                                  <button
-                                    onClick={() => handleShowHistory(order)}
-                                    className="text-xs text-blue-600 font-semibold hover:text-blue-800"
-                                  >
-                                    +{histories.length - 2} lainnya →
-                                  </button>
-                                )}
-                              </div>
-                            )
-                          })()}
-                        </td>
-                        <td className="px-6 py-5 text-center">
-                          <button
-                            onClick={() => handleShowHistory(order)}
-                            className="inline-flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-all text-sm"
-                            title="Lihat History & Schedule"
-                          >
-                            <History className="w-4 h-4" />
-                            History
-                          </button>
-                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -390,16 +283,6 @@ const SalesOrdersPage = () => {
             </>
           )}
         </div>
-
-        {/* History Modal */}
-        <SalesOrderHistoryModal
-          isOpen={showHistoryModal}
-          onClose={() => {
-            setShowHistoryModal(false)
-            setSelectedOrder(null)
-          }}
-          order={selectedOrder}
-        />
       </div>
     </DashboardLayout>
   )
