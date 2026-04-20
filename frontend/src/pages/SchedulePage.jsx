@@ -186,22 +186,6 @@ const SchedulePage = () => {
     } catch (_) {}
   }, [])
 
-  // Play TTS "SO masuk" setelah bunyi notifikasi
-  const playNewSOVoice = useCallback(async () => {
-    try {
-      const token = localStorage.getItem('accessToken')
-      if (!token) return
-      
-      // Tunggu sebentar agar bunyi notifikasi selesai dulu (~1 detik)
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      // Panggil TTS dengan teks "SO masuk"
-      await fetchAndPlayTTS('SO masuk', token)
-    } catch (err) {
-      console.warn('[playNewSOVoice] Gagal memutar suara SO masuk:', err)
-    }
-  }, [fetchAndPlayTTS])
-
   // index SO yang sedang dibacakan (-1 = tidak ada / intro/outro)
   const [activeSOIndex, setActiveSOIndex] = useState(-1)
   const soListRef = useRef(null)
@@ -234,6 +218,22 @@ const SchedulePage = () => {
       // Setelah retry tetap gagal, lanjut ke segmen berikutnya
     }
   }, [])
+
+  // Play TTS "SO masuk" setelah bunyi notifikasi
+  const playNewSOVoice = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('accessToken')
+      if (!token) return
+      
+      // Tunggu sebentar agar bunyi notifikasi selesai dulu (~1 detik)
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      // Panggil TTS dengan teks "SO masuk"
+      await fetchAndPlayTTS('SO masuk', token)
+    } catch (err) {
+      console.warn('[playNewSOVoice] Gagal memutar suara SO masuk:', err)
+    }
+  }, [fetchAndPlayTTS])
 
   // Pecah array SO menjadi segmen-segmen teks ≤ 180 karakter agar tidak terpotong Google TTS
   const buildTTSSegments = useCallback((overdueOrders) => {
