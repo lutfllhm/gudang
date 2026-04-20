@@ -240,6 +240,8 @@ const SchedulePage = () => {
     const intro = `Perhatian, terdapat ${overdueOrders.length} sales order yang belum diproses dan telah melewati batas waktu.`
     const segments = [intro]
 
+    console.log(`[buildTTSSegments] Memproses ${overdueOrders.length} SO overdue untuk TTS`)
+
     // Setiap SO jadi segmen sendiri: sebut 5 digit terakhir nomor SO lalu nama customer
     // PENTING: Bacakan SEMUA SO tanpa kecuali
     overdueOrders.forEach((o, index) => {
@@ -267,6 +269,7 @@ const SchedulePage = () => {
     })
 
     segments.push('Mohon segera ditindaklanjuti.')
+    console.log(`[buildTTSSegments] Total ${segments.length} segmen dibuat (1 intro + ${overdueOrders.length} SO + 1 outro)`)
     return segments
   }, [])
 
@@ -276,6 +279,7 @@ const SchedulePage = () => {
     const segments = buildTTSSegments(overdueOrders)
 
     console.log(`[TTS] Akan membacakan ${overdueOrders.length} SO overdue dengan ${segments.length} segmen (termasuk intro & outro)`)
+    console.log(`[TTS] Detail SO yang akan dibacakan:`, overdueOrders.map((o, i) => `${i+1}. ${o.transNumber || o.nomor_so} - ${o.customerName || o.nama_pelanggan}`))
 
     for (let i = 0; i < segments.length; i++) {
       // segments[0] = intro, segments[1..n-1] = per SO, segments[n] = outro
@@ -297,7 +301,7 @@ const SchedulePage = () => {
       }
     }
     
-    console.log('[TTS] Selesai membacakan semua segmen')
+    console.log(`[TTS] ✅ Selesai membacakan semua ${segments.length} segmen (${overdueOrders.length} SO)`)
     setActiveSOIndex(-1)
   }, [fetchAndPlayTTS, buildTTSSegments])
 
@@ -413,7 +417,10 @@ const SchedulePage = () => {
       // HANYA ambil yang pending (Menunggu Diproses), TIDAK termasuk processing (Sebagian Diproses)
       if (group !== 'pending') return false
       const dateStr = o.transDate || o.tanggal_so
-      if (!dateStr) return false
+      if (!dateStr) {
+        console.warn(`[Reminder] SO ${o.transNumber || o.nomor_so} tidak punya tanggal, skip`)
+        return false
+      }
       const orderDate = new Date(dateStr).getTime()
       const isOverdue = now - orderDate >= threeDaysMs
       return isOverdue
@@ -421,6 +428,15 @@ const SchedulePage = () => {
 
     console.log(`[Reminder] Status breakdown: Pending=${statusBreakdown.pending}, Processing=${statusBreakdown.processing}, Completed=${statusBreakdown.completed}`)
     console.log(`[Reminder] Dari ${ordersToCheck.length} SO di schedule → ${statusBreakdown.pending} "Menunggu Diproses" → ${overdueOrders.length} overdue (>= ${OVERDUE_DAYS} hari)`)
+    
+    // Log detail SO overdue untuk debugging
+    if (overdueOrders.length > 0) {
+      console.log(`[Reminder] Detail ${overdueOrders.length} SO overdue:`)
+      overdueOrders.forEach((o, i) => {
+        const daysDiff = Math.floor((now - new Date(o.transDate || o.tanggal_so).getTime()) / (24 * 60 * 60 * 1000))
+        console.log(`  ${i+1}. ${o.transNumber || o.nomor_so} - ${o.customerName || o.nama_pelanggan} (${daysDiff} hari)`)
+      })
+    }
 
     if (overdueOrders.length === 0) {
       setOverdueReminder(null)
