@@ -12,7 +12,6 @@ router.get('/stats', SalesOrderController.getStats);
 router.get('/pending', SalesOrderController.getPending);
 router.get('/top-customers', SalesOrderController.getTopCustomers);
 router.get('/search', SalesOrderController.search);
-router.get('/:soId/invoices', SalesOrderController.getInvoices);
 router.get('/:id', SalesOrderController.getById);
 router.put('/:id/status', SalesOrderController.updateStatus);
 
