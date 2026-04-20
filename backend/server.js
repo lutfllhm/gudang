@@ -79,6 +79,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', require('./src/routes/authRoutes'));
 app.use('/api/items', require('./src/routes/itemRoutes'));
 app.use('/api/sales-orders', require('./src/routes/salesOrderRoutes'));
+app.use('/api/sales-invoice-history', require('./src/routes/salesInvoiceHistory'));
 app.use('/api/dashboard', require('./src/routes/dashboardRoutes'));
 app.use('/api/users', require('./src/routes/userRoutes'));
 app.use('/api/accurate', require('./src/routes/accurateRoutes'));

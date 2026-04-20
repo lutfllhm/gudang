@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import DashboardLayout from '../components/DashboardLayout'
 import LoadingSpinner from '../components/LoadingSpinner'
+import SalesInvoiceHistory from '../components/SalesInvoiceHistory'
 import usePageTitle from '../hooks/usePageTitle'
 import api from '../utils/api'
 import { formatCurrency, formatDate, debounce, getStatusColor } from '../utils/helpers'
@@ -225,30 +226,38 @@ const SalesOrdersPage = () => {
                         <td className="px-6 py-5 text-right text-lg font-bold text-green-600">
                           {formatCurrency(order.totalAmount)}
                         </td>
-                        <td className="px-6 py-5 text-center">
-                          <span
-                            className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold tracking-wider badge-${getStatusColor(order.status || 'menunggu diproses')}`}
-                          >
-                            {(() => {
-                              const s = (order.status || '').toLowerCase().trim()
-                              
-                              // Completed
-                              if (s.includes('terproses') || s.includes('completed') || s.includes('selesai') || 
-                                  s.includes('proceed') || s.includes('closed') || s.includes('close') || 
-                                  s.includes('finished') || s.includes('done')) {
-                                return 'Terproses'
-                              }
-                              
-                              // Processing - penting untuk "Sebagian diproses" dari Accurate
-                              if (s.includes('sebagian') || s.includes('processing') || s.includes('diproses') || 
-                                  s.includes('partial') || s.includes('in progress')) {
-                                return 'Sebagian diproses'
-                              }
-                              
-                              // Pending - termasuk queue dan status lain
-                              return 'Menunggu diproses'
-                            })()}
-                          </span>
+                        <td className="px-6 py-5">
+                          <div className="flex flex-col items-center gap-2">
+                            <span
+                              className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold tracking-wider badge-${getStatusColor(order.status || 'menunggu diproses')}`}
+                            >
+                              {(() => {
+                                const s = (order.status || '').toLowerCase().trim()
+                                
+                                // Completed
+                                if (s.includes('terproses') || s.includes('completed') || s.includes('selesai') || 
+                                    s.includes('proceed') || s.includes('closed') || s.includes('close') || 
+                                    s.includes('finished') || s.includes('done')) {
+                                  return 'Terproses'
+                                }
+                                
+                                // Processing - penting untuk "Sebagian diproses" dari Accurate
+                                if (s.includes('sebagian') || s.includes('processing') || s.includes('diproses') || 
+                                    s.includes('partial') || s.includes('in progress')) {
+                                  return 'Sebagian diproses'
+                                }
+                                
+                                // Pending - termasuk queue dan status lain
+                                return 'Menunggu diproses'
+                              })()}
+                            </span>
+                            
+                            {/* Tampilkan history di bawah status */}
+                            <SalesInvoiceHistory 
+                              soId={order.soId} 
+                              status={order.status}
+                            />
+                          </div>
                         </td>
                       </tr>
                     ))}

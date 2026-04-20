@@ -1,5 +1,6 @@
 const SalesOrderService = require('../services/SalesOrderService');
 const QueueService = require('../services/QueueService');
+const SalesInvoiceHistory = require('../models/SalesInvoiceHistory');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { success, paginated } = require('../utils/response');
 
@@ -23,7 +24,14 @@ class SalesOrderController {
 
   static getById = asyncHandler(async (req, res) => {
     const order = await SalesOrderService.getById(req.params.id);
-    success(res, order);
+    
+    // Get invoice history for this order
+    const history = await SalesInvoiceHistory.getBySalesOrderId(req.params.id);
+    
+    success(res, {
+      ...order,
+      invoiceHistory: history
+    });
   });
 
   static search = asyncHandler(async (req, res) => {
