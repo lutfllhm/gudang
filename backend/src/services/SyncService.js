@@ -4,6 +4,7 @@ const logger = require('../utils/logger');
 const QueueService = require('./QueueService');
 const ItemService = require('./ItemService');
 const SalesOrderService = require('./SalesOrderService');
+const CustomerService = require('./CustomerService');
 
 class SyncService {
   constructor() {
@@ -132,6 +133,19 @@ class SyncService {
       } catch (error) {
         logger.error('Sales orders sync failed:', error);
         throw error; // Re-throw to be caught by outer catch
+      }
+
+      // Sync invoice history (optional, tidak throw error jika gagal)
+      try {
+        logger.info('Starting invoice history sync');
+        const historyResult = await CustomerService.syncInvoiceHistory(userId, {
+          pageSize: 50 // Limit untuk auto sync
+        });
+        totalRecords += historyResult.synced || 0;
+        logger.info('Invoice history sync completed', { synced: historyResult.synced });
+      } catch (error) {
+        logger.error('Invoice history sync failed:', error);
+        // Don't throw, continue with sync completion
       }
 
       const duration = Math.floor((Date.now() - startTime) / 1000);

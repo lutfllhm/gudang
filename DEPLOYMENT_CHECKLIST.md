@@ -1,283 +1,223 @@
-# 📋 Deployment Checklist - Sales Invoice History
+# Deployment Checklist - Histori Faktur Penjualan
 
-## Pre-Deployment
+## Pre-Deployment ✅
 
-### Persiapan
 - [ ] Backup database sudah dibuat
-- [ ] Code sudah di-pull dari repository
-- [ ] Environment variables sudah dicek
-- [ ] Team sudah diinformasikan tentang deployment
-- [ ] Maintenance window sudah dijadwalkan (jika perlu)
-
-### Verifikasi File
-- [ ] `backend/database/add-sales-invoice-history.sql` ada
-- [ ] `backend/src/models/SalesInvoiceHistory.js` ada
-- [ ] `backend/src/services/CustomerService.js` ada
-- [ ] `backend/src/controllers/SalesInvoiceHistoryController.js` ada
-- [ ] `backend/src/routes/salesInvoiceHistory.js` ada
-- [ ] `backend/server.js` sudah updated
-- [ ] `frontend/src/components/SalesInvoiceHistory.jsx` ada
-- [ ] `frontend/src/pages/SalesOrdersPage.jsx` sudah updated
-
----
+- [ ] Semua file sudah di-commit ke git
+- [ ] VPS accessible (ssh root@212.85.26.166)
+- [ ] Docker dan docker-compose running di VPS
 
 ## Deployment Steps
 
-### 1. Backup (CRITICAL!)
-```bash
-docker exec iware-mysql mysqldump -u root -p iware_warehouse > backup_$(date +%Y%m%d_%H%M%S).sql
-```
-- [ ] Backup berhasil dibuat
-- [ ] File backup sudah dicek (tidak 0 bytes)
-- [ ] Backup disimpan di lokasi aman
-
-### 2. Pull Code
-```bash
-git pull origin main
-```
-- [ ] Code berhasil di-pull
-- [ ] Tidak ada conflict
-- [ ] Semua file baru sudah ada
-
-### 3. Database Migration
-```bash
-docker cp backend/database/add-sales-invoice-history.sql iware-mysql:/tmp/
-docker exec -it iware-mysql mysql -u root -p iware_warehouse -e "source /tmp/add-sales-invoice-history.sql"
-```
-- [ ] File SQL berhasil di-copy ke container
+### 1. Database Migration
+- [ ] File `add-sales-invoice-history.sql` uploaded ke VPS
 - [ ] Migration berhasil dijalankan
-- [ ] Tidak ada error message
-- [ ] Tabel `sales_invoice_history` sudah dibuat
-- [ ] View `v_sales_invoice_history` sudah dibuat
+- [ ] Tabel `sales_invoice_history` sudah ada
+- [ ] View `v_sales_invoice_history` sudah ada
 
-### 4. Verify Database
+**Verify:**
 ```bash
-docker exec -it iware-mysql mysql -u root -p -e "USE iware_warehouse; SHOW TABLES LIKE 'sales_invoice_history';"
-docker exec -it iware-mysql mysql -u root -p -e "USE iware_warehouse; DESCRIBE sales_invoice_history;"
+docker-compose exec db mysql -u root -p accurate_sync -e "SHOW TABLES LIKE '%invoice%';"
 ```
-- [ ] Tabel ada di database
-- [ ] Struktur tabel sesuai
-- [ ] View bisa di-query
 
-### 5. Rebuild Backend
+### 2. Backend Files Upload
+- [ ] `SalesInvoiceHistoryController.js` uploaded
+- [ ] `SalesInvoiceHistory.js` (model) uploaded
+- [ ] `CustomerService.js` uploaded
+- [ ] `SyncService.js` uploaded
+- [ ] `salesInvoiceHistory.js` (routes) uploaded
+
+**Verify:**
 ```bash
-docker-compose build --no-cache backend
-docker-compose up -d backend
+ls -la /root/accurate-sync/backend/src/controllers/SalesInvoiceHistoryController.js
+ls -la /root/accurate-sync/backend/src/models/SalesInvoiceHistory.js
+ls -la /root/accurate-sync/backend/src/services/CustomerService.js
+ls -la /root/accurate-sync/backend/src/services/SyncService.js
+ls -la /root/accurate-sync/backend/src/routes/salesInvoiceHistory.js
 ```
-- [ ] Build berhasil tanpa error
-- [ ] Container backend running
-- [ ] Tidak ada error di logs
 
-### 6. Rebuild Frontend
+### 3. Backend Restart
+- [ ] Backend container restarted
+- [ ] Backend container status: Up
+- [ ] No errors in logs
+
+**Verify:**
 ```bash
-docker-compose build --no-cache frontend
-docker-compose up -d frontend
+docker-compose ps | grep backend
+docker-compose logs --tail=50 backend
 ```
-- [ ] Build berhasil tanpa error
-- [ ] Container frontend running
-- [ ] Tidak ada error di logs
 
-### 7. Check Container Status
+## Post-Deployment Testing
+
+### 4. Database Verification
+- [ ] Table structure correct
+- [ ] View accessible
+- [ ] Can insert test record
+
+**Verify:**
 ```bash
-docker-compose ps
+docker-compose exec db mysql -u root -p accurate_sync -e "DESCRIBE sales_invoice_history;"
+docker-compose exec db mysql -u root -p accurate_sync -e "SELECT * FROM v_sales_invoice_history LIMIT 1;"
 ```
-- [ ] Backend: Up
-- [ ] Frontend: Up
-- [ ] MySQL: Up
-- [ ] Semua port sudah mapped
 
----
+### 5. API Testing
+- [ ] Health endpoint working
+- [ ] Login endpoint working
+- [ ] Token obtained successfully
 
-## Post-Deployment Verification
-
-### Backend Health Check
+**Verify:**
 ```bash
-curl http://localhost:5000/health
-```
-- [ ] Response: `{"success":true,...}`
-- [ ] Status code: 200
-- [ ] Uptime > 0
-
-### API Endpoint Test
-```bash
-# Login
-TOKEN=$(curl -X POST http://localhost:5000/api/auth/login \
+curl http://212.85.26.166:3000/health
+curl -X POST http://212.85.26.166:3000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"superadmin@iware.id","password":"admin123"}' \
-  | jq -r '.data.token')
-
-# Test endpoint
-curl "http://localhost:5000/api/sales-invoice-history/recent?limit=5" \
-  -H "Authorization: Bearer $TOKEN"
+  -d '{"username":"admin","password":"your_password"}'
 ```
-- [ ] Login berhasil, dapat token
-- [ ] Endpoint `/sales-invoice-history/recent` accessible
-- [ ] Response format benar
-- [ ] Status code: 200
 
-### Frontend Test
-- [ ] Buka `http://your-vps-ip:3000` di browser
-- [ ] Login berhasil
-- [ ] Dashboard loading dengan benar
-- [ ] Menu Sales Orders accessible
-- [ ] Tabel sales orders tampil
-- [ ] Tidak ada error di browser console
+### 6. Invoice History Endpoints
+- [ ] GET /api/sales-invoice-history/recent - Working
+- [ ] GET /api/sales-invoice-history/order/:orderId - Working
+- [ ] GET /api/sales-invoice-history/so/:soId - Working
+- [ ] GET /api/sales-invoice-history/status/:status - Working
+- [ ] POST /api/sales-invoice-history/sync - Working
 
-### Feature Test
-- [ ] Cari sales order dengan status "Sebagian diproses"
-- [ ] History muncul di bawah status badge
-- [ ] Format history benar: "Buat Faktur Penjualan [nomor] oleh [nama]"
-- [ ] Tanggal tampil dengan benar
-- [ ] Styling sesuai (blue box dengan icon user)
-
-### Logs Check
+**Verify:**
 ```bash
-docker-compose logs --tail=100 backend
-```
-- [ ] Tidak ada error message
-- [ ] Database connected successfully
-- [ ] Server running message muncul
-- [ ] Tidak ada warning kritis
+# Get recent (replace YOUR_TOKEN)
+curl -X GET "http://212.85.26.166:3000/api/sales-invoice-history/recent?limit=5" \
+  -H "Authorization: Bearer YOUR_TOKEN"
 
----
-
-## Optional: Sync History
-
-```bash
-curl -X POST http://localhost:5000/api/sales-invoice-history/sync \
-  -H "Authorization: Bearer $TOKEN" \
+# Manual sync
+curl -X POST http://212.85.26.166:3000/api/sales-invoice-history/sync \
+  -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"startDate":"2026-03-01","endDate":"2026-04-20","pageSize":100}'
+  -d '{"startDate":"2026-01-01","endDate":"2026-12-31","pageSize":100}'
 ```
-- [ ] Sync request berhasil
-- [ ] Response: `{"success":true,...}`
-- [ ] Data history masuk ke database
-- [ ] History tampil di frontend
 
----
+### 7. Auto Sync Integration
+- [ ] Auto sync enabled in config
+- [ ] Invoice history sync runs with auto sync
+- [ ] No errors in sync logs
 
-## Performance Check
-
-### Resource Usage
+**Verify:**
 ```bash
-docker stats --no-stream
+# Check sync config
+curl -X GET http://212.85.26.166:3000/api/sync/status \
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# Trigger manual sync and check logs
+docker-compose logs -f backend | grep -i "invoice\|history"
 ```
-- [ ] CPU usage normal (< 80%)
-- [ ] Memory usage normal (< 80%)
+
+## Monitoring Setup
+
+### 8. Logging
+- [ ] Invoice history logs visible
+- [ ] Error logs configured
+- [ ] Log rotation working
+
+**Verify:**
+```bash
+cd /root/accurate-sync/backend/logs
+ls -lh | grep invoice
+tail -f all-*.log | grep -i invoice
+```
+
+### 9. Performance
+- [ ] API response time < 2s
+- [ ] Database queries optimized
 - [ ] No memory leaks
 
-### Response Time
-- [ ] API response < 1 second
-- [ ] Frontend load < 3 seconds
-- [ ] Database query < 500ms
+**Verify:**
+```bash
+# Check response time
+time curl -X GET "http://212.85.26.166:3000/api/sales-invoice-history/recent?limit=10" \
+  -H "Authorization: Bearer YOUR_TOKEN"
 
----
+# Check container resources
+docker stats --no-stream
+```
 
 ## Rollback Plan (If Needed)
 
-### Jika Ada Masalah Kritis:
+### If Something Goes Wrong:
 
-1. **Stop Containers**
-   ```bash
-   docker-compose down
-   ```
-   - [ ] Containers stopped
+1. **Restore Database:**
+```bash
+cd /root/accurate-sync/backend
+docker-compose exec -T db mysql -u root -p accurate_sync < backup_YYYYMMDD.sql
+```
 
-2. **Restore Database**
-   ```bash
-   docker exec -i iware-mysql mysql -u root -p iware_warehouse < backup_20260420_143000.sql
-   ```
-   - [ ] Database restored
-   - [ ] Data verified
+2. **Revert Files:**
+```bash
+cd /root/accurate-sync
+git checkout HEAD~1 backend/src/
+```
 
-3. **Revert Code**
-   ```bash
-   git revert HEAD
-   ```
-   - [ ] Code reverted
-   - [ ] Commit pushed
+3. **Restart Backend:**
+```bash
+docker-compose restart backend
+```
 
-4. **Rebuild & Restart**
-   ```bash
-   docker-compose build
-   docker-compose up -d
-   ```
-   - [ ] Containers running
-   - [ ] Application working
+## Success Criteria
 
----
-
-## Documentation
-
-- [ ] Update CHANGELOG.md
-- [ ] Update version number
-- [ ] Document any issues encountered
-- [ ] Update team wiki/documentation
-
----
-
-## Communication
-
-### Before Deployment
-- [ ] Notify team about deployment schedule
-- [ ] Inform users about potential downtime (if any)
-- [ ] Prepare rollback plan
-
-### After Deployment
-- [ ] Notify team deployment is complete
-- [ ] Share deployment summary
-- [ ] Document any issues and solutions
-- [ ] Update status page (if any)
-
----
-
-## Final Checklist
-
-- [ ] All containers running
-- [ ] Database migration successful
-- [ ] Backend API working
-- [ ] Frontend accessible
-- [ ] New feature working correctly
-- [ ] No errors in logs
-- [ ] Performance acceptable
-- [ ] Backup saved safely
-- [ ] Team notified
-- [ ] Documentation updated
-
----
+✅ All checklist items completed
+✅ All API endpoints responding correctly
+✅ No errors in logs
+✅ Database records being created
+✅ Auto sync working
+✅ Performance acceptable
 
 ## Sign-off
 
-**Deployed by:** ___________________  
-**Date:** ___________________  
-**Time:** ___________________  
-**Version:** 1.0.0  
-**Status:** ⬜ Success  ⬜ Failed  ⬜ Rolled Back  
+- [ ] Deployment completed by: ________________
+- [ ] Date: ________________
+- [ ] All tests passed: Yes / No
+- [ ] Issues found: ________________
+- [ ] Notes: ________________
 
-**Notes:**
-```
-_________________________________________________________________
-_________________________________________________________________
-_________________________________________________________________
-```
+## Next Steps
 
----
+After successful deployment:
 
-## Emergency Contacts
+1. **Monitor for 24 hours:**
+   - Check logs regularly
+   - Monitor API usage
+   - Check database growth
 
-**Development Team:**
-- Name: ___________________
-- Phone: ___________________
-- Email: ___________________
+2. **User Acceptance Testing:**
+   - Test with real data
+   - Verify accuracy of history
+   - Check user permissions
 
-**DevOps/Infrastructure:**
-- Name: ___________________
-- Phone: ___________________
-- Email: ___________________
+3. **Documentation:**
+   - Update API documentation
+   - Train users if needed
+   - Document any issues found
 
----
+4. **Optimization:**
+   - Add indexes if needed
+   - Optimize slow queries
+   - Adjust sync frequency
 
-**Keep this checklist for audit trail! 📋**
+## Support
 
-Print Date: ___________________  
-Printed By: ___________________
+**Documentation:**
+- Full docs: `INVOICE_HISTORY_INTEGRATION.md`
+- Quick start: `QUICK_START_INVOICE_HISTORY.md`
+- Windows guide: `DEPLOY_WINDOWS.md`
+- Summary: `SUMMARY_INVOICE_HISTORY.md`
+
+**Scripts:**
+- Deploy: `./deploy-invoice-history.sh`
+- Verify: `./verify-invoice-history.sh`
+- Test: `./test-invoice-history-api.sh`
+
+**Logs Location:**
+- Backend: `/root/accurate-sync/backend/logs/`
+- Docker: `docker-compose logs backend`
+
+**Database:**
+- Host: localhost (in container)
+- Database: accurate_sync
+- Table: sales_invoice_history
+- View: v_sales_invoice_history
