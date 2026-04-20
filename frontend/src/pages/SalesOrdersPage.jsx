@@ -31,6 +31,7 @@ const SalesOrdersPage = () => {
   const [month, setMonth] = useState('all') // Default ke 'all' untuk menampilkan semua data
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [showHistoryModal, setShowHistoryModal] = useState(false)
+  const [orderHistories, setOrderHistories] = useState({}) // Store histories for each order
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 20,
@@ -41,6 +42,36 @@ const SalesOrdersPage = () => {
   useEffect(() => {
     fetchOrders()
   }, [pagination.page, search, month])
+
+  // Fetch history for orders with "Sebagian diproses" status
+  useEffect(() => {
+    const fetchHistoriesForOrders = async () => {
+      const partialOrders = orders.filter(order => {
+        const s = (order.status || '').toLowerCase().trim()
+        return s.includes('sebagian') || s.includes('partial')
+      })
+
+      for (const order of partialOrders) {
+        if (!orderHistories[order.id]) {
+          try {
+            const response = await api.get(`/sales-orders/${order.id}/history`)
+            if (response.data && response.data.success) {
+              setOrderHistories(prev => ({
+                ...prev,
+                [order.id]: response.data.data || []
+              }))
+            }
+          } catch (error) {
+            console.error(`Failed to fetch history for order ${order.id}:`, error)
+          }
+        }
+      }
+    }
+
+    if (orders.length > 0) {
+      fetchHistoriesForOrders()
+    }
+  }, [orders])
 
   const fetchOrders = async () => {
     try {
@@ -209,6 +240,9 @@ const SalesOrdersPage = () => {
                       <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">
                         Status
                       </th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                        History Faktur Penjualan
+                      </th>
                       <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">
                         Actions
                       </th>
@@ -260,6 +294,37 @@ const SalesOrdersPage = () => {
                               return 'Menunggu diproses'
                             })()}
                           </span>
+                        </td>
+                        <td className="px-6 py-5">
+                          {(() => {
+                            const s = (order.status || '').toLowerCase().trim()
+                            const isPartial = s.includes('sebagian') || s.includes('partial')
+                            const histories = orderHistories[order.id] || []
+                            
+                            if (!isPartial || histories.length === 0) {
+                              return <span className="text-gray-400 text-sm italic">-</span>
+                            }
+
+                            return (
+                              <div className="space-y-1">
+                                {histories.slice(0, 2).map((history, idx) => (
+                                  <div key={history.id} className="text-xs">
+                                    <div className="font-semibold text-gray-700">
+                                      {history.invoiceNumber || 'No Invoice'}
+                                    </div>
+                                    <div className="text-gray-500 truncate max-w-xs">
+                                      {history.description}
+                                    </div>
+                                  </div>
+                                ))}
+                                {histories.length > 2 && (
+                                  <div className="text-xs text-blue-600 font-semibold">
+                                    +{histories.length - 2} lainnya
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })()}
                         </td>
                         <td className="px-6 py-5 text-center">
                           <button
