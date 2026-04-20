@@ -500,6 +500,13 @@ class SalesOrderService {
         try {
           const detailResponse = await ApiClient.get(userId, '/sales-invoice/detail.do', { id: invoice.id });
           if (detailResponse && detailResponse.d) {
+            logger.info('Sales invoice detail received', { 
+              invoiceId: invoice.id, 
+              fields: Object.keys(detailResponse.d),
+              createdBy: detailResponse.d.createdBy,
+              createdByName: detailResponse.d.createdByName,
+              userName: detailResponse.d.userName
+            });
             detailedInvoices.push(detailResponse.d);
           }
         } catch (error) {
@@ -564,10 +571,16 @@ class SalesOrderService {
 
           // Get created by name
           let createdByName = null;
-          if (invoice.createdBy && invoice.createdBy.name) {
-            createdByName = invoice.createdBy.name;
+          if (invoice.createdBy && typeof invoice.createdBy === 'object') {
+            createdByName = invoice.createdBy.name || invoice.createdBy.displayName || invoice.createdBy.userName;
           } else if (invoice.createdByName) {
             createdByName = invoice.createdByName;
+          } else if (invoice.createdBy && typeof invoice.createdBy === 'string') {
+            createdByName = invoice.createdBy;
+          } else if (invoice.userName) {
+            createdByName = invoice.userName;
+          } else if (invoice.userDisplayName) {
+            createdByName = invoice.userDisplayName;
           }
 
           await query(

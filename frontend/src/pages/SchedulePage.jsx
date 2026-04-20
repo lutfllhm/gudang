@@ -146,8 +146,11 @@ const SchedulePage = () => {
   // Fetch invoices for a sales order
   const fetchInvoices = useCallback(async (soId) => {
     try {
+      console.log('[fetchInvoices] Fetching invoices for SO:', soId)
       const response = await api.get(`/sales-orders/${soId}/invoices`)
+      console.log('[fetchInvoices] Response:', response.data)
       if (response.data?.success && Array.isArray(response.data.data)) {
+        console.log('[fetchInvoices] Invoices received:', response.data.data.length)
         setInvoicesData(prev => ({
           ...prev,
           [soId]: response.data.data
