@@ -301,26 +301,47 @@ const SalesOrdersPage = () => {
                             const isPartial = s.includes('sebagian') || s.includes('partial')
                             const histories = orderHistories[order.id] || []
                             
-                            if (!isPartial || histories.length === 0) {
+                            if (!isPartial) {
                               return <span className="text-gray-400 text-sm italic">-</span>
                             }
 
+                            if (histories.length === 0) {
+                              return (
+                                <div className="text-xs text-gray-500 italic">
+                                  Belum ada history
+                                </div>
+                              )
+                            }
+
                             return (
-                              <div className="space-y-1">
+                              <div className="space-y-2">
                                 {histories.slice(0, 2).map((history, idx) => (
-                                  <div key={history.id} className="text-xs">
-                                    <div className="font-semibold text-gray-700">
-                                      {history.invoiceNumber || 'No Invoice'}
-                                    </div>
-                                    <div className="text-gray-500 truncate max-w-xs">
+                                  <div key={history.id} className="text-xs border-l-2 border-blue-400 pl-2 py-1">
+                                    {history.invoiceNumber && (
+                                      <div className="font-bold text-blue-700">
+                                        {history.invoiceNumber}
+                                      </div>
+                                    )}
+                                    <div className="text-gray-700 line-clamp-2">
                                       {history.description}
+                                    </div>
+                                    {history.createdBy && history.createdBy !== 'system' && (
+                                      <div className="text-gray-500 mt-1">
+                                        oleh {history.createdBy}
+                                      </div>
+                                    )}
+                                    <div className="text-gray-400 text-[10px] mt-1">
+                                      {formatDate(history.createdAt)} {new Date(history.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
                                     </div>
                                   </div>
                                 ))}
                                 {histories.length > 2 && (
-                                  <div className="text-xs text-blue-600 font-semibold">
-                                    +{histories.length - 2} lainnya
-                                  </div>
+                                  <button
+                                    onClick={() => handleShowHistory(order)}
+                                    className="text-xs text-blue-600 font-semibold hover:text-blue-800"
+                                  >
+                                    +{histories.length - 2} lainnya →
+                                  </button>
                                 )}
                               </div>
                             )
