@@ -35,10 +35,12 @@ const TOAST_DURATION_MS = 15000
 const KNOWN_SO_KEY = 'schedule_known_so_ids'
 const INITIAL_LIMIT = 5000
 const OVERDUE_DAYS = 3
-// Jam reminder WIB (UTC+7): 14:50
+// Jam reminder WIB (UTC+7): 08:30, 11:00, 14:00
 // Format: { hour, minute } — trigger dalam window ±2 menit dari waktu yang ditentukan
 const REMINDER_TIMES_WIB = [
-  { hour: 14, minute: 50 },
+  { hour: 8, minute: 30 },
+  { hour: 11, minute: 0 },
+  { hour: 14, minute: 0 },
 ]
 // Safety cap so we don't accidentally request an absurdly huge payload.
 // If total is bigger than this cap, we fall back to page-by-page fetching.
