@@ -184,6 +184,22 @@ const SchedulePage = () => {
     } catch (_) {}
   }, [])
 
+  // Play TTS "SO masuk" setelah bunyi notifikasi
+  const playNewSOVoice = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('accessToken')
+      if (!token) return
+      
+      // Tunggu sebentar agar bunyi notifikasi selesai dulu (~1 detik)
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      // Panggil TTS dengan teks "SO masuk"
+      await fetchAndPlayTTS('SO masuk', token)
+    } catch (err) {
+      console.warn('[playNewSOVoice] Gagal memutar suara SO masuk:', err)
+    }
+  }, [fetchAndPlayTTS])
+
   // index SO yang sedang dibacakan (-1 = tidak ada / intro/outro)
   const [activeSOIndex, setActiveSOIndex] = useState(-1)
   const soListRef = useRef(null)
@@ -369,20 +385,40 @@ const SchedulePage = () => {
   // Cek SO yang telat dan jalankan reminder jika sudah waktunya
   // Cek SO yang telat dan jalankan reminder hanya pada jam 14:50 WIB
   // Menggunakan displayOrders (data terbaru yang ditampilkan di schedule)
+  // HANYA untuk SO dengan status "Menunggu Diproses" (pending)
   const checkAndTriggerOverdueReminder = useCallback((ordersToCheck) => {
     const now = Date.now()
     const threeDaysMs = OVERDUE_DAYS * 24 * 60 * 60 * 1000
 
+    // Hitung breakdown status untuk debugging
+    const statusBreakdown = {
+      pending: 0,
+      processing: 0,
+      completed: 0,
+      other: 0
+    }
+    ordersToCheck.forEach((o) => {
+      const group = getOrderStatusGroup(o)
+      if (statusBreakdown[group] !== undefined) {
+        statusBreakdown[group]++
+      } else {
+        statusBreakdown.other++
+      }
+    })
+
     const overdueOrders = ordersToCheck.filter((o) => {
       const group = getOrderStatusGroup(o)
-      if (group !== 'pending' && group !== 'processing') return false
+      // HANYA ambil yang pending (Menunggu Diproses), TIDAK termasuk processing (Sebagian Diproses)
+      if (group !== 'pending') return false
       const dateStr = o.transDate || o.tanggal_so
       if (!dateStr) return false
       const orderDate = new Date(dateStr).getTime()
-      return now - orderDate >= threeDaysMs
+      const isOverdue = now - orderDate >= threeDaysMs
+      return isOverdue
     })
 
-    console.log(`[Reminder] Mengecek dari ${ordersToCheck.length} SO di schedule → Ditemukan ${overdueOrders.length} SO overdue (>= ${OVERDUE_DAYS} hari)`)
+    console.log(`[Reminder] Status breakdown: Pending=${statusBreakdown.pending}, Processing=${statusBreakdown.processing}, Completed=${statusBreakdown.completed}`)
+    console.log(`[Reminder] Dari ${ordersToCheck.length} SO di schedule → ${statusBreakdown.pending} "Menunggu Diproses" → ${overdueOrders.length} overdue (>= ${OVERDUE_DAYS} hari)`)
 
     if (overdueOrders.length === 0) {
       setOverdueReminder(null)
@@ -407,7 +443,7 @@ const SchedulePage = () => {
     const isReminderHour = !!matchedTime
 
     if (isReminderHour && !alreadyPlayed) {
-      console.log(`[Reminder] ✅ Memulai reminder untuk ${overdueOrders.length} SO overdue dari data schedule terbaru`)
+      console.log(`[Reminder] ✅ Memulai reminder untuk ${overdueOrders.length} SO "Menunggu Diproses" overdue dari data schedule terbaru`)
       lastReminderRef.current = reminderKey
       playOverdueReminder(overdueOrders)
     } else if (isReminderHour && alreadyPlayed) {
@@ -574,7 +610,11 @@ const SchedulePage = () => {
           const wasEmpty = toastQueueRef.current.length === 0 && !activeToast
           toastQueueRef.current.push(...toasts)
           if (wasEmpty) {
-            if (toasts.length > 0) playNotificationSound()
+            if (toasts.length > 0) {
+              playNotificationSound()
+              // Play suara "SO masuk" setelah bunyi notifikasi
+              playNewSOVoice()
+            }
             showNextToast()
           }
         }
@@ -623,7 +663,7 @@ const SchedulePage = () => {
       if (!silent) setLoading(false)
       setRefreshing(false)
     }
-  }, [month, playNotificationSound, dismissToast, checkAndTriggerOverdueReminder, showNextToast, activeToast])
+  }, [month, playNotificationSound, playNewSOVoice, dismissToast, checkAndTriggerOverdueReminder, showNextToast, activeToast])
 
   // Reset displayOrders saat bulan berubah agar marquee mulai fresh
   useEffect(() => {
@@ -654,8 +694,10 @@ const SchedulePage = () => {
 
   // Cek reminder setiap kali displayOrders berubah (termasuk saat SO baru masuk)
   // Ini memastikan reminder selalu up-to-date dengan data terbaru di schedule
+  // HANYA untuk SO dengan status "Menunggu Diproses" yang >= 3 hari
   useEffect(() => {
     if (displayOrders.length > 0 && !isFirstLoad.current) {
+      console.log('[Reminder] DisplayOrders berubah, cek ulang reminder...')
       checkAndTriggerOverdueReminder(displayOrders)
     }
   }, [displayOrders, checkAndTriggerOverdueReminder])
