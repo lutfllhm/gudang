@@ -13,6 +13,9 @@ router.get('/pending', SalesOrderController.getPending);
 router.get('/top-customers', SalesOrderController.getTopCustomers);
 router.get('/search', SalesOrderController.search);
 router.get('/:id', SalesOrderController.getById);
+router.get('/:id/history', SalesOrderController.getHistory);
+router.post('/:id/history', SalesOrderController.addHistory);
+router.delete('/:id/history/:historyId', SalesOrderController.deleteHistory);
 router.put('/:id/status', SalesOrderController.updateStatus);
 
 // Sync routes

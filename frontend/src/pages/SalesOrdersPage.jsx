@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import DashboardLayout from '../components/DashboardLayout'
 import LoadingSpinner from '../components/LoadingSpinner'
+import SalesOrderHistoryModal from '../components/SalesOrderHistoryModal'
 import usePageTitle from '../hooks/usePageTitle'
 import api from '../utils/api'
 import { formatCurrency, formatDate, debounce, getStatusColor } from '../utils/helpers'
-import { Search, RefreshCw, ShoppingCart } from 'lucide-react'
+import { Search, RefreshCw, ShoppingCart, History } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const toYyyyMm = (d) => {
@@ -28,6 +29,8 @@ const SalesOrdersPage = () => {
   const [syncing, setSyncing] = useState(false)
   const [search, setSearch] = useState('')
   const [month, setMonth] = useState('all') // Default ke 'all' untuk menampilkan semua data
+  const [selectedOrder, setSelectedOrder] = useState(null)
+  const [showHistoryModal, setShowHistoryModal] = useState(false)
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 20,
@@ -113,6 +116,11 @@ const SalesOrdersPage = () => {
   const handleMonthChange = (value) => {
     setMonth(value)
     setPagination({ ...pagination, page: 1 })
+  }
+
+  const handleShowHistory = (order) => {
+    setSelectedOrder(order)
+    setShowHistoryModal(true)
   }
 
   return (
@@ -201,6 +209,9 @@ const SalesOrdersPage = () => {
                       <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">
                         Status
                       </th>
+                      <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">
+                        Actions
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-100">
@@ -250,6 +261,16 @@ const SalesOrdersPage = () => {
                             })()}
                           </span>
                         </td>
+                        <td className="px-6 py-5 text-center">
+                          <button
+                            onClick={() => handleShowHistory(order)}
+                            className="inline-flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-all text-sm"
+                            title="Lihat History & Schedule"
+                          >
+                            <History className="w-4 h-4" />
+                            History
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -283,6 +304,16 @@ const SalesOrdersPage = () => {
             </>
           )}
         </div>
+
+        {/* History Modal */}
+        <SalesOrderHistoryModal
+          isOpen={showHistoryModal}
+          onClose={() => {
+            setShowHistoryModal(false)
+            setSelectedOrder(null)
+          }}
+          order={selectedOrder}
+        />
       </div>
     </DashboardLayout>
   )
