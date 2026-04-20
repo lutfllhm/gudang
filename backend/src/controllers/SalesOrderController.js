@@ -73,6 +73,18 @@ class SalesOrderController {
       message: 'Sales orders sync dimulai di background. Refresh halaman nanti untuk melihat hasil.'
     }, 'Sales orders sync started');
   });
+
+  static getInvoices = asyncHandler(async (req, res) => {
+    const { soId } = req.params;
+    
+    // Sync invoices from Accurate first
+    await SalesOrderService.syncInvoicesForOrder(req.user.id, soId);
+    
+    // Get invoices from database
+    const invoices = await SalesOrderService.getInvoicesForOrder(soId);
+    
+    success(res, invoices);
+  });
 }
 
 module.exports = SalesOrderController;

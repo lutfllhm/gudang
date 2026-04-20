@@ -129,6 +129,7 @@ const SchedulePage = () => {
   const [newSOToasts, setNewSOToasts] = useState([])
   const [overdueReminder, setOverdueReminder] = useState(null) // { count, orders }
   const [activeToast, setActiveToast] = useState(null) // satu toast aktif sekaligus
+  const [invoicesData, setInvoicesData] = useState({}) // { soId: [invoices] }
   const toastQueueRef = useRef([])
   const isReminderActiveRef = useRef(false) // true saat reminder sedang diputar
   const showNextToastRef = useRef(null) // ref untuk hindari circular dependency
@@ -141,6 +142,21 @@ const SchedulePage = () => {
   // sehingga animasi marquee tidak restart dari awal
   const [displayOrders, setDisplayOrders] = useState([])
   const displayOrdersRef = useRef([])
+
+  // Fetch invoices for a sales order
+  const fetchInvoices = useCallback(async (soId) => {
+    try {
+      const response = await api.get(`/sales-orders/${soId}/invoices`)
+      if (response.data?.success && Array.isArray(response.data.data)) {
+        setInvoicesData(prev => ({
+          ...prev,
+          [soId]: response.data.data
+        }))
+      }
+    } catch (error) {
+      console.error('[fetchInvoices] Error:', error)
+    }
+  }, [])
 
   const playNotificationSound = useCallback(() => {
     try {
@@ -1358,6 +1374,16 @@ const SchedulePage = () => {
                 >
                   {[...filteredAndSortedOrders, ...filteredAndSortedOrders].map((order, index) => {
                     const statusConfig = getStatusConfig(order.status)
+                    const statusGroup = getOrderStatusGroup(order)
+                    const isProcessing = statusGroup === 'processing'
+                    const soId = order.so_id || order.id
+                    const invoices = invoicesData[soId] || []
+                    
+                    // Fetch invoices untuk SO yang sedang diproses (sebagian diproses)
+                    if (isProcessing && soId && !invoicesData[soId]) {
+                      fetchInvoices(soId)
+                    }
+                    
                     // Gunakan key yang stabil berdasarkan ID unik SO, bukan index
                     // Tambahkan suffix untuk duplikasi marquee (first/second loop)
                     const uniqueKey = `${order.so_id || order.id || order.transNumber}-${index < filteredAndSortedOrders.length ? 'a' : 'b'}`
@@ -1425,6 +1451,34 @@ const SchedulePage = () => {
                             </span>
                           </div>
                         </div>
+                        
+                        {/* Tampilkan faktur penjualan jika status "Sebagian diproses" */}
+                        {isProcessing && invoices.length > 0 && (
+                          <div className="px-4 pb-2.5 pt-0">
+                            <div className="ml-[80px] pl-4 border-l-2 border-amber-500/30">
+                              {invoices.map((invoice, idx) => (
+                                <div 
+                                  key={invoice.invoice_id || idx}
+                                  className="flex items-center gap-3 py-1 text-xs"
+                                >
+                                  <FileText className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                  <span className="text-amber-300 font-semibold">
+                                    Faktur: {invoice.nomor_faktur}
+                                  </span>
+                                  {invoice.created_by_name && (
+                                    <>
+                                      <span className="text-slate-500">oleh</span>
+                                      <span className="text-slate-300">{invoice.created_by_name}</span>
+                                    </>
+                                  )}
+                                  <span className="text-slate-500 ml-auto">
+                                    {formatDate(invoice.tanggal_faktur)}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )
                   })}

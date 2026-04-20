@@ -472,6 +472,163 @@ class SalesOrderService {
       throw error;
     }
   }
+
+  /**
+   * Get sales invoices for a sales order from Accurate
+   */
+  static async getSalesInvoicesForOrder(userId, soId) {
+    try {
+      logger.info('Getting sales invoices for order', { soId });
+
+      // Get sales invoices from Accurate API
+      // Filter by sales order reference
+      const response = await ApiClient.get(userId, '/sales-invoice/list.do', {
+        'sp.page': 1,
+        'sp.pageSize': 100,
+        filter: `salesOrderId=${soId}`
+      });
+
+      if (!response || !response.d) {
+        return [];
+      }
+
+      const invoices = Array.isArray(response.d) ? response.d : [];
+      
+      // Get details for each invoice
+      const detailedInvoices = [];
+      for (const invoice of invoices) {
+        try {
+          const detailResponse = await ApiClient.get(userId, '/sales-invoice/detail.do', { id: invoice.id });
+          if (detailResponse && detailResponse.d) {
+            detailedInvoices.push(detailResponse.d);
+          }
+        } catch (error) {
+          logger.warn('Failed to get invoice detail', { invoiceId: invoice.id, error: error.message });
+        }
+      }
+
+      return detailedInvoices;
+
+    } catch (error) {
+      logger.error('Failed to get sales invoices', { soId, error: error.message });
+      return [];
+    }
+  }
+
+  /**
+   * Sync sales invoices for a sales order
+   */
+  static async syncInvoicesForOrder(userId, soId) {
+    try {
+      logger.info('Syncing invoices for order', { soId });
+
+      // Get sales order from database
+      const orderResult = await query(
+        'SELECT id FROM sales_orders WHERE so_id = ?',
+        [String(soId)]
+      );
+
+      if (orderResult.length === 0) {
+        throw new AppError('Sales order not found in database', 404);
+      }
+
+      const salesOrderId = orderResult[0].id;
+
+      // Get invoices from Accurate
+      const invoices = await this.getSalesInvoicesForOrder(userId, soId);
+
+      if (invoices.length === 0) {
+        return { success: true, synced: 0 };
+      }
+
+      // Transform and upsert invoices
+      let synced = 0;
+      for (const invoice of invoices) {
+        try {
+          // Convert date from DD/MM/YYYY to YYYY-MM-DD
+          let tanggalFaktur = new Date().toISOString().split('T')[0];
+          if (invoice.transDate) {
+            const parts = invoice.transDate.split('/');
+            if (parts.length === 3) {
+              tanggalFaktur = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+            }
+          }
+
+          // Get currency code
+          let currencyCode = 'IDR';
+          if (invoice.currency && invoice.currency.code) {
+            currencyCode = invoice.currency.code;
+          } else if (invoice.currency && typeof invoice.currency === 'string') {
+            currencyCode = invoice.currency;
+          }
+
+          // Get created by name
+          let createdByName = null;
+          if (invoice.createdBy && invoice.createdBy.name) {
+            createdByName = invoice.createdBy.name;
+          } else if (invoice.createdByName) {
+            createdByName = invoice.createdByName;
+          }
+
+          await query(
+            `INSERT INTO sales_invoices 
+            (invoice_id, sales_order_id, nomor_faktur, tanggal_faktur, total_amount, currency, created_by_name)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+            nomor_faktur = VALUES(nomor_faktur),
+            tanggal_faktur = VALUES(tanggal_faktur),
+            total_amount = VALUES(total_amount),
+            currency = VALUES(currency),
+            created_by_name = VALUES(created_by_name),
+            updated_at = CURRENT_TIMESTAMP`,
+            [
+              String(invoice.id),
+              salesOrderId,
+              invoice.number || invoice.transNumber || '',
+              tanggalFaktur,
+              parseFloat(invoice.totalAmount || invoice.total || 0),
+              currencyCode,
+              createdByName
+            ]
+          );
+
+          synced++;
+        } catch (error) {
+          logger.warn('Failed to upsert invoice', { invoiceId: invoice.id, error: error.message });
+        }
+      }
+
+      logger.info('Invoices synced for order', { soId, synced });
+
+      return { success: true, synced };
+
+    } catch (error) {
+      logger.error('Failed to sync invoices', { soId, error: error.message });
+      throw error;
+    }
+  }
+
+  /**
+   * Get sales invoices for a sales order from database
+   */
+  static async getInvoicesForOrder(soId) {
+    try {
+      const result = await query(
+        `SELECT si.* 
+        FROM sales_invoices si
+        JOIN sales_orders so ON si.sales_order_id = so.id
+        WHERE so.so_id = ?
+        ORDER BY si.tanggal_faktur DESC`,
+        [String(soId)]
+      );
+
+      return result;
+
+    } catch (error) {
+      logger.error('Failed to get invoices from database', { soId, error: error.message });
+      return [];
+    }
+  }
 }
 
 module.exports = SalesOrderService;
