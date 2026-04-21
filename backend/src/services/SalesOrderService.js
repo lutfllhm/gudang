@@ -79,17 +79,33 @@ class SalesOrderService {
   }
 
   static async resolveInvoiceCreatorName(userId, accurateOrder) {
+    const soId = accurateOrder?.id || accurateOrder?.orderId || null;
+    const transNumber = accurateOrder?.number || accurateOrder?.transNumber || accurateOrder?.orderNumber || null;
+
     const directCreator =
       this.extractDisplayName(accurateOrder?.invoiceCreatedBy) ||
       this.extractDisplayName(accurateOrder?.createdBy) ||
       this.extractDisplayName(accurateOrder?.salesInvoiceCreatedBy) ||
       this.extractDisplayName(accurateOrder?.lastInvoiceCreatedBy);
-    if (directCreator) return directCreator;
+    if (directCreator) {
+      logger.info('Invoice creator resolved from direct fields', {
+        soId,
+        transNumber,
+        invoiceCreatedBy: directCreator
+      });
+      return directCreator;
+    }
 
     const historyCreator = this.extractCreatorFromAnyNode(accurateOrder);
-    if (historyCreator) return historyCreator;
+    if (historyCreator) {
+      logger.info('Invoice creator resolved from history text', {
+        soId,
+        transNumber,
+        invoiceCreatedBy: historyCreator
+      });
+      return historyCreator;
+    }
 
-    const soId = accurateOrder?.id || accurateOrder?.orderId;
     if (!soId || !userId) return null;
 
     // Fallback: coba baca sales invoice list yang terkait SO ini.
@@ -133,6 +149,18 @@ class SalesOrderService {
         // skip filter yang tidak didukung endpoint
       }
     }
+
+    logger.warn('Invoice creator unresolved for SO', {
+      soId,
+      transNumber,
+      debugKeys: Object.keys(accurateOrder || {}),
+      sampleHistoryText: this.extractCreatorFromAnyNode({
+        description: accurateOrder?.description,
+        note: accurateOrder?.note,
+        remarks: accurateOrder?.remarks,
+        message: accurateOrder?.message
+      })
+    });
 
     return null;
   }
