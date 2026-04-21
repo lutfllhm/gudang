@@ -1416,13 +1416,19 @@ const SchedulePage = () => {
                           </div>
                           
                           {/* Status */}
-                          <div className="flex items-center justify-center">
+                          <div className="flex flex-col items-center justify-center gap-1">
                             <span
                               className={`inline-flex items-center justify-center w-full px-2 py-1.5 rounded border-2 font-bold uppercase tracking-wide whitespace-nowrap ${statusConfig.className} ${statusConfig.glow}`}
                               style={{ fontSize: formatStatusLabel(order.status).length > 12 ? '9px' : '11px' }}
                             >
                               {formatStatusLabel(order.status)}
                             </span>
+                            {/* Invoice Creator - Nama pembuat faktur */}
+                            {order.invoiceCreatedBy && (
+                              <span className="text-[9px] text-slate-400 font-medium">
+                                <span className="text-slate-500">oleh:</span> {order.invoiceCreatedBy}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>

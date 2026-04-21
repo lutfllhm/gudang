@@ -44,11 +44,7 @@ class SalesOrder {
       currency: order.currency,
       lastSync: order.last_sync,
       createdAt: order.created_at,
-      updatedAt: order.updated_at,
-      // Invoice history info
-      invoiceCreatedBy: order.invoice_created_by || null,
-      latestInvoiceNumber: order.latest_invoice_number || null,
-      latestInvoiceDate: order.latest_invoice_date || null
+      updatedAt: order.updated_at
     };
   }
 
@@ -113,29 +109,11 @@ class SalesOrder {
     );
     const total = countResult[0].total;
 
-    // Get sales orders with invoice history - use string interpolation for LIMIT/OFFSET
+    // Get sales orders - use string interpolation for LIMIT/OFFSET
     // to avoid MySQL2 parameter binding issues with pagination values
     const orders = await query(
-      `SELECT 
-        so.*,
-        sih.modified_by as invoice_created_by,
-        sih.invoice_number as latest_invoice_number,
-        sih.invoice_date as latest_invoice_date
+      `SELECT so.*
        FROM sales_orders so
-       LEFT JOIN (
-         SELECT 
-           sales_order_id,
-           modified_by,
-           invoice_number,
-           invoice_date,
-           created_at
-         FROM sales_invoice_history
-         WHERE (sales_order_id, created_at) IN (
-           SELECT sales_order_id, MAX(created_at)
-           FROM sales_invoice_history
-           GROUP BY sales_order_id
-         )
-       ) sih ON so.id = sih.sales_order_id
        ${whereClause}
        ORDER BY so.${sortBy} ${sortOrder}
        LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}`,
