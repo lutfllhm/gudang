@@ -130,19 +130,37 @@ class SalesOrderService {
           const creatorFromList =
             this.extractDisplayName(inv?.createdBy) ||
             this.extractDisplayName(inv?.salesman) ||
-            this.extractDisplayName(inv?.inputBy);
+            this.extractDisplayName(inv?.inputBy) ||
+            this.extractCreatorFromAnyNode(inv);
           if (creatorFromList) return creatorFromList;
 
           if (!inv?.id) continue;
-          try {
-            const detail = await ApiClient.get(userId, '/sales-invoice/detail.do', { id: inv.id });
-            const creatorFromDetail =
-              this.extractDisplayName(detail?.d?.createdBy) ||
-              this.extractDisplayName(detail?.d?.salesman) ||
-              this.extractDisplayName(detail?.d?.inputBy);
-            if (creatorFromDetail) return creatorFromDetail;
-          } catch (_) {
-            // skip per-invoice detail error
+          // Coba kedua endpoint detail karena struktur Accurate bisa berbeda antar akun/versi.
+          const detailEndpoints = ['/sales-invoice/detail.do', '/sales-invoice/detail-invoice.do'];
+          for (const endpoint of detailEndpoints) {
+            try {
+              const detail = await ApiClient.get(userId, endpoint, { id: inv.id });
+              const detailData = detail?.d ?? detail;
+              const creatorFromDetail =
+                this.extractDisplayName(detailData?.createdBy) ||
+                this.extractDisplayName(detailData?.salesman) ||
+                this.extractDisplayName(detailData?.inputBy) ||
+                this.extractDisplayName(detailData?.createdUser) ||
+                this.extractDisplayName(detailData?.createdByName) ||
+                this.extractCreatorFromAnyNode(detailData);
+              if (creatorFromDetail) {
+                logger.info('Invoice creator resolved from invoice detail endpoint', {
+                  soId,
+                  transNumber,
+                  invoiceId: inv.id,
+                  endpoint,
+                  invoiceCreatedBy: creatorFromDetail
+                });
+                return creatorFromDetail;
+              }
+            } catch (_) {
+              // skip endpoint yang gagal, lanjut endpoint berikutnya
+            }
           }
         }
       } catch (_) {
