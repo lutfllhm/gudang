@@ -111,6 +111,61 @@ class SalesOrderService {
     return acc;
   }
 
+  static extractCreatorFromStructuredNode(node, depth = 0) {
+    if (depth > 6 || node == null) return null;
+
+    if (typeof node === 'string') return null;
+    if (Array.isArray(node)) {
+      for (const item of node) {
+        const found = this.extractCreatorFromStructuredNode(item, depth + 1);
+        if (found) return found;
+      }
+      return null;
+    }
+
+    if (typeof node !== 'object') return null;
+
+    const creatorLikeKeys = [
+      'createdBy',
+      'createdByName',
+      'inputBy',
+      'employee',
+      'employeeName',
+      'salesman',
+      'operator',
+      'user',
+      'userName',
+      'username',
+      'updatedBy',
+      'lastUpdatedBy'
+    ];
+
+    for (const key of creatorLikeKeys) {
+      if (!(key in node)) continue;
+      const candidateVal = node[key];
+      const direct = this.extractDisplayName(candidateVal);
+      if (direct) return direct;
+
+      if (typeof candidateVal === 'object' && candidateVal) {
+        const nested =
+          this.extractDisplayName(candidateVal?.name) ||
+          this.extractDisplayName(candidateVal?.fullName) ||
+          this.extractDisplayName(candidateVal?.userName) ||
+          this.extractDisplayName(candidateVal?.username) ||
+          this.extractDisplayName(candidateVal?.employeeName) ||
+          this.extractDisplayName(candidateVal?.alias);
+        if (nested) return nested;
+      }
+    }
+
+    for (const val of Object.values(node)) {
+      const found = this.extractCreatorFromStructuredNode(val, depth + 1);
+      if (found) return found;
+    }
+
+    return null;
+  }
+
   static async resolveInvoiceCreatorName(userId, accurateOrder) {
     const soId = accurateOrder?.id || accurateOrder?.orderId || null;
     const transNumber = accurateOrder?.number || accurateOrder?.transNumber || accurateOrder?.orderNumber || null;
@@ -121,7 +176,8 @@ class SalesOrderService {
       this.extractDisplayName(accurateOrder?.invoiceCreatedBy) ||
       this.extractDisplayName(accurateOrder?.createdBy) ||
       this.extractDisplayName(accurateOrder?.salesInvoiceCreatedBy) ||
-      this.extractDisplayName(accurateOrder?.lastInvoiceCreatedBy);
+      this.extractDisplayName(accurateOrder?.lastInvoiceCreatedBy) ||
+      this.extractCreatorFromStructuredNode(accurateOrder);
     if (directCreator) {
       logger.info('Invoice creator resolved from direct fields', {
         soId,
@@ -166,6 +222,7 @@ class SalesOrderService {
             this.extractDisplayName(inv?.createdBy) ||
             this.extractDisplayName(inv?.salesman) ||
             this.extractDisplayName(inv?.inputBy) ||
+            this.extractCreatorFromStructuredNode(inv) ||
             this.extractCreatorFromAnyNode(inv);
           if (creatorFromList) return creatorFromList;
 
@@ -182,6 +239,7 @@ class SalesOrderService {
                 this.extractDisplayName(detailData?.inputBy) ||
                 this.extractDisplayName(detailData?.createdUser) ||
                 this.extractDisplayName(detailData?.createdByName) ||
+                this.extractCreatorFromStructuredNode(detailData) ||
                 this.extractCreatorFromAnyNode(detailData);
               if (creatorFromDetail) {
                 logger.info('Invoice creator resolved from invoice detail endpoint', {
@@ -224,6 +282,7 @@ class SalesOrderService {
           this.extractDisplayName(inv?.createdBy) ||
           this.extractDisplayName(inv?.salesman) ||
           this.extractDisplayName(inv?.inputBy) ||
+          this.extractCreatorFromStructuredNode(inv) ||
           this.extractCreatorFromAnyNode(inv);
         if (creatorFromRecentList) {
           logger.info('Invoice creator resolved from recent invoice list fallback', {
