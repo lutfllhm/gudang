@@ -78,9 +78,41 @@ class SalesOrderService {
     return null;
   }
 
+  static extractInvoiceReferenceTokens(node, depth = 0, acc = []) {
+    if (depth > 4 || node == null) return acc;
+
+    if (typeof node === 'string') {
+      const v = node.trim();
+      if (v) acc.push(v.toLowerCase());
+      return acc;
+    }
+
+    if (Array.isArray(node)) {
+      for (const item of node) this.extractInvoiceReferenceTokens(item, depth + 1, acc);
+      return acc;
+    }
+
+    if (typeof node === 'object') {
+      const candidateKeys = [
+        'description', 'note', 'remarks', 'message',
+        'number', 'transNumber', 'sourceNumber',
+        'salesOrderNumber', 'soNumber', 'referenceNo',
+        'referenceNumber', 'refNo'
+      ];
+      for (const key of candidateKeys) {
+        if (key in node) this.extractInvoiceReferenceTokens(node[key], depth + 1, acc);
+      }
+      for (const val of Object.values(node)) this.extractInvoiceReferenceTokens(val, depth + 1, acc);
+    }
+
+    return acc;
+  }
+
   static async resolveInvoiceCreatorName(userId, accurateOrder) {
     const soId = accurateOrder?.id || accurateOrder?.orderId || null;
     const transNumber = accurateOrder?.number || accurateOrder?.transNumber || accurateOrder?.orderNumber || null;
+    const soIdStr = soId ? String(soId).toLowerCase() : null;
+    const soNumberStr = transNumber ? String(transNumber).toLowerCase() : null;
 
     const directCreator =
       this.extractDisplayName(accurateOrder?.invoiceCreatedBy) ||
@@ -166,6 +198,42 @@ class SalesOrderService {
       } catch (_) {
         // skip filter yang tidak didukung endpoint
       }
+    }
+
+    // Fallback tambahan: ambil invoice terbaru tanpa filter, lalu cari yang referensinya memuat nomor SO.
+    try {
+      const invoiceListResponse = await ApiClient.get(userId, '/sales-invoice/list.do', {
+        'sp.page': 1,
+        'sp.pageSize': 100
+      });
+      const invoices = Array.isArray(invoiceListResponse?.d) ? invoiceListResponse.d : [];
+
+      for (const inv of invoices) {
+        const tokens = this.extractInvoiceReferenceTokens(inv);
+        const matched = tokens.some((t) => {
+          if (soNumberStr && t.includes(soNumberStr)) return true;
+          if (soIdStr && (t === soIdStr || t.includes(soIdStr))) return true;
+          return false;
+        });
+        if (!matched) continue;
+
+        const creatorFromRecentList =
+          this.extractDisplayName(inv?.createdBy) ||
+          this.extractDisplayName(inv?.salesman) ||
+          this.extractDisplayName(inv?.inputBy) ||
+          this.extractCreatorFromAnyNode(inv);
+        if (creatorFromRecentList) {
+          logger.info('Invoice creator resolved from recent invoice list fallback', {
+            soId,
+            transNumber,
+            invoiceId: inv?.id || null,
+            invoiceCreatedBy: creatorFromRecentList
+          });
+          return creatorFromRecentList;
+        }
+      }
+    } catch (_) {
+      // skip fallback list error
     }
 
     logger.warn('Invoice creator unresolved for SO', {
