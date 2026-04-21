@@ -28,6 +28,56 @@ class SalesOrderService {
     return null;
   }
 
+  static extractCreatorFromHistoryText(text) {
+    if (typeof text !== 'string') return null;
+    const normalized = text.trim();
+    if (!normalized) return null;
+
+    // Contoh: "Buat Faktur Penjualan SI.2026... oleh Nur gudang admin"
+    const invoiceByMatch = normalized.match(/faktur penjualan[\s\S]*?\boleh\s+(.+)$/i);
+    if (invoiceByMatch?.[1]) return invoiceByMatch[1].trim();
+
+    // Fallback generic: "... oleh <nama>"
+    const genericByMatch = normalized.match(/\boleh\s+(.+)$/i);
+    if (genericByMatch?.[1]) return genericByMatch[1].trim();
+
+    return null;
+  }
+
+  static extractCreatorFromAnyNode(node, depth = 0) {
+    if (depth > 4 || node == null) return null;
+
+    if (typeof node === 'string') {
+      return this.extractCreatorFromHistoryText(node);
+    }
+
+    if (Array.isArray(node)) {
+      for (const item of node) {
+        const found = this.extractCreatorFromAnyNode(item, depth + 1);
+        if (found) return found;
+      }
+      return null;
+    }
+
+    if (typeof node === 'object') {
+      // Prioritaskan key yang biasanya berisi deskripsi histori
+      const prioritizedKeys = ['description', 'message', 'note', 'remarks', 'activity', 'summary'];
+      for (const key of prioritizedKeys) {
+        if (key in node) {
+          const found = this.extractCreatorFromAnyNode(node[key], depth + 1);
+          if (found) return found;
+        }
+      }
+
+      for (const val of Object.values(node)) {
+        const found = this.extractCreatorFromAnyNode(val, depth + 1);
+        if (found) return found;
+      }
+    }
+
+    return null;
+  }
+
   static async resolveInvoiceCreatorName(userId, accurateOrder) {
     const directCreator =
       this.extractDisplayName(accurateOrder?.invoiceCreatedBy) ||
@@ -35,6 +85,9 @@ class SalesOrderService {
       this.extractDisplayName(accurateOrder?.salesInvoiceCreatedBy) ||
       this.extractDisplayName(accurateOrder?.lastInvoiceCreatedBy);
     if (directCreator) return directCreator;
+
+    const historyCreator = this.extractCreatorFromAnyNode(accurateOrder);
+    if (historyCreator) return historyCreator;
 
     const soId = accurateOrder?.id || accurateOrder?.orderId;
     if (!soId || !userId) return null;
