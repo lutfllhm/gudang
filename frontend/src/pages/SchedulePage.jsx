@@ -9,6 +9,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion'
 import DashboardLayout from '../components/DashboardLayout'
 import usePageTitle from '../hooks/usePageTitle'
+import { useWebSocket } from '../hooks/useWebSocket'
 import Logo from '../components/Logo'
 import api from '../utils/api'
 import { formatCurrency, formatDate } from '../utils/helpers'
@@ -141,6 +142,92 @@ const SchedulePage = () => {
   // sehingga animasi marquee tidak restart dari awal
   const [displayOrders, setDisplayOrders] = useState([])
   const displayOrdersRef = useRef([])
+
+  // WebSocket integration for real-time updates
+  useWebSocket({
+    onSalesOrderNew: (newOrder) => {
+      console.log('🔔 [Schedule] New sales order received via WebSocket:', newOrder)
+      
+      // Transform database format to display format
+      const transformedOrder = {
+        id: newOrder.id,
+        so_id: newOrder.so_id,
+        transNumber: newOrder.nomor_so,
+        customerName: newOrder.nama_pelanggan,
+        transDate: newOrder.tanggal_so,
+        totalAmount: newOrder.total_amount,
+        status: newOrder.status,
+        description: newOrder.keterangan,
+        invoiceCreatedBy: newOrder.invoice_created_by
+      }
+      
+      // Trigger silent refresh untuk update data
+      // Silent refresh akan merge data baru tanpa mengganggu animasi marquee
+      fetchOrders({ silent: true })
+    },
+    onSalesOrderUpdated: (updatedOrder) => {
+      console.log('🔔 [Schedule] Sales order updated via WebSocket:', updatedOrder)
+      
+      // Update order in both orders and displayOrders
+      const updateFn = (prevOrders) => 
+        prevOrders.map(o => 
+          o.so_id === updatedOrder.so_id ? {
+            ...o,
+            status: updatedOrder.status,
+            totalAmount: updatedOrder.total_amount,
+            invoiceCreatedBy: updatedOrder.invoice_created_by,
+            description: updatedOrder.keterangan
+          } : o
+        )
+      
+      setOrders(updateFn)
+      setDisplayOrders(updateFn)
+      displayOrdersRef.current = updateFn(displayOrdersRef.current)
+      
+      // Recalculate stats
+      const updatedOrders = updateFn(orders)
+      const counter = updatedOrders.reduce(
+        (acc, o) => {
+          const group = getOrderStatusGroup(o)
+          if (group === 'completed') acc.completed += 1
+          else if (group === 'processing') acc.processing += 1
+          else if (group === 'pending') acc.pending += 1
+          return acc
+        },
+        { completed: 0, processing: 0, pending: 0 }
+      )
+      
+      const totalRevenue = updatedOrders.reduce(
+        (sum, o) => sum + (o.totalAmount || 0),
+        0
+      )
+      
+      setStats({
+        total: updatedOrders.length,
+        completed: counter.completed,
+        processing: counter.processing,
+        pending: counter.pending,
+        totalRevenue,
+      })
+    },
+    onSalesOrderDeleted: (deletedData) => {
+      console.log('🔔 [Schedule] Sales order deleted via WebSocket:', deletedData)
+      
+      // Remove order from all lists
+      const filterFn = (prevOrders) => 
+        prevOrders.filter(o => o.so_id !== deletedData.so_id)
+      
+      setOrders(filterFn)
+      setDisplayOrders(filterFn)
+      displayOrdersRef.current = filterFn(displayOrdersRef.current)
+      
+      // Update stats
+      setStats(prev => ({
+        ...prev,
+        total: Math.max(0, prev.total - 1)
+      }))
+    }
+  })
 
   const playNotificationSound = useCallback(() => {
     try {

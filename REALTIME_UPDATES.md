@@ -101,6 +101,21 @@ docker-compose restart backend
 ### Sync Events
 - `sync:status` - Status sinkronisasi
 
+## 📊 Halaman yang Sudah Real-Time
+
+### 1. **Sales Orders Page** ✅
+- Data sales order baru langsung muncul
+- Update status otomatis
+- Notifikasi toast untuk SO baru
+- Indikator "Live/Offline"
+
+### 2. **Schedule Page** ✅
+- Data sales order baru langsung masuk ke schedule
+- Update status otomatis tanpa mengganggu animasi marquee
+- Stats counter update real-time
+- Reminder overdue tetap berfungsi dengan data terbaru
+- Auto-refresh polling tetap berjalan sebagai fallback
+
 ## 💻 Cara Menggunakan di Frontend
 
 ### Contoh Implementasi
