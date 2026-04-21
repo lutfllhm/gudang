@@ -1,5 +1,6 @@
 const ItemService = require('../services/ItemService');
 const SalesOrderService = require('../services/SalesOrderService');
+const WebSocketService = require('../services/WebSocketService');
 const { asyncHandler } = require('../middleware/errorHandler');
 const logger = require('../utils/logger');
 const config = require('../config');
@@ -174,7 +175,13 @@ class WebhookController {
     try {
       // Sync item spesifik dari Accurate
       const itemId = data?.id ?? data?.itemId ?? data?.item_id;
-      await ItemService.syncSingleItem(itemId);
+      const item = await ItemService.syncSingleItem(itemId);
+      
+      // Broadcast via WebSocket
+      if (item) {
+        WebSocketService.broadcastUpdatedItem(item);
+      }
+      
       logger.info('Item synced from webhook', { itemId });
     } catch (error) {
       logger.error('Failed to sync item from webhook', { 
@@ -209,7 +216,13 @@ class WebhookController {
     try {
       // Sync sales order spesifik dari Accurate
       const orderId = data?.id ?? data?.orderId ?? data?.so_id ?? data?.soId;
-      await SalesOrderService.syncSingleOrder(orderId);
+      const result = await SalesOrderService.syncSingleOrder(orderId);
+      
+      // Broadcast via WebSocket
+      if (result && result.data) {
+        WebSocketService.broadcastNewSalesOrder(result.data);
+      }
+      
       logger.info('Sales order synced from webhook', { orderId });
     } catch (error) {
       logger.error('Failed to sync sales order from webhook', { 

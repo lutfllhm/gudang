@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react'
 import DashboardLayout from '../components/DashboardLayout'
 import LoadingSpinner from '../components/LoadingSpinner'
 import usePageTitle from '../hooks/usePageTitle'
+import { useWebSocket } from '../hooks/useWebSocket'
 import api from '../utils/api'
 import { formatCurrency, formatDate, debounce, getStatusColor } from '../utils/helpers'
-import { Search, RefreshCw, ShoppingCart } from 'lucide-react'
+import { Search, RefreshCw, ShoppingCart, Wifi, WifiOff } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const toYyyyMm = (d) => {
@@ -33,6 +34,78 @@ const SalesOrdersPage = () => {
     limit: 20,
     total: 0,
     totalPages: 0
+  })
+
+  // WebSocket integration for real-time updates
+  const { isConnected } = useWebSocket({
+    onSalesOrderNew: (newOrder) => {
+      console.log('🔔 New sales order received via WebSocket:', newOrder)
+      toast.success(`Sales Order baru: ${newOrder.nomor_so}`, {
+        icon: '📦',
+        duration: 5000
+      })
+      
+      // Add new order to the list if it matches current filters
+      setOrders(prevOrders => {
+        // Check if order already exists
+        const exists = prevOrders.some(o => o.so_id === newOrder.so_id)
+        if (exists) return prevOrders
+        
+        // Add to beginning of list
+        return [transformOrder(newOrder), ...prevOrders]
+      })
+      
+      // Update pagination total
+      setPagination(prev => ({
+        ...prev,
+        total: prev.total + 1
+      }))
+    },
+    onSalesOrderUpdated: (updatedOrder) => {
+      console.log('🔔 Sales order updated via WebSocket:', updatedOrder)
+      toast.success(`Sales Order diupdate: ${updatedOrder.nomor_so}`, {
+        icon: '📝',
+        duration: 3000
+      })
+      
+      // Update order in the list
+      setOrders(prevOrders => 
+        prevOrders.map(o => 
+          o.so_id === updatedOrder.so_id ? transformOrder(updatedOrder) : o
+        )
+      )
+    },
+    onSalesOrderDeleted: (deletedData) => {
+      console.log('🔔 Sales order deleted via WebSocket:', deletedData)
+      toast.error(`Sales Order dihapus: ${deletedData.so_id}`, {
+        icon: '🗑️',
+        duration: 3000
+      })
+      
+      // Remove order from the list
+      setOrders(prevOrders => 
+        prevOrders.filter(o => o.so_id !== deletedData.so_id)
+      )
+      
+      // Update pagination total
+      setPagination(prev => ({
+        ...prev,
+        total: Math.max(0, prev.total - 1)
+      }))
+    }
+  })
+
+  // Transform database order to display format
+  const transformOrder = (dbOrder) => ({
+    id: dbOrder.id,
+    so_id: dbOrder.so_id,
+    transNumber: dbOrder.nomor_so,
+    customerName: dbOrder.nama_pelanggan,
+    transDate: dbOrder.tanggal_so,
+    totalAmount: dbOrder.total_amount,
+    status: dbOrder.status,
+    description: dbOrder.keterangan,
+    invoiceCreatedBy: dbOrder.invoice_created_by
   })
 
   useEffect(() => {
@@ -135,8 +208,21 @@ const SalesOrdersPage = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="animate-slide-in-left">
-            <h1 className="text-4xl font-bold text-gradient-brand mb-2">Sales Orders</h1>
-            <p className="text-gray-600 text-lg">Lihat dan kelola sales orders</p>
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-4xl font-bold text-gradient-brand">Sales Orders</h1>
+              {isConnected ? (
+                <div className="flex items-center gap-2 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
+                  <Wifi className="w-4 h-4" />
+                  <span>Live</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm font-semibold">
+                  <WifiOff className="w-4 h-4" />
+                  <span>Offline</span>
+                </div>
+              )}
+            </div>
+            <p className="text-gray-600 text-lg">Lihat dan kelola sales orders - Data update otomatis</p>
           </div>
           <button
             onClick={handleSync}

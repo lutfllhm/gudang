@@ -136,12 +136,24 @@ const startServer = async () => {
       logger.info('='.repeat(50));
     });
 
+    // Initialize WebSocket
+    const WebSocketService = require('./src/services/WebSocketService');
+    WebSocketService.initialize(server);
+
     // Graceful shutdown
     const gracefulShutdown = async (signal) => {
       logger.info(`${signal} received, shutting down gracefully...`);
       
       server.close(async () => {
         logger.info('HTTP server closed');
+        
+        // Close WebSocket
+        try {
+          const WebSocketService = require('./src/services/WebSocketService');
+          WebSocketService.close();
+        } catch (error) {
+          logger.warn('Failed to close WebSocket:', error.message);
+        }
         
         // Stop sync service
         try {

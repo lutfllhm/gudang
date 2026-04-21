@@ -741,6 +741,12 @@ class SalesOrderService {
       // Upsert sales order
       const result = await SalesOrder.bulkUpsert([accurateOrder]);
 
+      // Get the synced sales order from database
+      const syncedOrder = await query(
+        'SELECT * FROM sales_orders WHERE so_id = ?',
+        [soId]
+      );
+
       logger.info('Single sales order synced', { 
         soId, 
         inserted: result.inserted, 
@@ -750,7 +756,8 @@ class SalesOrderService {
       return {
         success: true,
         soId,
-        action: result.inserted > 0 ? 'inserted' : 'updated'
+        action: result.inserted > 0 ? 'inserted' : 'updated',
+        data: syncedOrder[0] || null
       };
 
     } catch (error) {
