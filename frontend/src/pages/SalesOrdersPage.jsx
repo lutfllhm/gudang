@@ -115,6 +115,20 @@ const SalesOrdersPage = () => {
     setPagination({ ...pagination, page: 1 })
   }
 
+  const formatStatusLabel = (status) => {
+    const s = (status || '').toLowerCase().trim()
+    if (s.includes('terproses') || s.includes('completed') || s.includes('selesai') ||
+        s.includes('proceed') || s.includes('closed') || s.includes('close') ||
+        s.includes('finished') || s.includes('done')) {
+      return 'Terproses'
+    }
+    if (s.includes('sebagian') || s.includes('processing') || s.includes('diproses') ||
+        s.includes('partial') || s.includes('in progress')) {
+      return 'Sebagian diproses'
+    }
+    return 'Menunggu diproses'
+  }
+
   return (
     <DashboardLayout>
       <div className="space-y-8 animate-fade-in">
@@ -226,29 +240,18 @@ const SalesOrdersPage = () => {
                           {formatCurrency(order.totalAmount)}
                         </td>
                         <td className="px-6 py-5 text-center">
-                          <span
-                            className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold tracking-wider badge-${getStatusColor(order.status || 'menunggu diproses')}`}
-                          >
-                            {(() => {
-                              const s = (order.status || '').toLowerCase().trim()
-                              
-                              // Completed
-                              if (s.includes('terproses') || s.includes('completed') || s.includes('selesai') || 
-                                  s.includes('proceed') || s.includes('closed') || s.includes('close') || 
-                                  s.includes('finished') || s.includes('done')) {
-                                return 'Terproses'
-                              }
-                              
-                              // Processing - penting untuk "Sebagian diproses" dari Accurate
-                              if (s.includes('sebagian') || s.includes('processing') || s.includes('diproses') || 
-                                  s.includes('partial') || s.includes('in progress')) {
-                                return 'Sebagian diproses'
-                              }
-                              
-                              // Pending - termasuk queue dan status lain
-                              return 'Menunggu diproses'
-                            })()}
-                          </span>
+                          <div className="flex flex-col items-center gap-1">
+                            <span
+                              className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold tracking-wider badge-${getStatusColor(order.status || 'menunggu diproses')}`}
+                            >
+                              {formatStatusLabel(order.status)}
+                            </span>
+                            {order.invoiceCreatedBy && ['Terproses', 'Sebagian diproses'].includes(formatStatusLabel(order.status)) && (
+                              <span className="text-[11px] text-gray-500">
+                                oleh: {order.invoiceCreatedBy}
+                              </span>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}

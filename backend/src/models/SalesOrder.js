@@ -40,6 +40,7 @@ class SalesOrder {
       customerName: order.nama_pelanggan,
       description: order.keterangan,
       status: order.status,
+      invoiceCreatedBy: order.invoice_created_by,
       totalAmount: parseFloat(order.total_amount || 0),
       currency: order.currency,
       lastSync: order.last_sync,
@@ -146,6 +147,7 @@ class SalesOrder {
       nama_pelanggan,
       keterangan,
       status,
+      invoice_created_by,
       total_amount,
       currency
     } = data;
@@ -157,10 +159,10 @@ class SalesOrder {
       await query(
         `UPDATE sales_orders 
          SET nomor_so = ?, tanggal_so = ?, customer_id = ?, nama_pelanggan = ?,
-             keterangan = ?, status = ?, total_amount = ?, currency = ?,
+             keterangan = ?, status = ?, invoice_created_by = ?, total_amount = ?, currency = ?,
              last_sync = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
          WHERE so_id = ?`,
-        [nomor_so, tanggal_so, customer_id, nama_pelanggan, keterangan, status, total_amount, currency, so_id]
+        [nomor_so, tanggal_so, customer_id, nama_pelanggan, keterangan, status, invoice_created_by || null, total_amount, currency, so_id]
       );
 
       return await this.findBySoId(so_id);
@@ -168,9 +170,9 @@ class SalesOrder {
       // Insert
       await query(
         `INSERT INTO sales_orders 
-         (so_id, nomor_so, tanggal_so, customer_id, nama_pelanggan, keterangan, status, total_amount, currency)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [so_id, nomor_so, tanggal_so, customer_id, nama_pelanggan, keterangan, status, total_amount, currency]
+         (so_id, nomor_so, tanggal_so, customer_id, nama_pelanggan, keterangan, status, invoice_created_by, total_amount, currency)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [so_id, nomor_so, tanggal_so, customer_id, nama_pelanggan, keterangan, status, invoice_created_by || null, total_amount, currency]
       );
 
       return await this.findBySoId(so_id);

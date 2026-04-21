@@ -1424,7 +1424,7 @@ const SchedulePage = () => {
                               {formatStatusLabel(order.status)}
                             </span>
                             {/* Invoice Creator - Nama pembuat faktur */}
-                            {order.invoiceCreatedBy && (
+                            {order.invoiceCreatedBy && ['Terproses', 'Sebagian diproses'].includes(formatStatusLabel(order.status)) && (
                               <span className="text-[9px] text-slate-400 font-medium">
                                 <span className="text-slate-500">oleh:</span> {order.invoiceCreatedBy}
                               </span>

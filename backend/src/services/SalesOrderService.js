@@ -6,6 +6,83 @@ const { query } = require('../config/database');
 
 class SalesOrderService {
   static unmappedAccurateStatuses = new Set();
+
+  static extractDisplayName(value) {
+    if (!value) return null;
+    if (typeof value === 'string') {
+      const v = value.trim();
+      return v || null;
+    }
+    if (typeof value === 'object') {
+      const candidates = [
+        value.name,
+        value.fullName,
+        value.username,
+        value.userName,
+        value.employeeName,
+        value.alias
+      ];
+      const hit = candidates.find((item) => typeof item === 'string' && item.trim());
+      return hit ? hit.trim() : null;
+    }
+    return null;
+  }
+
+  static async resolveInvoiceCreatorName(userId, accurateOrder) {
+    const directCreator =
+      this.extractDisplayName(accurateOrder?.invoiceCreatedBy) ||
+      this.extractDisplayName(accurateOrder?.createdBy) ||
+      this.extractDisplayName(accurateOrder?.salesInvoiceCreatedBy) ||
+      this.extractDisplayName(accurateOrder?.lastInvoiceCreatedBy);
+    if (directCreator) return directCreator;
+
+    const soId = accurateOrder?.id || accurateOrder?.orderId;
+    if (!soId || !userId) return null;
+
+    // Fallback: coba baca sales invoice list yang terkait SO ini.
+    // Parameter filter dapat berbeda antar versi API Accurate, jadi kita coba beberapa variasi.
+    const filterCandidates = [
+      `salesOrder.id=${soId}`,
+      `salesOrderId=${soId}`,
+      `sourceTransId=${soId}`
+    ];
+
+    for (const filter of filterCandidates) {
+      try {
+        const invoiceListResponse = await ApiClient.get(userId, '/sales-invoice/list.do', {
+          'sp.page': 1,
+          'sp.pageSize': 5,
+          filter
+        });
+        const invoices = Array.isArray(invoiceListResponse?.d) ? invoiceListResponse.d : [];
+        if (invoices.length === 0) continue;
+
+        for (const inv of invoices) {
+          const creatorFromList =
+            this.extractDisplayName(inv?.createdBy) ||
+            this.extractDisplayName(inv?.salesman) ||
+            this.extractDisplayName(inv?.inputBy);
+          if (creatorFromList) return creatorFromList;
+
+          if (!inv?.id) continue;
+          try {
+            const detail = await ApiClient.get(userId, '/sales-invoice/detail.do', { id: inv.id });
+            const creatorFromDetail =
+              this.extractDisplayName(detail?.d?.createdBy) ||
+              this.extractDisplayName(detail?.d?.salesman) ||
+              this.extractDisplayName(detail?.d?.inputBy);
+            if (creatorFromDetail) return creatorFromDetail;
+          } catch (_) {
+            // skip per-invoice detail error
+          }
+        }
+      } catch (_) {
+        // skip filter yang tidak didukung endpoint
+      }
+    }
+
+    return null;
+  }
   /**
    * Get all sales orders with pagination
    */
@@ -172,7 +249,10 @@ class SalesOrderService {
           }
 
           // Transform and upsert sales orders
-          const transformedOrders = detailedOrders.map(order => this.transformAccurateOrder(order));
+          const transformedOrders = [];
+          for (const order of detailedOrders) {
+            transformedOrders.push(await this.transformAccurateOrder(order, userId));
+          }
           const result = await SalesOrder.bulkUpsert(transformedOrders);
 
           totalSynced += result.inserted + result.updated;
@@ -247,7 +327,7 @@ class SalesOrderService {
    * Transform Accurate sales order to our format.
    * Status diambil persis dari Accurate Online agar tampilan sama (Menunggu diproses, Sebagian terproses, Terproses).
    */
-  static transformAccurateOrder(accurateOrder) {
+  static async transformAccurateOrder(accurateOrder, userId = null) {
     // Ambil status dari semua kemungkinan field response API Accurate
     // Accurate Online bisa mengirim status sebagai object {id, name} atau string langsung
     const extractStatusStr = (val) => {
@@ -363,6 +443,8 @@ class SalesOrderService {
       currencyCode = accurateOrder.currency;
     }
 
+    const invoiceCreatedBy = await this.resolveInvoiceCreatorName(userId, accurateOrder);
+
     return {
       so_id: String(accurateOrder.id || accurateOrder.orderId),
       nomor_so: accurateOrder.number || accurateOrder.transNumber || accurateOrder.orderNumber || accurateOrder.soNumber || '',
@@ -371,6 +453,7 @@ class SalesOrderService {
       nama_pelanggan: customerName,
       keterangan: accurateOrder.description || null,
       status: status,
+      invoice_created_by: invoiceCreatedBy,
       total_amount: parseFloat(accurateOrder.totalAmount || accurateOrder.total || 0),
       currency: currencyCode
     };
@@ -387,7 +470,7 @@ class SalesOrderService {
         throw new AppError('Sales order not found in Accurate', 404);
       }
 
-      return this.transformAccurateOrder(response.d);
+      return await this.transformAccurateOrder(response.d, userId);
     } catch (error) {
       logger.error('Error getting sales order from Accurate', { soId, error: error.message });
       throw new AppError('Failed to get sales order from Accurate', 500);
