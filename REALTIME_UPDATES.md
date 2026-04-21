@@ -115,6 +115,8 @@ docker-compose restart backend
 - Stats counter update real-time
 - Reminder overdue tetap berfungsi dengan data terbaru
 - Auto-refresh polling tetap berjalan sebagai fallback
+- **Notifikasi suara + TTS "SO masuk" real-time** 🔔
+- **Toast notification untuk SO baru real-time** 📢
 
 ## 💻 Cara Menggunakan di Frontend
 
