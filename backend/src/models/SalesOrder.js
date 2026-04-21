@@ -44,7 +44,11 @@ class SalesOrder {
       currency: order.currency,
       lastSync: order.last_sync,
       createdAt: order.created_at,
-      updatedAt: order.updated_at
+      updatedAt: order.updated_at,
+      // Invoice history info
+      invoiceCreatedBy: order.invoice_created_by || null,
+      latestInvoiceNumber: order.latest_invoice_number || null,
+      latestInvoiceDate: order.latest_invoice_date || null
     };
   }
 
@@ -67,27 +71,27 @@ class SalesOrder {
     
     const offset = (page - 1) * limit;
     
-    let whereConditions = ['is_active = 1'];
+    let whereConditions = ['so.is_active = 1'];
     let params = [];
 
     if (search) {
-      whereConditions.push('(nomor_so LIKE ? OR nama_pelanggan LIKE ? OR keterangan LIKE ?)');
+      whereConditions.push('(so.nomor_so LIKE ? OR so.nama_pelanggan LIKE ? OR so.keterangan LIKE ?)');
       params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
     if (status) {
-      whereConditions.push('status = ?');
+      whereConditions.push('so.status = ?');
       params.push(status);
     }
 
     if (startDate && endDate) {
-      whereConditions.push('tanggal_so BETWEEN ? AND ?');
+      whereConditions.push('so.tanggal_so BETWEEN ? AND ?');
       params.push(startDate, endDate);
     } else if (startDate) {
-      whereConditions.push('tanggal_so >= ?');
+      whereConditions.push('so.tanggal_so >= ?');
       params.push(startDate);
     } else if (endDate) {
-      whereConditions.push('tanggal_so <= ?');
+      whereConditions.push('so.tanggal_so <= ?');
       params.push(endDate);
     }
 
@@ -104,16 +108,36 @@ class SalesOrder {
 
     // Get total count
     const countResult = await query(
-      `SELECT COUNT(*) as total FROM sales_orders ${whereClause}`,
+      `SELECT COUNT(*) as total FROM sales_orders so ${whereClause}`,
       params
     );
     const total = countResult[0].total;
 
-    // Get sales orders - use string interpolation for LIMIT/OFFSET
+    // Get sales orders with invoice history - use string interpolation for LIMIT/OFFSET
     // to avoid MySQL2 parameter binding issues with pagination values
     const orders = await query(
-      `SELECT * FROM sales_orders ${whereClause}
-       ORDER BY ${sortBy} ${sortOrder}
+      `SELECT 
+        so.*,
+        sih.modified_by as invoice_created_by,
+        sih.invoice_number as latest_invoice_number,
+        sih.invoice_date as latest_invoice_date
+       FROM sales_orders so
+       LEFT JOIN (
+         SELECT 
+           sales_order_id,
+           modified_by,
+           invoice_number,
+           invoice_date,
+           created_at
+         FROM sales_invoice_history
+         WHERE (sales_order_id, created_at) IN (
+           SELECT sales_order_id, MAX(created_at)
+           FROM sales_invoice_history
+           GROUP BY sales_order_id
+         )
+       ) sih ON so.id = sih.sales_order_id
+       ${whereClause}
+       ORDER BY so.${sortBy} ${sortOrder}
        LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}`,
       params
     );
