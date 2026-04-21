@@ -14,13 +14,13 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # 1. Cek apakah di direktori yang benar
-if [ ! -d "/root/werehousegudang" ]; then
-    echo -e "${RED}❌ Direktori /root/werehousegudang tidak ditemukan!${NC}"
-    echo "Pastikan aplikasi sudah di-deploy di /root/werehousegudang"
+if [ ! -d "/var/www/gudang" ]; then
+    echo -e "${RED}❌ Direktori /var/www/gudang tidak ditemukan!${NC}"
+    echo "Pastikan aplikasi sudah di-deploy di /var/www/gudang"
     exit 1
 fi
 
-cd /root/werehousegudang
+cd /var/www/gudang
 
 # 2. Backup file penting
 echo -e "${YELLOW}📦 Backup file penting...${NC}"
@@ -241,5 +241,5 @@ echo "  docker-compose logs -f frontend"
 echo "  tail -f /var/log/nginx/iwareid.com-error.log"
 echo ""
 echo "🔄 Jika masih error, jalankan:"
-echo "  docker-compose down && docker-compose up -d"
+echo "  cd /var/www/gudang && docker-compose down && docker-compose up -d"
 echo ""
