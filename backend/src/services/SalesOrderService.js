@@ -33,13 +33,16 @@ class SalesOrderService {
     const normalized = text.trim();
     if (!normalized) return null;
 
-    // Contoh: "Buat Faktur Penjualan SI.2026... oleh Nur gudang admin"
-    const invoiceByMatch = normalized.match(/faktur penjualan[\s\S]*?\boleh\s+(.+)$/i);
-    if (invoiceByMatch?.[1]) return invoiceByMatch[1].trim();
+    // Hindari false-positive dari deskripsi SO biasa seperti "dibayar oleh kantor".
+    // Hanya ambil pola "oleh <nama>" jika kalimatnya jelas konteks invoice.
+    const hasInvoiceContext = /faktur penjualan|sales invoice|sales-invoice|buat faktur|create invoice/i.test(normalized);
+    if (!hasInvoiceContext) return null;
 
-    // Fallback generic: "... oleh <nama>"
-    const genericByMatch = normalized.match(/\boleh\s+(.+)$/i);
-    if (genericByMatch?.[1]) return genericByMatch[1].trim();
+    const invoiceByMatch = normalized.match(/\boleh\s+(.+)$/i);
+    if (invoiceByMatch?.[1]) {
+      const candidate = invoiceByMatch[1].trim().replace(/[.,;:]+$/, '');
+      return candidate || null;
+    }
 
     return null;
   }
