@@ -1,0 +1,62 @@
+═══════════════════════════════════════════════════════════
+🚀 COMMAND CEPAT - COPY PASTE SAJA
+═══════════════════════════════════════════════════════════
+
+📌 STEP 1: Upload script ke VPS
+───────────────────────────────────────────────────────────
+Buka terminal di komputer lokal Anda, lalu jalankan:
+
+scp fix-websocket-vps.sh root@212.85.26.166:/root/
+
+(Masukkan password saat diminta)
+
+
+📌 STEP 2: Login ke VPS
+───────────────────────────────────────────────────────────
+ssh root@212.85.26.166
+
+(Masukkan password)
+
+
+📌 STEP 3: Jalankan perbaikan
+───────────────────────────────────────────────────────────
+Setelah login ke VPS, copy-paste command ini:
+
+cd /root && chmod +x fix-websocket-vps.sh && ./fix-websocket-vps.sh
+
+
+📌 STEP 4: Tunggu selesai (3-5 menit)
+───────────────────────────────────────────────────────────
+Script akan otomatis:
+✅ Backup file
+✅ Perbaiki WebSocket
+✅ Rebuild containers
+✅ Restart aplikasi
+
+
+📌 STEP 5: Cek hasilnya
+───────────────────────────────────────────────────────────
+Buka browser: https://iwareid.com
+Lihat status di Sales Orders page - harus "Live" (hijau)
+
+
+═══════════════════════════════════════════════════════════
+🔍 COMMAND TAMBAHAN (jika perlu)
+═══════════════════════════════════════════════════════════
+
+Lihat logs backend:
+docker-compose logs -f backend
+
+Lihat logs frontend:
+docker-compose logs -f frontend
+
+Restart manual:
+cd /root/werehousegudang && docker-compose restart
+
+Cek status containers:
+docker-compose ps
+
+
+═══════════════════════════════════════════════════════════
+✅ SELESAI!
+═══════════════════════════════════════════════════════════
