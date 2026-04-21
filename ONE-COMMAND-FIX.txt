@@ -1,0 +1,30 @@
+═══════════════════════════════════════════════════════════════════
+🎯 SATU COMMAND - PERBAIKI SEMUA
+═══════════════════════════════════════════════════════════════════
+
+Dari komputer Windows Anda, buka terminal dan jalankan command ini:
+
+
+scp fix-websocket-nginx-vps.sh root@212.85.26.166:/root/ && ssh root@212.85.26.166 "chmod +x /root/fix-websocket-nginx-vps.sh && /root/fix-websocket-nginx-vps.sh"
+
+
+Masukkan password 2x (untuk scp dan ssh)
+
+SELESAI! Script akan otomatis:
+✅ Upload file ke VPS
+✅ Login ke VPS
+✅ Jalankan perbaikan
+✅ Tampilkan hasil
+
+
+═══════════════════════════════════════════════════════════════════
+🔍 Setelah selesai, cek:
+═══════════════════════════════════════════════════════════════════
+
+1. Buka: https://iwareid.com
+2. Tekan F12 (Console)
+3. Refresh (Ctrl+Shift+R)
+4. Lihat status "Live" di Sales Orders
+
+
+═══════════════════════════════════════════════════════════════════
