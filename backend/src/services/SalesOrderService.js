@@ -565,19 +565,22 @@ class SalesOrderService {
       return String(val).trim() || null;
     };
 
-    const rawStatus =
-      extractStatusStr(accurateOrder?.documentStatus) ??
-      extractStatusStr(accurateOrder?.documentStatusName) ??
-      extractStatusStr(accurateOrder?.transStatusName) ??
-      extractStatusStr(accurateOrder?.statusName) ??
-      extractStatusStr(accurateOrder?.status_label) ??
-      extractStatusStr(accurateOrder?.state) ??
-      extractStatusStr(accurateOrder?.statusCode) ??
-      extractStatusStr(accurateOrder?.status_code) ??
-      extractStatusStr(accurateOrder?.status);
+    // Beberapa akun Accurate mengirim lebih dari 1 field status dan kadang berbeda makna.
+    // Prioritaskan field yang paling sering merepresentasikan status Sales Order di UI Accurate.
+    const statusCandidates = [
+      ['transStatusName', extractStatusStr(accurateOrder?.transStatusName)],
+      ['statusName', extractStatusStr(accurateOrder?.statusName)],
+      ['documentStatusName', extractStatusStr(accurateOrder?.documentStatusName)],
+      ['documentStatus', extractStatusStr(accurateOrder?.documentStatus)],
+      ['status', extractStatusStr(accurateOrder?.status)],
+      ['status_label', extractStatusStr(accurateOrder?.status_label)],
+      ['state', extractStatusStr(accurateOrder?.state)],
+      ['statusCode', extractStatusStr(accurateOrder?.statusCode)],
+      ['status_code', extractStatusStr(accurateOrder?.status_code)]
+    ].filter(([, v]) => v != null && String(v).trim() !== '');
 
-    const rawStr = rawStatus == null ? '' : String(rawStatus).trim();
-    const normalizedStatus = rawStr.toUpperCase();
+    const rawStr = statusCandidates.length ? String(statusCandidates[0][1]).trim() : '';
+    const normalizedStatus = rawStr.toUpperCase().trim();
 
     // Log INFO (bukan debug) agar selalu muncul di log - untuk diagnosa status Accurate
     logger.info('Accurate order status mapping', {
@@ -616,34 +619,36 @@ class SalesOrderService {
       'NEW', 'DRAFT', 'WAITING', 'QUEUE'
     ];
 
-    let status = 'Menunggu diproses';
-    if (completedSet.includes(normalizedStatus)) {
-      status = 'Terproses';
-    } else if (partialSet.includes(normalizedStatus)) {
-      status = 'Sebagian diproses';
-    } else if (pendingSet.includes(normalizedStatus)) {
-      status = 'Menunggu diproses';
-    } else if (normalizedStatus.startsWith('MENUNGGU')) {
-      // Tangkap semua variasi status yang dimulai dengan "MENUNGGU"
-      // seperti "Menunggu di...", "Menunggu diproses", dll
-      status = 'Menunggu diproses';
-      logger.info('Status mapped via MENUNGGU prefix', {
-        accurateOrderId: accurateOrder?.id,
-        rawStatus: rawStr,
-        normalizedStatus
-      });
-    } else if (normalizedStatus.startsWith('SEBAGIAN')) {
-      // Tangkap semua variasi status yang dimulai dengan "SEBAGIAN"
-      status = 'Sebagian diproses';
-      logger.info('Status mapped via SEBAGIAN prefix', {
-        accurateOrderId: accurateOrder?.id,
-        rawStatus: rawStr,
-        normalizedStatus
-      });
-    } else if (rawStr) {
-      // Nilai dari Accurate yang tidak kita kenal: simpan apa adanya
-      status = rawStr;
-      if (!SalesOrderService.unmappedAccurateStatuses.has(normalizedStatus)) {
+    const mapNormalizedToLabel = (norm, raw) => {
+      const n = String(norm || '').toUpperCase().trim();
+      const r = raw == null ? '' : String(raw).trim();
+      if (!n && !r) return null;
+
+      if (completedSet.includes(n)) return 'Terproses';
+      if (partialSet.includes(n)) return 'Sebagian diproses';
+      if (pendingSet.includes(n)) return 'Menunggu diproses';
+      if (n.startsWith('MENUNGGU')) return 'Menunggu diproses';
+      if (n.startsWith('SEBAGIAN')) return 'Sebagian diproses';
+      if (n.startsWith('TERPROSES')) return 'Terproses';
+      return r || null;
+    };
+
+    // Pilih candidate pertama yang bisa dimapping ke 3 label baku.
+    // Kalau tidak ada, simpan raw apa adanya (agar tidak hilang informasinya).
+    let status = null;
+    const mappedByCandidate = [];
+    for (const [src, val] of statusCandidates) {
+      const raw = String(val).trim();
+      const mapped = mapNormalizedToLabel(raw.toUpperCase(), raw);
+      if (mapped) mappedByCandidate.push([src, raw, mapped]);
+      if (!status && mapped && ['Terproses', 'Sebagian diproses', 'Menunggu diproses'].includes(mapped)) {
+        status = mapped;
+      }
+    }
+
+    if (!status) {
+      status = mapNormalizedToLabel(normalizedStatus, rawStr) || 'Menunggu diproses';
+      if (rawStr && !SalesOrderService.unmappedAccurateStatuses.has(normalizedStatus)) {
         SalesOrderService.unmappedAccurateStatuses.add(normalizedStatus);
         logger.warn('UNMAPPED Accurate status - perlu ditambahkan ke mapping!', {
           accurateOrderId: accurateOrder?.id,
@@ -651,6 +656,17 @@ class SalesOrderService {
           normalizedStatus
         });
       }
+    }
+
+    // Jika beberapa field status terdeteksi dan mappingnya konflik, log supaya bisa dianalisa.
+    const distinctMapped = Array.from(new Set(mappedByCandidate.map(([, , m]) => m)));
+    if (distinctMapped.length > 1) {
+      logger.warn('Accurate status fields conflict - picked by priority', {
+        accurateOrderId: accurateOrder?.id,
+        transNumber: accurateOrder?.transNumber ?? accurateOrder?.number,
+        candidates: mappedByCandidate.map(([src, raw, mapped]) => ({ src, raw, mapped })),
+        chosen: status
+      });
     }
 
     logger.info('Status mapping result', {
