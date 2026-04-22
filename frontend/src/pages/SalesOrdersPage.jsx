@@ -226,16 +226,52 @@ const SalesOrdersPage = () => {
 
   const formatStatusLabel = (status) => {
     const s = (status || '').toLowerCase().trim()
-    if (s.includes('terproses') || s.includes('completed') || s.includes('selesai') ||
-        s.includes('proceed') || s.includes('closed') || s.includes('close') ||
-        s.includes('finished') || s.includes('done')) {
+
+    // Pending harus dicek lebih dulu.
+    // Kalau tidak, string "menunggu diproses" akan salah masuk ke "Sebagian diproses"
+    // karena mengandung kata "diproses".
+    if (
+      s.includes('menunggu') ||
+      s.includes('pending') ||
+      s.includes('dipesan') ||
+      s.includes('open') ||
+      s.includes('opened') ||
+      s.includes('queue') ||
+      s.includes('waiting') ||
+      s.includes('draft') ||
+      s.includes('new')
+    ) {
+      return 'Menunggu diproses'
+    }
+
+    if (
+      s.includes('terproses') ||
+      s.includes('completed') ||
+      s.includes('selesai') ||
+      s.includes('proceed') ||
+      s.includes('closed') ||
+      s.includes('close') ||
+      s.includes('finished') ||
+      s.includes('done')
+    ) {
       return 'Terproses'
     }
-    if (s.includes('sebagian') || s.includes('processing') || s.includes('diproses') ||
-        s.includes('partial') || s.includes('in progress')) {
+
+    if (
+      s.includes('sebagian') ||
+      s.includes('processing') ||
+      s.includes('partial') ||
+      s.includes('in progress')
+    ) {
       return 'Sebagian diproses'
     }
-    return 'Menunggu diproses'
+
+    // Fallback: kalau backend sudah menyimpan label baku Accurate, tampilkan apa adanya
+    if (s === 'menunggu diproses') return 'Menunggu diproses'
+    if (s === 'sebagian diproses') return 'Sebagian diproses'
+    if (s === 'terproses') return 'Terproses'
+
+    return status || 'Menunggu diproses'
   }
 
   return (
