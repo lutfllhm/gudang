@@ -690,6 +690,28 @@ const SchedulePage = () => {
     return toYyyyMm(d) === month
   }, [month])
 
+  const normalizeIncomingOrder = useCallback((incoming) => {
+    if (!incoming) return null
+    // Map raw DB row -> Schedule UI shape
+    if (incoming.nomor_so || incoming.nama_pelanggan || incoming.tanggal_so) {
+      return {
+        id: incoming.id,
+        so_id: incoming.so_id,
+        transNumber: incoming.nomor_so,
+        customerName: incoming.nama_pelanggan,
+        transDate: incoming.tanggal_so,
+        totalAmount: incoming.total_amount,
+        status: incoming.status,
+        description: incoming.keterangan,
+        invoiceCreatedBy: incoming.invoice_created_by,
+        createdAt: incoming.created_at,
+        updatedAt: incoming.updated_at,
+        lastSync: incoming.last_sync,
+      }
+    }
+    return incoming
+  }, [])
+
   // Reset displayOrders saat bulan berubah agar marquee mulai fresh
   useEffect(() => {
     displayOrdersRef.current = []
@@ -717,6 +739,7 @@ const SchedulePage = () => {
     const socket = createSocket()
 
     const upsertIntoStates = (incoming) => {
+      incoming = normalizeIncomingOrder(incoming)
       if (!incoming) return
       if (!isOrderInCurrentMonth(incoming)) return
 
@@ -762,7 +785,7 @@ const SchedulePage = () => {
         socket.disconnect()
       } catch (_) {}
     }
-  }, [isOrderInCurrentMonth, playNotificationSound, playNewSOVoice])
+  }, [isOrderInCurrentMonth, normalizeIncomingOrder, playNotificationSound, playNewSOVoice])
 
   useEffect(() => {
     const refreshInterval = setInterval(() => fetchOrders({ silent: true }), AUTO_REFRESH_MS)

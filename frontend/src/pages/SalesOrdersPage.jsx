@@ -57,6 +57,28 @@ const SalesOrdersPage = () => {
     return yyyyMm === month
   }
 
+  const normalizeIncomingOrder = (incoming) => {
+    if (!incoming) return null
+
+    // If backend sends raw DB row, map it to UI shape
+    if (incoming.nomor_so || incoming.nama_pelanggan || incoming.tanggal_so) {
+      return {
+        id: incoming.id,
+        so_id: incoming.so_id,
+        transNumber: incoming.nomor_so,
+        customerName: incoming.nama_pelanggan,
+        transDate: incoming.tanggal_so,
+        totalAmount: incoming.total_amount,
+        status: incoming.status,
+        description: incoming.keterangan,
+        invoiceCreatedBy: incoming.invoice_created_by,
+      }
+    }
+
+    // Otherwise assume it's already in UI shape
+    return incoming
+  }
+
   useEffect(() => {
     fetchOrders()
   }, [pagination.page, search, month])
@@ -113,7 +135,7 @@ const SalesOrdersPage = () => {
     const socket = createSocket()
 
     const handleNew = (payload) => {
-      const incoming = payload?.data
+      const incoming = normalizeIncomingOrder(payload?.data)
       if (!incoming) return
 
       // SalesOrders list uses a page + filters; only merge if it matches current filter
@@ -133,7 +155,7 @@ const SalesOrdersPage = () => {
     }
 
     const handleUpdated = (payload) => {
-      const incoming = payload?.data
+      const incoming = normalizeIncomingOrder(payload?.data)
       if (!incoming) return
 
       setOrders((prev) => {
