@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import DashboardLayout from '../components/DashboardLayout'
 import LoadingSpinner from '../components/LoadingSpinner'
 import usePageTitle from '../hooks/usePageTitle'
@@ -6,6 +6,7 @@ import api from '../utils/api'
 import { formatCurrency, formatDate, debounce, getStatusColor } from '../utils/helpers'
 import { Search, RefreshCw, ShoppingCart } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { createSocket } from '../utils/socket'
 
 const toYyyyMm = (d) => {
   const yyyy = d.getFullYear()
@@ -35,18 +36,26 @@ const SalesOrdersPage = () => {
     totalPages: 0
   })
 
-  // Transform database order to display format
-  const transformOrder = (dbOrder) => ({
-    id: dbOrder.id,
-    so_id: dbOrder.so_id,
-    transNumber: dbOrder.nomor_so,
-    customerName: dbOrder.nama_pelanggan,
-    transDate: dbOrder.tanggal_so,
-    totalAmount: dbOrder.total_amount,
-    status: dbOrder.status,
-    description: dbOrder.keterangan,
-    invoiceCreatedBy: dbOrder.invoice_created_by
-  })
+  const monthRange = useMemo(() => {
+    if (month === 'all') return null
+    return getMonthRange(month)
+  }, [month])
+
+  const isOrderInCurrentFilter = (o) => {
+    // Search filter
+    const q = String(search || '').trim().toLowerCase()
+    if (q) {
+      const hay = `${o?.transNumber || ''} ${o?.customerName || ''}`.toLowerCase()
+      if (!hay.includes(q)) return false
+    }
+
+    // Month filter
+    if (!monthRange) return true
+    const d = o?.transDate ? new Date(o.transDate) : null
+    if (!d || Number.isNaN(d.getTime())) return false
+    const yyyyMm = toYyyyMm(d)
+    return yyyyMm === month
+  }
 
   useEffect(() => {
     fetchOrders()
@@ -63,8 +72,8 @@ const SalesOrdersPage = () => {
         search,
       }
       
-      if (month !== 'all') {
-        const { startDate, endDate } = getMonthRange(month)
+      if (monthRange) {
+        const { startDate, endDate } = monthRange
         params.startDate = startDate
         params.endDate = endDate
         console.log('[SalesOrdersPage] Fetching orders with date filter...', { page: pagination.page, limit: pagination.limit, search, month, startDate, endDate })
@@ -98,6 +107,71 @@ const SalesOrdersPage = () => {
       setLoading(false)
     }
   }
+
+  // Live updates via WebSocket: append/merge orders without refresh
+  useEffect(() => {
+    const socket = createSocket()
+
+    const handleNew = (payload) => {
+      const incoming = payload?.data
+      if (!incoming) return
+
+      // SalesOrders list uses a page + filters; only merge if it matches current filter
+      if (!isOrderInCurrentFilter(incoming)) return
+
+      setOrders((prev) => {
+        const idx = prev.findIndex((x) => String(x.so_id) === String(incoming.so_id))
+        if (idx >= 0) {
+          const next = [...prev]
+          next[idx] = { ...next[idx], ...incoming }
+          return next
+        }
+        // prepend so it appears immediately
+        return [incoming, ...prev]
+      })
+      setPagination((p) => ({ ...p, total: (Number(p.total) || 0) + 1 }))
+    }
+
+    const handleUpdated = (payload) => {
+      const incoming = payload?.data
+      if (!incoming) return
+
+      setOrders((prev) => {
+        const idx = prev.findIndex((x) => String(x.so_id) === String(incoming.so_id))
+        if (idx === -1) {
+          // if the updated order now matches filter, insert it
+          if (!isOrderInCurrentFilter(incoming)) return prev
+          setPagination((p) => ({ ...p, total: (Number(p.total) || 0) + 1 }))
+          return [incoming, ...prev]
+        }
+
+        // if it no longer matches filter, remove it
+        if (!isOrderInCurrentFilter(incoming)) {
+          const next = [...prev]
+          next.splice(idx, 1)
+          setPagination((p) => ({ ...p, total: Math.max(0, (Number(p.total) || 0) - 1) }))
+          return next
+        }
+
+        const next = [...prev]
+        next[idx] = { ...next[idx], ...incoming }
+        return next
+      })
+    }
+
+    socket.on('sales_order:new', handleNew)
+    socket.on('sales_order:updated', handleUpdated)
+
+    return () => {
+      try {
+        socket.off('sales_order:new', handleNew)
+        socket.off('sales_order:updated', handleUpdated)
+        socket.disconnect()
+      } catch (_) {}
+    }
+    // We want socket handlers to reflect current filters (search/month)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, month, monthRange])
 
   const handleSync = async () => {
     setSyncing(true)

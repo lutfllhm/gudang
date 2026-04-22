@@ -13,6 +13,7 @@ import Logo from '../components/Logo'
 import api from '../utils/api'
 import { formatCurrency, formatDate } from '../utils/helpers'
 import AnimatedCounter from '../components/AnimatedCounter'
+import { createSocket } from '../utils/socket'
 import {
   Maximize2,
   Minimize2,
@@ -681,6 +682,14 @@ const SchedulePage = () => {
     }
   }, [month, playNotificationSound, playNewSOVoice, dismissToast, checkAndTriggerOverdueReminder, showNextToast, activeToast])
 
+  const isOrderInCurrentMonth = useCallback((o) => {
+    const dateStr = o?.transDate || o?.tanggal_so
+    if (!dateStr) return false
+    const d = new Date(dateStr)
+    if (Number.isNaN(d.getTime())) return false
+    return toYyyyMm(d) === month
+  }, [month])
+
   // Reset displayOrders saat bulan berubah agar marquee mulai fresh
   useEffect(() => {
     displayOrdersRef.current = []
@@ -702,6 +711,58 @@ const SchedulePage = () => {
 
     return () => clearInterval(timeInterval)
   }, [fetchOrders])
+
+  // Live updates via WebSocket: append/merge orders without refresh
+  useEffect(() => {
+    const socket = createSocket()
+
+    const upsertIntoStates = (incoming) => {
+      if (!incoming) return
+      if (!isOrderInCurrentMonth(incoming)) return
+
+      // Update orders (used for counts & footer)
+      setOrders((prev) => {
+        const key = String(incoming.so_id || incoming.id || incoming.transNumber)
+        const existingMap = new Map(prev.map((o) => [String(o.so_id || o.id || o.transNumber), o]))
+        existingMap.set(key, { ...(existingMap.get(key) || {}), ...incoming })
+        return Array.from(existingMap.values())
+      })
+
+      // Update displayOrders without restarting marquee:
+      // - update existing if found
+      // - append if brand new
+      const key = String(incoming.so_id || incoming.id || incoming.transNumber)
+      const idx = displayOrdersRef.current.findIndex(
+        (o) => String(o.so_id || o.id || o.transNumber) === key
+      )
+      if (idx >= 0) {
+        const next = [...displayOrdersRef.current]
+        next[idx] = { ...next[idx], ...incoming }
+        displayOrdersRef.current = next
+        setDisplayOrders(next)
+      } else {
+        displayOrdersRef.current = [...displayOrdersRef.current, incoming]
+        setDisplayOrders((prev) => [...prev, incoming])
+        // Optional: play notification/toast for new SO
+        playNotificationSound()
+        playNewSOVoice()
+      }
+    }
+
+    const handleNew = (payload) => upsertIntoStates(payload?.data)
+    const handleUpdated = (payload) => upsertIntoStates(payload?.data)
+
+    socket.on('sales_order:new', handleNew)
+    socket.on('sales_order:updated', handleUpdated)
+
+    return () => {
+      try {
+        socket.off('sales_order:new', handleNew)
+        socket.off('sales_order:updated', handleUpdated)
+        socket.disconnect()
+      } catch (_) {}
+    }
+  }, [isOrderInCurrentMonth, playNotificationSound, playNewSOVoice])
 
   useEffect(() => {
     const refreshInterval = setInterval(() => fetchOrders({ silent: true }), AUTO_REFRESH_MS)
