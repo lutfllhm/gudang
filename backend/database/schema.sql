@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS sales_orders (
   customer_id VARCHAR(50),
   nama_pelanggan VARCHAR(255) NOT NULL,
   keterangan TEXT,
-  status VARCHAR(100) DEFAULT 'Menunggu Diproses' COMMENT 'Sama dengan Accurate: Menunggu Diproses, Sebagian Terproses, Terproses',
+  status VARCHAR(100) DEFAULT 'Menunggu diproses' COMMENT 'Sama dengan Accurate: Menunggu diproses, Sebagian diproses, Terproses',
   invoice_created_by VARCHAR(255) NULL COMMENT 'Nama user Accurate yang membuat Sales Invoice terkait SO',
   total_amount DECIMAL(15,2) DEFAULT 0,
   currency VARCHAR(10) DEFAULT 'IDR',
