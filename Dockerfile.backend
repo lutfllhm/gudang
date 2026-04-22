@@ -1,0 +1,76 @@
+# ================================
+# Backend Dockerfile - Production
+# ================================
+
+FROM node:18-alpine AS base
+
+# Install dependencies untuk production
+RUN apk add --no-cache \
+    tini \
+    curl
+
+# Set working directory
+WORKDIR /app
+
+# ================================
+# Dependencies Stage
+# ================================
+FROM base AS dependencies
+
+# Copy package files
+COPY backend/package*.json ./
+
+# Install production dependencies
+RUN npm ci --only=production && \
+    npm cache clean --force
+
+# ================================
+# Build Stage
+# ================================
+FROM base AS build
+
+# Copy package files
+COPY backend/package*.json ./
+
+# Install all dependencies (including dev)
+RUN npm ci
+
+# Copy source code
+COPY backend/ ./
+
+# ================================
+# Production Stage
+# ================================
+FROM base AS production
+
+# Set environment
+ENV NODE_ENV=production
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
+# Copy production dependencies
+COPY --from=dependencies --chown=nodejs:nodejs /app/node_modules ./node_modules
+
+# Copy application code
+COPY --chown=nodejs:nodejs backend/ ./
+
+# Create logs directory
+RUN mkdir -p logs && chown -R nodejs:nodejs logs
+
+# Switch to non-root user
+USER nodejs
+
+# Expose port
+EXPOSE 5000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD node healthcheck.js || exit 1
+
+# Use tini for proper signal handling
+ENTRYPOINT ["/sbin/tini", "--"]
+
+# Start application
+CMD ["node", "server.js"]

@@ -1,166 +1,126 @@
+version: '3.8'
+
 services:
-  db:
+  # ================================
+  # MySQL Database
+  # ================================
+  mysql:
     image: mysql:8.0
-    container_name: iware_db
+    container_name: iware-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root_password}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root_password_change_me}
       MYSQL_DATABASE: ${DB_NAME:-iware_warehouse}
-      MYSQL_USER: ${DB_USER:-iware}
+      MYSQL_USER: ${DB_USER:-iware_user}
       MYSQL_PASSWORD: ${DB_PASSWORD:-iware_password}
-      TZ: 'UTC'
+      MYSQL_ROOT_HOST: '%'
     volumes:
-      - db_data:/var/lib/mysql
-      - ./backend/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
-      - ./backend/database/update-password.sql:/docker-entrypoint-initdb.d/02-update-password.sql
+      - mysql_data:/var/lib/mysql
+      - ./backend/database/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+    ports:
+      - "3306:3306"
     networks:
-      - iware_network
+      - iware-network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-uroot", "-p${DB_PASSWORD:-root_password}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD:-root_password_change_me}"]
       interval: 10s
       timeout: 5s
-      retries: 10
-      start_period: 40s
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+      retries: 5
+      start_period: 30s
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
 
+  # ================================
+  # Redis Cache
+  # ================================
   redis:
     image: redis:7-alpine
-    container_name: iware_redis
+    container_name: iware-redis
     restart: unless-stopped
-    command: >
-      sh -c "
-      if [ -n \"${REDIS_PASSWORD}\" ]; then
-        redis-server --requirepass ${REDIS_PASSWORD}
-      else
-        redis-server
-      fi
-      "
+    command: redis-server --requirepass ${REDIS_PASSWORD:-redis_password_change_me}
     volumes:
       - redis_data:/data
+    ports:
+      - "6379:6379"
     networks:
-      - iware_network
+      - iware-network
     healthcheck:
-      test: ["CMD-SHELL", "if [ -n \"$REDIS_PASSWORD\" ]; then redis-cli -a \"$REDIS_PASSWORD\" ping | grep -q PONG; else redis-cli ping | grep -q PONG; fi"]
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
       interval: 10s
       timeout: 5s
-      retries: 10
-      start_period: 20s
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+      retries: 5
 
+  # ================================
+  # Backend API
+  # ================================
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: iware_backend
+      context: .
+      dockerfile: Dockerfile.backend
+      args:
+        NODE_ENV: production
+    container_name: iware-backend
     restart: unless-stopped
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+    env_file:
+      - .env
     environment:
-      NODE_ENV: ${NODE_ENV:-production}
-      PORT: ${PORT:-5000}
-      APP_NAME: ${APP_NAME:-iWare Warehouse}
-      LOG_LEVEL: ${LOG_LEVEL:-info}
-
-      DB_HOST: db
-      DB_PORT: 3306
-      DB_USER: ${DB_USER:-iware}
-      DB_PASSWORD: ${DB_PASSWORD:-iware_password}
-      DB_NAME: ${DB_NAME:-iware_warehouse}
-      DB_CONNECTION_LIMIT: ${DB_CONNECTION_LIMIT:-10}
-
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
-      REDIS_DB: ${REDIS_DB:-0}
-
-      JWT_SECRET: ${JWT_SECRET:-your_jwt_secret_key_here_min_32_characters}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-your_jwt_refresh_secret_key_here_min_32_characters}
-      JWT_EXPIRE: ${JWT_EXPIRE:-7d}
-      JWT_REFRESH_EXPIRE: ${JWT_REFRESH_EXPIRE:-30d}
-
-      ACCURATE_ACCOUNT_URL: ${ACCURATE_ACCOUNT_URL:-https://account.accurate.id}
-      ACCURATE_API_URL: ${ACCURATE_API_URL:-https://public-api.accurate.id/api}
-      ACCURATE_APP_KEY: ${ACCURATE_APP_KEY:-}
-      ACCURATE_CLIENT_ID: ${ACCURATE_CLIENT_ID:-}
-      ACCURATE_CLIENT_SECRET: ${ACCURATE_CLIENT_SECRET:-}
-      # OAuth callback endpoint ada di backend: GET /api/accurate/callback
-      # Pastikan nilainya sama persis dengan yang didaftarkan di Accurate Developer Portal
-      ACCURATE_REDIRECT_URI: ${ACCURATE_REDIRECT_URI:-https://iwareid.com/api/accurate/callback}
-      ACCURATE_SIGNATURE_SECRET: ${ACCURATE_SIGNATURE_SECRET:-}
-      ACCURATE_ACCESS_TOKEN: ${ACCURATE_ACCESS_TOKEN:-}
-      ACCURATE_DATABASE_ID: ${ACCURATE_DATABASE_ID:-}
-
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000,http://localhost:5000}
-      CORS_CREDENTIALS: ${CORS_CREDENTIALS:-true}
-
-      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-900000}
-      RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS:-100}
-
-      AUTO_SYNC_ENABLED: ${AUTO_SYNC_ENABLED:-false}
-      SYNC_INTERVAL_SECONDS: ${SYNC_INTERVAL_SECONDS:-300}
-      SYNC_BATCH_SIZE: ${SYNC_BATCH_SIZE:-100}
-
-      WEBHOOK_SECRET: ${WEBHOOK_SECRET:-your_webhook_secret_here}
+      - NODE_ENV=production
+      - DB_HOST=mysql
+      - REDIS_HOST=redis
     ports:
-      - "5000:5000"
+      - "${PORT:-5000}:5000"
     volumes:
       - ./backend/logs:/app/logs
     networks:
-      - iware_network
+      - iware-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "node", "healthcheck.js"]
       interval: 30s
       timeout: 10s
-      retries: 5
-      start_period: 60s
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "5"
+      retries: 3
+      start_period: 40s
 
+  # ================================
+  # Frontend Web
+  # ================================
   frontend:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: iware_frontend
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost/api}
+    container_name: iware-frontend
     restart: unless-stopped
-    depends_on:
-      backend:
-        condition: service_healthy
     ports:
-      - "3000:3000"
+      - "80:80"
     networks:
-      - iware_network
+      - iware-network
+    depends_on:
+      - backend
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:3000/ >/dev/null || exit 1"]
+      test: ["CMD", "curl", "-f", "http://localhost/"]
       interval: 30s
       timeout: 10s
-      retries: 5
-      start_period: 20s
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+      retries: 3
+      start_period: 10s
 
-volumes:
-  db_data:
-    driver: local
-  redis_data:
-    driver: local
-
+# ================================
+# Networks
+# ================================
 networks:
-  iware_network:
+  iware-network:
     driver: bridge
+    name: iware-network
+
+# ================================
+# Volumes
+# ================================
+volumes:
+  mysql_data:
+    name: iware-mysql-data
+  redis_data:
+    name: iware-redis-data
