@@ -1,568 +1,284 @@
-# 🚀 Panduan Deployment iWare Warehouse
+# Panduan Deploy Lengkap ke VPS KVM2 (Docker Compose)
 
-Panduan lengkap untuk deployment aplikasi iWare Warehouse menggunakan Docker.
+Dokumen ini adalah langkah tunggal dari awal sampai aplikasi jalan stabil di VPS.
 
-## 📋 Daftar Isi
+Container yang akan aktif:
 
-1. [Persiapan](#persiapan)
-2. [Konfigurasi](#konfigurasi)
-3. [Deployment](#deployment)
-4. [Verifikasi](#verifikasi)
-5. [Maintenance](#maintenance)
-6. [Troubleshooting](#troubleshooting)
+- `iware-frontend`
+- `iware-backend`
+- `iware-mysql`
+- `iware-redis`
+
+Target akhir:
+
+- aplikasi bisa diakses dari domain,
+- backend health normal,
+- integrasi Accurate bisa connect OAuth.
 
 ---
 
-## 🔧 Persiapan
+## 0) Prasyarat VPS
 
-### Requirement Sistem
+**Tujuan langkah ini:** memastikan VPS cukup kuat dan port siap.
 
-- **OS**: Linux (Ubuntu 20.04+), Windows Server, atau macOS
-- **Docker**: 20.10+
-- **Docker Compose**: 2.0+
-- **RAM**: Minimal 2GB (Rekomendasi 4GB+)
-- **Storage**: Minimal 10GB free space
-- **Port**: 80, 443, 3306, 6379, 5000
+Spesifikasi minimum rekomendasi:
 
-### Install Docker
+- CPU 2 vCore
+- RAM 4 GB
+- Disk 40 GB SSD
+- Ubuntu 22.04/24.04 LTS
+- Domain sudah mengarah ke IP VPS
 
-**Ubuntu/Debian:**
+Port wajib terbuka:
+
+- `22` (SSH)
+- `80` (HTTP)
+- `443` (HTTPS, untuk SSL)
+
+---
+
+## 1) Install Docker dan Docker Compose
+
+**Tujuan langkah ini:** menyiapkan engine container di VPS.
+
+Jalankan:
+
 ```bash
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
+sudo apt update
+sudo apt install -y ca-certificates curl gnupg lsb-release
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+sudo systemctl enable docker
+sudo systemctl start docker
 sudo usermod -aG docker $USER
 ```
 
-**Windows:**
-Download dan install [Docker Desktop](https://www.docker.com/products/docker-desktop)
+Logout SSH lalu login lagi agar group `docker` aktif.
 
-**Verifikasi instalasi:**
+Verifikasi:
+
 ```bash
 docker --version
-docker-compose --version
+docker compose version
+```
+
+**Indikator berhasil:** dua command di atas menampilkan versi, bukan error.
+
+---
+
+## 2) Upload source code ke VPS
+
+**Tujuan langkah ini:** menaruh project di lokasi permanen.
+
+Contoh:
+
+```bash
+cd /opt
+sudo mkdir -p iware
+sudo chown -R $USER:$USER /opt/iware
+cd /opt/iware
+git clone <URL_REPOSITORY_ANDA> .
+```
+
+Cek file penting ada:
+
+- `Dockerfile.backend`
+- `Dockerfile.frontend`
+- `docker-compose.yml`
+- `docker-compose.prod.yml`
+- `backend/database/schema.sql`
+- `.env.production`
+
+---
+
+## 3) Isi `.env.production` (wajib)
+
+**Tujuan langkah ini:** memberi semua rahasia dan konfigurasi production.
+
+Edit file:
+
+```bash
+cd /opt/iware
+nano .env.production
+```
+
+Pastikan nilai ini **sudah diganti**:
+
+- Database: `DB_PASSWORD`, `DB_ROOT_PASSWORD`
+- Redis: `REDIS_PASSWORD`
+- JWT: `JWT_SECRET`, `JWT_REFRESH_SECRET`
+- Domain: `CORS_ORIGIN`, `VITE_API_URL`
+- Accurate: `ACCURATE_APP_KEY`, `ACCURATE_CLIENT_ID`, `ACCURATE_CLIENT_SECRET`, `ACCURATE_SIGNATURE_SECRET`, `ACCURATE_REDIRECT_URI`
+- Webhook: `WEBHOOK_SECRET`
+
+Contoh domain:
+
+- `VITE_API_URL=https://domainanda.com/api`
+- `ACCURATE_REDIRECT_URI=https://domainanda.com/api/accurate/callback`
+- `CORS_ORIGIN=https://domainanda.com,https://www.domainanda.com`
+
+**Indikator berhasil:** tidak ada lagi placeholder seperti `GANTI_` atau `yourdomain`.
+
+---
+
+## 4) Build dan jalankan semua container
+
+**Tujuan langkah ini:** start seluruh service aplikasi.
+
+Jalankan:
+
+```bash
+cd /opt/iware
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+```
+
+Cek status:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml ps
+```
+
+**Indikator berhasil:** service `frontend`, `backend`, `mysql`, `redis` status `Up` (idealnya `healthy`).
+
+---
+
+## 5) Verifikasi aplikasi
+
+**Tujuan langkah ini:** memastikan endpoint utama normal.
+
+### 5.1 Cek frontend lokal VPS
+
+```bash
+curl -I http://127.0.0.1
+```
+
+Harus mengembalikan status `200`.
+
+### 5.2 Cek backend health
+
+```bash
+curl http://127.0.0.1:5000/health
+curl http://127.0.0.1:5000/api/health
+```
+
+Harus return JSON status sehat.
+
+### 5.3 Jika ada error, baca log per service
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml logs backend --tail=200
+docker compose -f docker-compose.yml -f docker-compose.prod.yml logs frontend --tail=200
+docker compose -f docker-compose.yml -f docker-compose.prod.yml logs mysql --tail=200
+docker compose -f docker-compose.yml -f docker-compose.prod.yml logs redis --tail=200
 ```
 
 ---
 
-## ⚙️ Konfigurasi
+## 6) Integrasi Accurate (wajib setelah deploy)
 
-### 1. Clone Repository
+**Tujuan langkah ini:** mengaktifkan OAuth dan sinkron data Accurate.
 
-```bash
-git clone <repository-url>
-cd iware-warehouse
-```
-
-### 2. Setup Environment Variables
-
-Copy file environment production:
-```bash
-cp .env.production .env
-```
-
-Edit file `.env` dan sesuaikan konfigurasi:
+1. Pastikan semua env Accurate di `.env.production` sudah valid.
+2. Jika ada perubahan env, restart backend:
 
 ```bash
-nano .env
-# atau
-vim .env
+docker compose -f docker-compose.yml -f docker-compose.prod.yml restart backend
 ```
 
-**Konfigurasi Wajib Diubah:**
+3. Login ke aplikasi sebagai admin.
+4. Buka menu integrasi Accurate, lalu klik connect/authorize.
+5. Selesaikan proses OAuth.
 
-```env
-# Database Passwords (WAJIB GANTI!)
-DB_PASSWORD=password_database_yang_kuat_minimal_16_karakter
-DB_ROOT_PASSWORD=root_password_yang_sangat_kuat_minimal_16_karakter
+**Hasil yang diharapkan:** token tersimpan ke tabel `accurate_tokens`.
 
-# Redis Password (WAJIB GANTI!)
-REDIS_PASSWORD=redis_password_yang_kuat_minimal_16_karakter
+Catatan penting:
 
-# JWT Secrets (WAJIB GANTI!)
-JWT_SECRET=jwt_secret_64_karakter_atau_lebih_gunakan_random_string
-JWT_REFRESH_SECRET=refresh_secret_64_karakter_atau_lebih_gunakan_random_string
-
-# Webhook Secret (WAJIB GANTI!)
-WEBHOOK_SECRET=webhook_secret_yang_kuat_minimal_32_karakter
-
-# Domain (Sesuaikan dengan domain Anda)
-CORS_ORIGIN=https://yourdomain.com,https://www.yourdomain.com
-VITE_API_URL=https://yourdomain.com/api
-
-# Accurate Online API (Dapatkan dari Accurate Developer Portal)
-ACCURATE_APP_KEY=your_accurate_app_key
-ACCURATE_CLIENT_ID=your_accurate_client_id
-ACCURATE_CLIENT_SECRET=your_accurate_client_secret
-ACCURATE_REDIRECT_URI=https://yourdomain.com/api/accurate/callback
-ACCURATE_SIGNATURE_SECRET=your_accurate_signature_secret
-```
-
-**Generate Secret Keys:**
-```bash
-# Generate JWT Secret
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-
-# Generate Refresh Secret
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-
-# Generate Webhook Secret
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-```
-
-### 3. Konfigurasi Accurate Online
-
-1. Login ke [Accurate Developer Portal](https://account.accurate.id/developer)
-2. Buat aplikasi baru atau gunakan yang sudah ada
-3. Catat:
-   - App Key
-   - Client ID
-   - Client Secret
-   - Signature Secret
-4. Set Redirect URI: `https://yourdomain.com/api/accurate/callback`
-5. Masukkan ke file `.env`
+- Jika akun Accurate punya lebih dari 1 database, isi `ACCURATE_DATABASE_ID`.
+- `ACCURATE_REDIRECT_URI` harus sama persis dengan di Accurate Developer Portal.
+- Aplikasi ini memakai scope read-only dan rate limit internal sesuai pedoman Accurate.
 
 ---
 
-## 🚀 Deployment
+## 7) Arahkan domain ke VPS
 
-### Opsi 1: Deployment Sederhana (Tanpa Nginx)
+**Tujuan langkah ini:** aplikasi bisa diakses publik.
 
-Untuk testing atau development:
+Di DNS provider:
+
+- `A record` domain utama -> IP VPS
+- `A record` `www` -> IP VPS (opsional)
+
+Karena frontend expose port `80`, domain langsung bisa resolve ke aplikasi.
+
+---
+
+## 8) SSL HTTPS (opsional, sangat disarankan)
+
+**Tujuan langkah ini:** mengamankan akses dengan HTTPS.
+
+Install Nginx + Certbot:
 
 ```bash
-# Build dan start semua services
-docker-compose up -d
-
-# Lihat logs
-docker-compose logs -f
-
-# Stop services
-docker-compose down
+sudo apt install -y nginx certbot python3-certbot-nginx
 ```
 
-Akses aplikasi:
-- Frontend: http://localhost
-- Backend API: http://localhost:5000/api
-
-### Opsi 2: Deployment Production (Dengan Nginx)
-
-Untuk production dengan reverse proxy:
+Aktifkan config:
 
 ```bash
-# Berikan permission untuk script
-chmod +x scripts/deploy.sh
-
-# Jalankan deployment
-./scripts/deploy.sh
+sudo ln -s /opt/iware/nginx/conf.d/iwareid.com.conf /etc/nginx/sites-available/iwareid.com.conf
+sudo ln -s /etc/nginx/sites-available/iwareid.com.conf /etc/nginx/sites-enabled/iwareid.com.conf
+sudo nginx -t && sudo systemctl reload nginx
 ```
 
-Script akan otomatis:
-1. ✅ Stop container yang sedang berjalan
-2. ✅ Pull latest images
-3. ✅ Build images baru
-4. ✅ Start semua services
-5. ✅ Verifikasi health status
-
-### Manual Deployment Production
-
-Jika ingin manual:
+Pasang sertifikat:
 
 ```bash
-# Stop existing containers
-docker-compose -f docker-compose.prod.yml down
+sudo certbot --nginx -d domainanda.com -d www.domainanda.com
+```
 
-# Build images
-docker-compose -f docker-compose.prod.yml build --no-cache
+Jika mode ini dipakai, ubah mapping port frontend agar tidak bentrok dengan host nginx (misalnya `127.0.0.1:8080:80`).
 
-# Start services
-docker-compose -f docker-compose.prod.yml up -d
+---
 
-# Check status
-docker-compose -f docker-compose.prod.yml ps
+## 9) Operasional harian
+
+### Update aplikasi
+
+```bash
+cd /opt/iware
+git pull
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+```
+
+### Restart service
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml restart backend frontend
+```
+
+### Stop semua container
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml down
 ```
 
 ---
 
-## ✅ Verifikasi
+## 10) Checklist deploy berhasil
 
-### 1. Cek Status Container
+Deploy dianggap sukses jika:
 
-```bash
-# Lihat semua container
-docker ps
+- `docker compose ... ps` menampilkan semua service `Up`
+- `http://domainanda.com` membuka frontend
+- `http://domainanda.com/api/health` merespon sehat
+- login aplikasi berhasil
+- integrasi Accurate berhasil connect OAuth
+- data item/sales order bisa sinkron
 
-# Atau dengan docker-compose
-docker-compose -f docker-compose.prod.yml ps
-```
-
-Semua container harus status `Up` dan `healthy`.
-
-### 2. Cek Logs
-
-```bash
-# Semua logs
-docker-compose -f docker-compose.prod.yml logs -f
-
-# Logs specific service
-docker-compose -f docker-compose.prod.yml logs -f backend
-docker-compose -f docker-compose.prod.yml logs -f frontend
-docker-compose -f docker-compose.prod.yml logs -f mysql
-docker-compose -f docker-compose.prod.yml logs -f redis
-docker-compose -f docker-compose.prod.yml logs -f nginx
-```
-
-### 3. Test Endpoints
-
-```bash
-# Health check
-curl http://localhost/health
-
-# Backend API health
-curl http://localhost/api/health
-
-# Frontend
-curl http://localhost/
-```
-
-### 4. Test Database Connection
-
-```bash
-# Masuk ke MySQL container
-docker exec -it iware-mysql-prod mysql -u iware_user -p
-
-# Di MySQL prompt:
-USE iware_warehouse;
-SHOW TABLES;
-EXIT;
-```
-
-### 5. Test Redis Connection
-
-```bash
-# Masuk ke Redis container
-docker exec -it iware-redis-prod redis-cli -a your_redis_password
-
-# Di Redis prompt:
-PING
-# Harus return: PONG
-EXIT
-```
-
-### 6. Buat Admin User
-
-```bash
-# Masuk ke backend container
-docker exec -it iware-backend-prod sh
-
-# Jalankan script create admin
-node src/scripts/create-admin-auto.js
-
-# Keluar dari container
-exit
-```
-
----
-
-## 🔄 Maintenance
-
-### Backup Database
-
-**Otomatis dengan script:**
-```bash
-chmod +x scripts/backup.sh
-./scripts/backup.sh
-```
-
-Backup akan disimpan di folder `./backups/`
-
-**Manual backup:**
-```bash
-# Backup database
-docker exec iware-mysql-prod mysqldump \
-  -u iware_user \
-  -p \
-  iware_warehouse > backup_$(date +%Y%m%d_%H%M%S).sql
-
-# Compress backup
-gzip backup_*.sql
-```
-
-### Restore Database
-
-```bash
-chmod +x scripts/restore.sh
-./scripts/restore.sh ./backups/iware_backup_20260422_120000.sql.gz
-```
-
-### Update Aplikasi
-
-```bash
-# Pull latest code
-git pull origin main
-
-# Rebuild dan restart
-docker-compose -f docker-compose.prod.yml down
-docker-compose -f docker-compose.prod.yml build --no-cache
-docker-compose -f docker-compose.prod.yml up -d
-```
-
-### Monitoring
-
-**Lihat resource usage:**
-```bash
-docker stats
-```
-
-**Lihat logs real-time:**
-```bash
-# All services
-docker-compose -f docker-compose.prod.yml logs -f
-
-# Specific service
-docker-compose -f docker-compose.prod.yml logs -f backend
-```
-
-**Lihat disk usage:**
-```bash
-docker system df
-```
-
-### Cleanup
-
-**Hapus unused images:**
-```bash
-docker image prune -a
-```
-
-**Hapus unused volumes:**
-```bash
-docker volume prune
-```
-
-**Hapus semua unused resources:**
-```bash
-docker system prune -a --volumes
-```
-
----
-
-## 🔒 SSL/HTTPS Setup
-
-### Menggunakan Let's Encrypt (Certbot)
-
-1. **Install Certbot:**
-```bash
-sudo apt-get update
-sudo apt-get install certbot
-```
-
-2. **Generate SSL Certificate:**
-```bash
-sudo certbot certonly --standalone -d yourdomain.com -d www.yourdomain.com
-```
-
-3. **Copy certificates ke nginx folder:**
-```bash
-sudo mkdir -p nginx/ssl
-sudo cp /etc/letsencrypt/live/yourdomain.com/fullchain.pem nginx/ssl/
-sudo cp /etc/letsencrypt/live/yourdomain.com/privkey.pem nginx/ssl/
-```
-
-4. **Edit nginx config:**
-```bash
-nano nginx/conf.d/default.conf
-```
-
-Uncomment bagian HTTPS server dan sesuaikan `server_name`.
-
-5. **Restart nginx:**
-```bash
-docker-compose -f docker-compose.prod.yml restart nginx
-```
-
-6. **Auto-renewal:**
-```bash
-# Test renewal
-sudo certbot renew --dry-run
-
-# Setup cron job
-sudo crontab -e
-
-# Tambahkan line ini:
-0 0 * * * certbot renew --quiet && docker-compose -f /path/to/docker-compose.prod.yml restart nginx
-```
-
----
-
-## 🐛 Troubleshooting
-
-### Container Tidak Start
-
-```bash
-# Cek logs
-docker-compose -f docker-compose.prod.yml logs
-
-# Cek specific container
-docker logs iware-backend-prod
-docker logs iware-mysql-prod
-```
-
-### Database Connection Error
-
-```bash
-# Cek MySQL status
-docker exec iware-mysql-prod mysqladmin ping -h localhost -u root -p
-
-# Cek MySQL logs
-docker logs iware-mysql-prod
-
-# Restart MySQL
-docker-compose -f docker-compose.prod.yml restart mysql
-```
-
-### Redis Connection Error
-
-```bash
-# Test Redis
-docker exec iware-redis-prod redis-cli -a your_password PING
-
-# Cek Redis logs
-docker logs iware-redis-prod
-
-# Restart Redis
-docker-compose -f docker-compose.prod.yml restart redis
-```
-
-### Port Already in Use
-
-```bash
-# Cek port yang digunakan
-sudo netstat -tulpn | grep :80
-sudo netstat -tulpn | grep :443
-sudo netstat -tulpn | grep :3306
-
-# Stop service yang menggunakan port
-sudo systemctl stop apache2  # Jika ada Apache
-sudo systemctl stop nginx    # Jika ada Nginx lokal
-```
-
-### Out of Memory
-
-```bash
-# Cek memory usage
-docker stats
-
-# Tambah swap space (Linux)
-sudo fallocate -l 2G /swapfile
-sudo chmod 600 /swapfile
-sudo mkswap /swapfile
-sudo swapon /swapfile
-```
-
-### Rebuild dari Awal
-
-```bash
-# Stop dan hapus semua
-docker-compose -f docker-compose.prod.yml down -v
-
-# Hapus images
-docker rmi $(docker images -q iware*)
-
-# Build ulang
-docker-compose -f docker-compose.prod.yml build --no-cache
-
-# Start
-docker-compose -f docker-compose.prod.yml up -d
-```
-
----
-
-## 📊 Monitoring & Logs
-
-### Log Locations
-
-- **Backend logs**: `./backend/logs/`
-- **Nginx logs**: Docker volume `iware-nginx-logs`
-- **MySQL logs**: Di dalam container
-- **Redis logs**: Di dalam container
-
-### View Logs
-
-```bash
-# Backend logs (dari host)
-tail -f backend/logs/all-$(date +%Y-%m-%d).log
-
-# Nginx logs
-docker exec iware-nginx-prod tail -f /var/log/nginx/access.log
-docker exec iware-nginx-prod tail -f /var/log/nginx/error.log
-
-# MySQL logs
-docker logs iware-mysql-prod --tail 100 -f
-
-# Redis logs
-docker logs iware-redis-prod --tail 100 -f
-```
-
----
-
-## 🔐 Security Checklist
-
-- [ ] Ganti semua default passwords
-- [ ] Generate strong JWT secrets
-- [ ] Setup firewall (UFW/iptables)
-- [ ] Enable SSL/HTTPS
-- [ ] Restrict database access
-- [ ] Setup regular backups
-- [ ] Enable rate limiting
-- [ ] Update CORS origins
-- [ ] Secure Redis with password
-- [ ] Regular security updates
-
----
-
-## 📞 Support
-
-Jika mengalami masalah:
-
-1. Cek logs terlebih dahulu
-2. Verifikasi konfigurasi `.env`
-3. Pastikan semua services healthy
-4. Cek dokumentasi Accurate Online API
-5. Contact support team
-
----
-
-## 📝 Catatan Penting
-
-1. **Backup Rutin**: Selalu backup database sebelum update
-2. **Environment Variables**: Jangan commit file `.env` ke git
-3. **SSL Certificate**: Renew setiap 90 hari (Let's Encrypt)
-4. **Monitoring**: Setup monitoring untuk production
-5. **Updates**: Update dependencies secara berkala
-6. **Security**: Audit security secara berkala
-
----
-
-**Deployment berhasil! 🎉**
-
-Aplikasi sekarang berjalan di:
-- Frontend: http://yourdomain.com
-- Backend API: http://yourdomain.com/api
-- WebSocket: ws://yourdomain.com/socket.io
-
----
-
-## 🔗 Integrasi Accurate Online
-
-**PENTING**: Setelah deployment, Anda perlu setup integrasi dengan Accurate Online.
-
-Lihat panduan lengkap: [ACCURATE-INTEGRATION.md](./ACCURATE-INTEGRATION.md)
-
-Quick setup:
-```bash
-# Linux/Mac
-./scripts/setup-accurate.sh
-
-# Windows
-.\scripts\setup-accurate.ps1
-```
+Selesai. Dengan urutan ini, aplikasi dan seluruh container siap jalan stabil di VPS KVM2.
