@@ -612,6 +612,7 @@ class SalesOrderService {
     const pendingSet = [
       'DIPESAN', 'OPEN', 'OPENED', 'PENDING', 'MENUNGGU',
       'MENUNGGU PROSES', 'MENUNGGU DIPROSES', 'MENUNGGU_DIPROSES',
+      'MENUNGGU DI...', 'MENUNGGU DI', // Status dari Accurate yang terpotong
       'NEW', 'DRAFT', 'WAITING', 'QUEUE'
     ];
 
@@ -622,6 +623,23 @@ class SalesOrderService {
       status = 'Sebagian diproses';
     } else if (pendingSet.includes(normalizedStatus)) {
       status = 'Menunggu diproses';
+    } else if (normalizedStatus.startsWith('MENUNGGU')) {
+      // Tangkap semua variasi status yang dimulai dengan "MENUNGGU"
+      // seperti "Menunggu di...", "Menunggu diproses", dll
+      status = 'Menunggu diproses';
+      logger.info('Status mapped via MENUNGGU prefix', {
+        accurateOrderId: accurateOrder?.id,
+        rawStatus: rawStr,
+        normalizedStatus
+      });
+    } else if (normalizedStatus.startsWith('SEBAGIAN')) {
+      // Tangkap semua variasi status yang dimulai dengan "SEBAGIAN"
+      status = 'Sebagian diproses';
+      logger.info('Status mapped via SEBAGIAN prefix', {
+        accurateOrderId: accurateOrder?.id,
+        rawStatus: rawStr,
+        normalizedStatus
+      });
     } else if (rawStr) {
       // Nilai dari Accurate yang tidak kita kenal: simpan apa adanya
       status = rawStr;

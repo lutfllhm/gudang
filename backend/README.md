@@ -490,7 +490,37 @@ node src/scripts/test-sync-sales-orders.js full
 
 # Test custom range
 node src/scripts/test-sync-sales-orders.js custom
+
+# Fix sales order status mapping
+node src/scripts/fix-and-resync-sales-orders.js
+
+# Debug sales order status (compare DB vs Accurate)
+node src/scripts/debug-sales-order-status.js
+
+# Debug specific SO
+node src/scripts/debug-sales-order-status.js SO.2026.04.00997 SO.2026.04.00998
 ```
+
+### Troubleshooting Status Mismatch
+
+Jika status sales order tidak sesuai dengan Accurate:
+
+1. **Debug status terlebih dahulu**:
+   ```bash
+   node src/scripts/debug-sales-order-status.js
+   ```
+
+2. **Perbaiki status yang salah**:
+   ```bash
+   node src/scripts/fix-and-resync-sales-orders.js
+   ```
+
+3. **Atau jalankan SQL script**:
+   ```bash
+   mysql -u [username] -p iware_warehouse < database/fix-sales-order-status-mapping.sql
+   ```
+
+Lihat [PERBAIKAN_STATUS_SALES_ORDER.md](../PERBAIKAN_STATUS_SALES_ORDER.md) untuk detail lengkap.
 
 ### Dokumentasi Lengkap
 
