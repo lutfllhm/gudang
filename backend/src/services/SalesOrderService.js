@@ -760,7 +760,9 @@ class SalesOrderService {
 
       // Get user ID (ambil user dengan token yang masih valid)
       const userResult = await query(
-        'SELECT user_id FROM accurate_tokens WHERE is_active = 1 AND expires_at > NOW() ORDER BY id DESC LIMIT 1'
+        // Jangan filter token berdasarkan expires_at.
+        // Kalau access_token expire, TokenManager akan refresh otomatis.
+        'SELECT user_id FROM accurate_tokens WHERE is_active = 1 ORDER BY id DESC LIMIT 1'
       );
 
       if (userResult.length === 0) {

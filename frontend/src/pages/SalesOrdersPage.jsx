@@ -83,6 +83,18 @@ const SalesOrdersPage = () => {
     fetchOrders()
   }, [pagination.page, search, month])
 
+  // Auto refresh list (agar hasil auto-sync dari backend segera terlihat tanpa klik manual)
+  useEffect(() => {
+    const t = setInterval(() => {
+      // Jangan ganggu saat sedang loading atau sync manual
+      if (!loading && !syncing) {
+        fetchOrders()
+      }
+    }, 60_000) // 1 menit
+    return () => clearInterval(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, syncing, pagination.page, pagination.limit, search, month])
+
   const fetchOrders = async () => {
     try {
       setLoading(true)

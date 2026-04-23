@@ -83,8 +83,10 @@ class SyncService {
 
       // Get user with active token if not provided
       if (!userId) {
+        // Jangan filter `expires_at > NOW()` di sini.
+        // Akses token bisa saja sudah expire, tapi TokenManager/ApiClient mampu refresh memakai refresh_token.
         const userResult = await query(
-          'SELECT user_id FROM accurate_tokens WHERE is_active = 1 AND expires_at > NOW() ORDER BY id DESC LIMIT 1'
+          'SELECT user_id FROM accurate_tokens WHERE is_active = 1 ORDER BY id DESC LIMIT 1'
         );
         
         if (userResult.length === 0) {

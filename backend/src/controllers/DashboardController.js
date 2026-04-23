@@ -34,7 +34,8 @@ class DashboardController {
       SalesOrderService.getAll({ page: 1, limit: 5, sortBy: 'tanggal_so', sortOrder: 'desc' }),
       query('SELECT * FROM sync_config WHERE id = 1'),
       query(
-        'SELECT id FROM accurate_tokens WHERE is_active = 1 AND expires_at > NOW() ORDER BY id DESC LIMIT 1'
+        // Jangan pakai `expires_at > NOW()` karena access token bisa expire tapi masih bisa di-refresh.
+        'SELECT id FROM accurate_tokens WHERE is_active = 1 ORDER BY id DESC LIMIT 1'
       )
     ]);
 
