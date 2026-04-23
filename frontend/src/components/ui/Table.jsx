@@ -4,7 +4,7 @@ const Table = ({ columns, children }) => {
   return (
     <div className="overflow-x-auto">
       <table className="w-full">
-        <thead className="bg-slate-50 border-b border-slate-200 relative after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-gradient-to-r after:from-transparent after:via-red-200/90 after:to-transparent">
+        <thead className="relative border-b border-white/50 bg-white/35 backdrop-blur-sm after:absolute after:bottom-0 after:inset-x-0 after:h-px after:bg-gradient-to-r after:from-transparent after:via-red-300/80 after:to-transparent">
           <tr>
             {columns.map((col) => (
               <th
@@ -23,7 +23,7 @@ const Table = ({ columns, children }) => {
             ))}
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-slate-100">{children}</tbody>
+        <tbody className="divide-y divide-white/50 bg-white/20">{children}</tbody>
       </table>
     </div>
   )

@@ -126,7 +126,7 @@ const ItemsPage = () => {
               type="text"
               placeholder="Cari items berdasarkan nama atau nomor..."
               onChange={(e) => handleSearchChange(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+              className="w-full rounded-xl border border-white/60 bg-white/55 py-2.5 pl-10 pr-3 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-red-400/25"
             />
           </div>
         </Card>
@@ -147,7 +147,7 @@ const ItemsPage = () => {
             <>
               <Table columns={columns}>
                 {items.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50">
+                  <tr key={item.id} className="hover:bg-white/40">
                     <td className="px-6 py-4">
                       <div className="text-sm font-semibold text-slate-900">{item.name}</div>
                       {item.description && (

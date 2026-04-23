@@ -12,6 +12,60 @@
   --color-success: #10b981;
   --color-warning: #f59e0b;
   --color-error: #ef4444;
+  --glass-blur: 16px;
+  --glass-bg-alpha: 0.5;
+  --glass-bg-alpha-fallback: 0.45;
+  --glass-border-alpha: 0.6;
+  --glass-shadow-alpha: 0.06;
+  --glass-hover-lift: -2px;
+  --glass-hover-glow-alpha: 0.45;
+  --glass-glow-strength: 1;
+  --shell-sidebar-bg-alpha: 0.82;
+  --shell-topbar-bg-alpha: 0.46;
+  --shell-menu-bg-alpha: 0.56;
+  --shell-backdrop-blur: 24px;
+  --ambient-red-alpha: 0.2;
+  --ambient-rose-alpha: 0.38;
+  --accent-line-opacity: 0.65;
+  --accent-line-speed: 6s;
+}
+
+[data-glass-intensity='soft'] {
+  --glass-blur: 10px;
+  --glass-bg-alpha: 0.62;
+  --glass-bg-alpha-fallback: 0.58;
+  --glass-border-alpha: 0.68;
+  --glass-shadow-alpha: 0.05;
+  --glass-hover-lift: -1px;
+  --glass-hover-glow-alpha: 0.3;
+  --glass-glow-strength: 0.65;
+  --shell-sidebar-bg-alpha: 0.9;
+  --shell-topbar-bg-alpha: 0.62;
+  --shell-menu-bg-alpha: 0.7;
+  --shell-backdrop-blur: 14px;
+  --ambient-red-alpha: 0.14;
+  --ambient-rose-alpha: 0.26;
+  --accent-line-opacity: 0.45;
+  --accent-line-speed: 8s;
+}
+
+[data-glass-intensity='strong'] {
+  --glass-blur: 22px;
+  --glass-bg-alpha: 0.38;
+  --glass-bg-alpha-fallback: 0.34;
+  --glass-border-alpha: 0.52;
+  --glass-shadow-alpha: 0.09;
+  --glass-hover-lift: -3px;
+  --glass-hover-glow-alpha: 0.62;
+  --glass-glow-strength: 1.2;
+  --shell-sidebar-bg-alpha: 0.76;
+  --shell-topbar-bg-alpha: 0.34;
+  --shell-menu-bg-alpha: 0.42;
+  --shell-backdrop-blur: 30px;
+  --ambient-red-alpha: 0.26;
+  --ambient-rose-alpha: 0.46;
+  --accent-line-opacity: 0.8;
+  --accent-line-speed: 5s;
 }
 
 @layer base {
@@ -23,8 +77,14 @@
     font-size: clamp(14px, 0.35vw + 12px, 18px);
   }
   body {
-    @apply bg-gray-50 text-gray-900 antialiased;
+    @apply text-gray-900 antialiased;
+    background:
+      radial-gradient(circle at 8% 12%, rgba(239, 68, 68, 0.22), transparent 34%),
+      radial-gradient(circle at 88% 10%, rgba(255, 255, 255, 0.95), transparent 36%),
+      radial-gradient(circle at 78% 82%, rgba(248, 113, 113, 0.2), transparent 42%),
+      linear-gradient(145deg, #eef2ff 0%, #f8fafc 42%, #ffe4e6 100%);
     font-family: 'Inter', sans-serif;
+    min-height: 100vh;
   }
 }
 
@@ -46,7 +106,7 @@
   }
   
   .card {
-    @apply bg-white rounded-xl shadow-lg border border-gray-200 p-6 transition-all duration-300 hover:shadow-xl;
+    @apply rounded-2xl border border-white/60 bg-white/50 p-6 shadow-lg shadow-slate-900/5 backdrop-blur-xl transition-all duration-300 hover:bg-white/65 hover:shadow-xl;
   }
   
   .badge {
@@ -136,8 +196,31 @@
 }
 
 @keyframes glow {
-  0%, 100% { box-shadow: 0 0 5px rgba(239, 68, 68, 0.5); }
-  50% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.8), 0 0 30px rgba(239, 68, 68, 0.6); }
+  0%, 100% {
+    box-shadow:
+      0 0 5px rgba(239, 68, 68, calc(0.4 * var(--glass-glow-strength))),
+      0 0 10px rgba(239, 68, 68, calc(0.2 * var(--glass-glow-strength)));
+  }
+  50% {
+    box-shadow:
+      0 0 16px rgba(239, 68, 68, calc(0.72 * var(--glass-glow-strength))),
+      0 0 30px rgba(239, 68, 68, calc(0.45 * var(--glass-glow-strength)));
+  }
+}
+
+@keyframes float-soft {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-4px); }
+}
+
+@keyframes ambient-drift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(8px, -10px, 0) scale(1.04); }
+}
+
+@keyframes accent-slide {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
 }
 
 .animate-spin { animation: spin 1s linear infinite; }
@@ -154,6 +237,73 @@
   animation: shimmer 2s infinite;
 }
 .animate-glow { animation: glow 2s ease-in-out infinite; }
+.animate-float-soft { animation: float-soft 4s ease-in-out infinite; }
+.animate-ambient-drift { animation: ambient-drift 14s ease-in-out infinite; }
+
+.glass-panel {
+  border: 1px solid rgba(255, 255, 255, var(--glass-border-alpha));
+  background: rgba(255, 255, 255, var(--glass-bg-alpha));
+  box-shadow: 0 16px 34px -20px rgba(15, 23, 42, var(--glass-shadow-alpha));
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+}
+
+.glass-sidebar {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(15, 23, 42, var(--shell-sidebar-bg-alpha));
+  backdrop-filter: blur(var(--shell-backdrop-blur));
+  -webkit-backdrop-filter: blur(var(--shell-backdrop-blur));
+}
+
+.glass-topbar {
+  border-color: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, var(--shell-topbar-bg-alpha));
+  backdrop-filter: blur(var(--shell-backdrop-blur));
+  -webkit-backdrop-filter: blur(var(--shell-backdrop-blur));
+}
+
+.glass-menu-panel {
+  border-color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, var(--shell-menu-bg-alpha));
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+}
+
+.glass-ambient-red {
+  background-color: rgba(239, 68, 68, var(--ambient-red-alpha));
+}
+
+.glass-ambient-rose {
+  background-color: rgba(251, 113, 133, var(--ambient-rose-alpha));
+}
+
+.glass-accent-line {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(248, 113, 113, calc(var(--accent-line-opacity) * 0.6)) 24%,
+    rgba(239, 68, 68, var(--accent-line-opacity)) 50%,
+    rgba(251, 113, 133, calc(var(--accent-line-opacity) * 0.75)) 76%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: accent-slide var(--accent-line-speed) linear infinite;
+}
+
+.glass-hover {
+  transition: transform 260ms ease, box-shadow 260ms ease, background-color 260ms ease;
+  will-change: transform;
+}
+
+.glass-hover:hover {
+  transform: translateY(var(--glass-hover-lift));
+  box-shadow: 0 16px 30px -18px rgba(239, 68, 68, var(--glass-hover-glow-alpha));
+}
+
+.glass-glow {
+  box-shadow: 0 0 0 rgba(239, 68, 68, 0.2);
+  animation: glow 3.2s ease-in-out infinite;
+}
 
 /* Professional text gradients */
 .text-gradient-primary {
@@ -193,6 +343,24 @@
   transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-float-soft,
+  .animate-ambient-drift,
+  .glass-glow,
+  .animate-glow,
+  .animate-bounce-slow {
+    animation: none !important;
+  }
+
+  .glass-accent-line {
+    animation: none !important;
+  }
+
+  .glass-hover:hover {
+    transform: none;
+  }
 }
 
 /* TV Display Mode - Optimized untuk TV 43 inch (1920x1080) */

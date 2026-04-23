@@ -3,15 +3,16 @@ import Card from './Card'
 
 const StatCard = ({ title, value, subtitle, icon: Icon }) => {
   return (
-    <Card className="p-5">
+    <Card className="relative overflow-hidden p-5">
+      <div className="pointer-events-none absolute -right-14 -top-14 h-28 w-28 rounded-full bg-red-200/40 blur-2xl animate-ambient-drift" />
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{title}</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500/95">{title}</p>
           <p className="mt-2 text-2xl font-semibold text-slate-900">{value}</p>
-          {subtitle ? <p className="mt-1 text-sm text-slate-600">{subtitle}</p> : null}
+          {subtitle ? <p className="mt-1 text-sm text-slate-600/90">{subtitle}</p> : null}
         </div>
         {Icon ? (
-          <div className="rounded-lg bg-gradient-to-br from-red-600 to-red-700 p-2.5 text-white shadow-sm shadow-red-600/20 ring-1 ring-inset ring-white/10">
+          <div className="glass-glow rounded-xl bg-gradient-to-br from-red-500 to-rose-500 p-2.5 text-white shadow-lg shadow-red-500/30 ring-1 ring-inset ring-white/20">
             <Icon className="h-5 w-5" />
           </div>
         ) : null}

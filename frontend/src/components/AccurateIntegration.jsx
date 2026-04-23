@@ -156,8 +156,8 @@ const AccurateIntegration = () => {
 
         {status?.connected ? (
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="rounded-xl border border-white/60 bg-white/45 p-4 backdrop-blur-sm">
                 <div className="mb-1 flex items-center gap-2 text-slate-600">
                   <Clock className="h-4 w-4" />
                   <span className="text-sm font-medium">Token Expired</span>
@@ -166,7 +166,7 @@ const AccurateIntegration = () => {
                   {status.expiresAt ? formatDateTime(status.expiresAt) : 'N/A'}
                 </p>
               </div>
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <div className="rounded-xl border border-white/60 bg-white/45 p-4 backdrop-blur-sm">
                 <div className="mb-1 flex items-center gap-2 text-slate-600">
                   <Database className="h-4 w-4" />
                   <span className="text-sm font-medium">Status</span>
@@ -201,7 +201,7 @@ const AccurateIntegration = () => {
               </Button>
             </div>
             
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <div className="rounded-xl border border-white/60 bg-white/45 p-4 backdrop-blur-sm">
               <p className="text-sm text-slate-700">
                 <span className="font-medium">Sync Bulan Ini</span>: update rutin (cepat).
                 <br />
@@ -234,7 +234,7 @@ const AccurateIntegration = () => {
           <h3 className="text-base font-semibold text-slate-900 mb-4">Konfigurasi Sync</h3>
           
           <div className="space-y-4">
-            <div className="flex items-center justify-between gap-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <div className="flex items-center justify-between gap-4 rounded-xl border border-white/60 bg-white/45 p-4 backdrop-blur-sm">
               <div>
                 <p className="font-medium text-slate-900">Auto Sync</p>
                 <p className="text-sm text-slate-600">Sinkronisasi otomatis dari Accurate.</p>
@@ -249,7 +249,7 @@ const AccurateIntegration = () => {
                   })}
                   className="sr-only peer"
                 />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                <div className="h-6 w-11 rounded-full bg-gray-200 peer peer-checked:bg-red-500 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-200 peer-checked:after:translate-x-full peer-checked:after:border-white after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-['']"></div>
               </label>
             </div>
 
@@ -263,7 +263,7 @@ const AccurateIntegration = () => {
                   ...syncConfig,
                   sync_interval_seconds: parseInt(e.target.value)
                 })}
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                className="w-full rounded-xl border border-white/60 bg-white/55 px-3 py-2.5 text-sm text-slate-900 shadow-sm backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-red-400/25"
               >
                 <option value={60}>1 minute</option>
                 <option value={300}>5 minutes</option>
@@ -294,7 +294,7 @@ const AccurateIntegration = () => {
             <button
               onClick={() => handleSync('items')}
               disabled={syncing}
-              className="rounded-lg border border-slate-200 bg-white p-4 text-left hover:bg-slate-50 disabled:opacity-60"
+              className="rounded-xl border border-white/60 bg-white/45 p-4 text-left backdrop-blur-sm hover:bg-white/65 disabled:opacity-60"
             >
               <Database className="mb-2 h-5 w-5 text-slate-700" />
               <p className="text-sm font-medium text-slate-900">Sync Items</p>
@@ -303,7 +303,7 @@ const AccurateIntegration = () => {
             <button
               onClick={() => handleSync('sales_orders')}
               disabled={syncing}
-              className="rounded-lg border border-slate-200 bg-white p-4 text-left hover:bg-slate-50 disabled:opacity-60"
+              className="rounded-xl border border-white/60 bg-white/45 p-4 text-left backdrop-blur-sm hover:bg-white/65 disabled:opacity-60"
             >
               <Database className="mb-2 h-5 w-5 text-slate-700" />
               <p className="text-sm font-medium text-slate-900">Sync Sales Orders</p>
@@ -312,7 +312,7 @@ const AccurateIntegration = () => {
             <button
               onClick={() => handleSync('full')}
               disabled={syncing}
-              className="rounded-lg border border-slate-200 bg-white p-4 text-left hover:bg-slate-50 disabled:opacity-60"
+              className="rounded-xl border border-white/60 bg-white/45 p-4 text-left backdrop-blur-sm hover:bg-white/65 disabled:opacity-60"
             >
               <RefreshCw className="mb-2 h-5 w-5 text-slate-700" />
               <p className="text-sm font-medium text-slate-900">Full Sync</p>

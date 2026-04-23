@@ -4,8 +4,7 @@ const Card = ({ className = '', children }) => {
   return (
     <div
       className={[
-        'rounded-xl border border-slate-200/80 bg-white shadow-sm shadow-slate-900/5',
-        'supports-[backdrop-filter]:bg-white/90',
+        'glass-panel glass-hover rounded-2xl',
         className
       ].join(' ')}
     >

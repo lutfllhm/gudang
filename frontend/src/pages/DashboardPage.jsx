@@ -24,9 +24,21 @@ const DashboardPage = () => {
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState(null)
   const [syncing, setSyncing] = useState(false)
+  const [glassIntensity, setGlassIntensity] = useState(() =>
+    document.documentElement.getAttribute('data-glass-intensity') || 'medium'
+  )
 
   useEffect(() => {
     fetchDashboardData()
+  }, [])
+
+  useEffect(() => {
+    const handleGlassIntensityChange = (event) => {
+      setGlassIntensity(event.detail || 'medium')
+    }
+
+    window.addEventListener('glass-intensity-change', handleGlassIntensityChange)
+    return () => window.removeEventListener('glass-intensity-change', handleGlassIntensityChange)
   }, [])
 
   const fetchDashboardData = async () => {
@@ -98,6 +110,38 @@ const DashboardPage = () => {
     }
   ]
 
+  const chartThemeByIntensity = {
+    soft: {
+      gridStroke: '#e2e8f0',
+      axisStroke: '#64748b',
+      barFill: '#f87171',
+      tooltipBackground: 'rgba(255,255,255,0.9)',
+      tooltipBorder: '1px solid rgba(255,255,255,0.85)',
+      tooltipShadow: '0 8px 24px -10px rgba(15, 23, 42, 0.18)',
+      tooltipBlur: '6px'
+    },
+    medium: {
+      gridStroke: '#e5e7eb',
+      axisStroke: '#6b7280',
+      barFill: '#ef4444',
+      tooltipBackground: 'rgba(255,255,255,0.75)',
+      tooltipBorder: '1px solid rgba(255,255,255,0.7)',
+      tooltipShadow: '0 10px 30px -8px rgba(15, 23, 42, 0.25)',
+      tooltipBlur: '8px'
+    },
+    strong: {
+      gridStroke: '#f1f5f9',
+      axisStroke: '#94a3b8',
+      barFill: '#dc2626',
+      tooltipBackground: 'rgba(255,255,255,0.62)',
+      tooltipBorder: '1px solid rgba(255,255,255,0.55)',
+      tooltipShadow: '0 14px 34px -8px rgba(15, 23, 42, 0.32)',
+      tooltipBlur: '12px'
+    }
+  }
+
+  const chartTheme = chartThemeByIntensity[glassIntensity] || chartThemeByIntensity.medium
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -131,10 +175,10 @@ const DashboardPage = () => {
         {/* Charts */}
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {/* Sales Chart */}
-          <Card className="p-5">
+          <Card className="p-5 animate-fade-in">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <div className="rounded-lg bg-gradient-to-br from-red-600 to-red-700 p-2 text-white shadow-sm shadow-red-600/20 ring-1 ring-inset ring-white/10">
+                <div className="glass-glow rounded-xl bg-gradient-to-br from-red-500 to-rose-500 p-2 text-white shadow-sm shadow-red-500/25 ring-1 ring-inset ring-white/20">
                   <TrendingUp className="h-4 w-4" />
                 </div>
                 <h3 className="text-sm font-semibold text-slate-900">Penjualan 7 hari terakhir</h3>
@@ -143,18 +187,26 @@ const DashboardPage = () => {
             {stats?.salesChart && stats.salesChart.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={stats.salesChart}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis dataKey="date" stroke="#6b7280" style={{ fontSize: '12px' }} />
-                  <YAxis stroke="#6b7280" style={{ fontSize: '12px' }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.gridStroke} />
+                  <XAxis dataKey="date" stroke={chartTheme.axisStroke} style={{ fontSize: '12px' }} />
+                  <YAxis stroke={chartTheme.axisStroke} style={{ fontSize: '12px' }} />
                   <Tooltip 
                     contentStyle={{ 
-                      backgroundColor: '#fff', 
-                      border: '1px solid #e5e7eb',
+                      backgroundColor: chartTheme.tooltipBackground,
+                      border: chartTheme.tooltipBorder,
                       borderRadius: '0.5rem',
-                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                      boxShadow: chartTheme.tooltipShadow,
+                      backdropFilter: `blur(${chartTheme.tooltipBlur})`
                     }}
                   />
-                  <Bar dataKey="total" fill="#dc2626" radius={[6, 6, 0, 0]} />
+                  <Bar
+                    dataKey="total"
+                    fill={chartTheme.barFill}
+                    radius={[8, 8, 0, 0]}
+                    isAnimationActive
+                    animationDuration={900}
+                    animationEasing="ease-out"
+                  />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -163,9 +215,9 @@ const DashboardPage = () => {
           </Card>
 
           {/* Recent Activity */}
-          <Card className="p-5">
+          <Card className="p-5 animate-fade-in">
             <div className="mb-4 flex items-center gap-2">
-              <div className="rounded-lg bg-gradient-to-br from-red-600 to-red-700 p-2 text-white shadow-sm shadow-red-600/20 ring-1 ring-inset ring-white/10">
+                <div className="glass-glow rounded-xl bg-gradient-to-br from-red-500 to-rose-500 p-2 text-white shadow-sm shadow-red-500/25 ring-1 ring-inset ring-white/20">
                 <ShoppingCart className="h-4 w-4" />
               </div>
               <h3 className="text-sm font-semibold text-slate-900">Sales order terbaru</h3>
@@ -175,7 +227,7 @@ const DashboardPage = () => {
                 stats.recentOrders.map((order) => (
                   <div
                     key={order.id}
-                    className="flex items-center justify-between gap-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 hover:bg-slate-100"
+                    className="glass-hover flex items-center justify-between gap-4 rounded-xl border border-white/60 bg-white/45 px-4 py-3 backdrop-blur-sm hover:bg-white/65"
                   >
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold text-slate-900">{order.transNumber}</p>
@@ -200,9 +252,9 @@ const DashboardPage = () => {
 
         {/* Accurate Status */}
         {stats?.accurateStatus && (
-          <Card className="p-5">
+          <Card className="p-5 animate-fade-in">
             <div className="flex items-start gap-4">
-              <div className="rounded-lg bg-gradient-to-br from-red-600 to-red-700 p-2.5 text-white shadow-sm shadow-red-600/20 ring-1 ring-inset ring-white/10">
+              <div className="rounded-xl bg-gradient-to-br from-red-500 to-rose-500 p-2.5 text-white shadow-sm shadow-red-500/25 ring-1 ring-inset ring-white/20">
                 <Package className="h-5 w-5" />
               </div>
               <div className="flex-1">

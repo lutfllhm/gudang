@@ -54,7 +54,10 @@ const DashboardLayout = ({ children }) => {
   const isActive = (href) => location.pathname === href
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="relative min-h-screen overflow-hidden bg-slate-100">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_10%_20%,rgba(239,68,68,0.24),transparent_40%),radial-gradient(circle_at_90%_10%,rgba(255,255,255,0.8),transparent_35%),radial-gradient(circle_at_80%_80%,rgba(248,113,113,0.22),transparent_45%)]" />
+      <div className="glass-ambient-red pointer-events-none absolute -left-32 top-24 h-72 w-72 rounded-full blur-3xl animate-ambient-drift" />
+      <div className="glass-ambient-rose pointer-events-none absolute bottom-0 right-0 h-96 w-96 rounded-full blur-3xl animate-ambient-drift" />
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div
@@ -65,15 +68,15 @@ const DashboardLayout = ({ children }) => {
 
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 border-r border-slate-800 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+        className={`glass-sidebar fixed inset-y-0 left-0 z-50 w-64 border-r shadow-2xl shadow-slate-950/45 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex items-center justify-between h-16 px-6 border-b border-slate-800 relative overflow-hidden">
+          <div className="relative flex h-16 items-center justify-between overflow-hidden border-b border-white/10 px-6">
             <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-500/40 to-transparent" />
-            <div className="pointer-events-none absolute -left-24 -top-24 h-48 w-48 rounded-full bg-red-600/10 blur-2xl" />
+            <div className="pointer-events-none absolute -left-24 -top-24 h-48 w-48 rounded-full bg-red-500/20 blur-2xl" />
             <div className="flex items-center gap-3">
               <Logo variant="white" size="md" className="rounded-lg" />
               <div>
@@ -105,10 +108,10 @@ const DashboardLayout = ({ children }) => {
                       window.open(item.href, '_blank')
                       closeSidebar()
                     }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors relative ${
+                    className={`relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-300 hover:translate-x-0.5 ${
                       active
-                        ? 'bg-slate-800 text-white ring-1 ring-inset ring-slate-700 before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:rounded-r before:bg-red-500'
-                        : 'text-slate-200 hover:bg-slate-800/70 hover:text-white'
+                        ? 'bg-white/10 text-white ring-1 ring-inset ring-white/20 before:absolute before:bottom-2 before:left-0 before:top-2 before:w-1 before:rounded-r before:glass-accent-line'
+                        : 'text-slate-200/95 hover:bg-white/10 hover:text-white'
                     }`}
                   >
                     <Icon className={`w-5 h-5 ${active ? 'text-red-300' : ''}`} />
@@ -119,10 +122,10 @@ const DashboardLayout = ({ children }) => {
                     key={item.name}
                     to={item.href}
                     onClick={closeSidebar}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors relative ${
+                    className={`relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-300 hover:translate-x-0.5 ${
                       active
-                        ? 'bg-slate-800 text-white ring-1 ring-inset ring-slate-700 before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:rounded-r before:bg-red-500'
-                        : 'text-slate-200 hover:bg-slate-800/70 hover:text-white'
+                        ? 'bg-white/10 text-white ring-1 ring-inset ring-white/20 before:absolute before:bottom-2 before:left-0 before:top-2 before:w-1 before:rounded-r before:glass-accent-line'
+                        : 'text-slate-200/95 hover:bg-white/10 hover:text-white'
                     }`}
                   >
                     <Icon className={`w-5 h-5 ${active ? 'text-red-300' : ''}`} />
@@ -134,8 +137,8 @@ const DashboardLayout = ({ children }) => {
           </nav>
 
           {/* User info */}
-          <div className="p-3 border-t border-slate-800">
-            <div className="flex items-center gap-3 px-3 py-3 bg-slate-800/40 rounded-lg border border-slate-800">
+          <div className="border-t border-white/10 p-3">
+            <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-3 backdrop-blur-sm">
               <div className="flex-shrink-0 w-9 h-9 bg-slate-200 rounded-full flex items-center justify-center text-slate-900 font-semibold">
                 {getInitials(user?.nama)}
               </div>
@@ -151,9 +154,9 @@ const DashboardLayout = ({ children }) => {
       </aside>
 
       {/* Main content */}
-      <div className="lg:pl-64">
+      <div className="relative lg:pl-64">
         {/* Top bar */}
-        <header className="sticky top-0 z-30 bg-white/85 backdrop-blur border-b border-slate-200 relative after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-gradient-to-r after:from-transparent after:via-red-200/80 after:to-transparent">
+        <header className="glass-topbar sticky top-0 z-30 relative border-b after:absolute after:bottom-0 after:inset-x-0 after:h-px after:glass-accent-line">
           <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
             <button
               onClick={openSidebar}
@@ -167,15 +170,15 @@ const DashboardLayout = ({ children }) => {
 
             {/* User menu */}
             <HeadlessMenu as="div" className="relative">
-              <HeadlessMenu.Button className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors">
-                <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+              <HeadlessMenu.Button className="glass-menu-panel flex items-center gap-2 rounded-xl border px-3 py-2 shadow-lg shadow-red-500/10 transition-colors hover:bg-white/75">
+                <div className="glass-glow flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-red-500 to-rose-500 text-sm font-semibold text-white shadow-sm shadow-red-500/40">
                   {getInitials(user?.nama)}
                 </div>
                 <span className="hidden md:block text-sm font-semibold text-slate-700">{user?.nama}</span>
                 <ChevronDown className="w-4 h-4 text-slate-500" />
               </HeadlessMenu.Button>
 
-              <HeadlessMenu.Items className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-xl border border-slate-200 py-1 focus:outline-none">
+              <HeadlessMenu.Items className="glass-menu-panel absolute right-0 mt-2 w-52 rounded-xl border py-1 shadow-xl shadow-slate-900/10 focus:outline-none">
                 <HeadlessMenu.Item>
                   {({ active }) => (
                     <button
@@ -208,7 +211,7 @@ const DashboardLayout = ({ children }) => {
         </header>
 
         {/* Page content */}
-        <main className="p-4 sm:p-6 lg:p-8 2xl:p-10">{children}</main>
+        <main className="relative p-4 sm:p-6 lg:p-8 2xl:p-10">{children}</main>
       </div>
     </div>
   )

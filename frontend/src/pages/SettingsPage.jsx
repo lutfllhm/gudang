@@ -10,11 +10,22 @@ import { Save, Key, Users, Settings, Shield, Database, Bell, Mail } from 'lucide
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
 
+const GLASS_INTENSITY_KEY = 'ui.glassIntensity'
+const GLASS_INTENSITY_OPTIONS = ['soft', 'medium', 'strong']
+
 const SettingsPage = () => {
   usePageTitle('Pengaturan')
   const { user, updateProfile, changePassword } = useAuth()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
+  const [glassIntensity, setGlassIntensity] = useState(() => {
+    try {
+      const saved = localStorage.getItem(GLASS_INTENSITY_KEY) || 'medium'
+      return GLASS_INTENSITY_OPTIONS.includes(saved) ? saved : 'medium'
+    } catch (_) {
+      return 'medium'
+    }
+  })
   const [profile, setProfile] = useState({
     nama: user?.nama || '',
     email: user?.email || ''
@@ -33,6 +44,15 @@ const SettingsPage = () => {
   })
 
   const isSuperAdmin = user?.role === 'superadmin'
+
+  const handleGlassIntensityChange = (nextIntensity) => {
+    if (!GLASS_INTENSITY_OPTIONS.includes(nextIntensity)) return
+    setGlassIntensity(nextIntensity)
+    document.documentElement.setAttribute('data-glass-intensity', nextIntensity)
+    localStorage.setItem(GLASS_INTENSITY_KEY, nextIntensity)
+    window.dispatchEvent(new CustomEvent('glass-intensity-change', { detail: nextIntensity }))
+    toast.success(`Mode glassmorphism: ${nextIntensity}`)
+  }
 
   const handleProfileSubmit = async (e) => {
     e.preventDefault()
@@ -89,6 +109,27 @@ const SettingsPage = () => {
           description="Kelola pengaturan akun dan integrasi."
         />
 
+        <Card className="p-6">
+          <h2 className="mb-2 text-base font-semibold text-slate-900">Tema Glassmorphism</h2>
+          <p className="mb-4 text-sm text-slate-600">
+            Atur kekuatan blur dan transparansi untuk menyesuaikan performa perangkat.
+          </p>
+          <div className="max-w-xs">
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Intensitas Tema
+            </label>
+            <select
+              value={glassIntensity}
+              onChange={(e) => handleGlassIntensityChange(e.target.value)}
+              className="w-full rounded-xl border border-white/60 bg-white/55 px-3 py-2.5 text-sm text-slate-900 shadow-sm backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-red-400/25"
+            >
+              <option value="soft">Soft</option>
+              <option value="medium">Medium</option>
+              <option value="strong">Strong</option>
+            </select>
+          </div>
+        </Card>
+
         {/* Accurate Integration */}
         <AccurateIntegration />
 
@@ -109,7 +150,7 @@ const SettingsPage = () => {
                 </div>
                 <button
                   onClick={() => navigate('/users')}
-                  className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-red-700"
+                  className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-gradient-to-r from-red-500 to-rose-500 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-red-500/25 hover:from-red-600 hover:to-rose-600"
                 >
                   <Users size={18} />
                   Kelola Pengguna
@@ -135,7 +176,7 @@ const SettingsPage = () => {
                     type="text"
                     value={appSettings.appName}
                     onChange={(e) => setAppSettings({ ...appSettings, appName: e.target.value })}
-                    className="input focus:ring-2 focus:ring-blue-500"
+                    className="input focus:ring-2 focus:ring-red-400/30"
                     required
                   />
                 </div>
@@ -143,7 +184,7 @@ const SettingsPage = () => {
                 {/* Toggle Settings */}
                 <div className="space-y-4">
                   {/* Maintenance Mode */}
-                  <div className="flex items-center justify-between gap-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                  <div className="flex items-center justify-between gap-4 rounded-xl border border-white/60 bg-white/45 p-4 backdrop-blur-sm">
                     <div className="flex items-center gap-3">
                       <Database className="text-slate-700" size={20} />
                       <div>
@@ -158,12 +199,12 @@ const SettingsPage = () => {
                         onChange={(e) => setAppSettings({ ...appSettings, maintenanceMode: e.target.checked })}
                         className="sr-only peer"
                       />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      <div className="h-6 w-11 rounded-full bg-gray-200 peer peer-checked:bg-red-500 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-200 peer-checked:after:translate-x-full peer-checked:after:border-white after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-['']"></div>
                     </label>
                   </div>
 
                   {/* Allow Registration */}
-                  <div className="flex items-center justify-between gap-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                  <div className="flex items-center justify-between gap-4 rounded-xl border border-white/60 bg-white/45 p-4 backdrop-blur-sm">
                     <div className="flex items-center gap-3">
                       <Users className="text-slate-700" size={20} />
                       <div>
@@ -178,12 +219,12 @@ const SettingsPage = () => {
                         onChange={(e) => setAppSettings({ ...appSettings, allowRegistration: e.target.checked })}
                         className="sr-only peer"
                       />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      <div className="h-6 w-11 rounded-full bg-gray-200 peer peer-checked:bg-red-500 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-200 peer-checked:after:translate-x-full peer-checked:after:border-white after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-['']"></div>
                     </label>
                   </div>
 
                   {/* Email Notifications */}
-                  <div className="flex items-center justify-between gap-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                  <div className="flex items-center justify-between gap-4 rounded-xl border border-white/60 bg-white/45 p-4 backdrop-blur-sm">
                     <div className="flex items-center gap-3">
                       <Mail className="text-slate-700" size={20} />
                       <div>
@@ -198,12 +239,12 @@ const SettingsPage = () => {
                         onChange={(e) => setAppSettings({ ...appSettings, emailNotifications: e.target.checked })}
                         className="sr-only peer"
                       />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      <div className="h-6 w-11 rounded-full bg-gray-200 peer peer-checked:bg-red-500 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-200 peer-checked:after:translate-x-full peer-checked:after:border-white after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-['']"></div>
                     </label>
                   </div>
 
                   {/* Auto Backup */}
-                  <div className="flex items-center justify-between gap-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                  <div className="flex items-center justify-between gap-4 rounded-xl border border-white/60 bg-white/45 p-4 backdrop-blur-sm">
                     <div className="flex items-center gap-3">
                       <Database className="text-slate-700" size={20} />
                       <div>
@@ -218,7 +259,7 @@ const SettingsPage = () => {
                         onChange={(e) => setAppSettings({ ...appSettings, autoBackup: e.target.checked })}
                         className="sr-only peer"
                       />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      <div className="h-6 w-11 rounded-full bg-gray-200 peer peer-checked:bg-red-500 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-200 peer-checked:after:translate-x-full peer-checked:after:border-white after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-['']"></div>
                     </label>
                   </div>
                 </div>
@@ -252,7 +293,7 @@ const SettingsPage = () => {
                 type="text"
                 value={profile.nama}
                 onChange={(e) => setProfile({ ...profile, nama: e.target.value })}
-                className="input focus:ring-2 focus:ring-blue-500"
+                className="input focus:ring-2 focus:ring-red-400/30"
                 required
               />
             </div>
@@ -264,7 +305,7 @@ const SettingsPage = () => {
                 type="email"
                 value={profile.email}
                 onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                className="input focus:ring-2 focus:ring-blue-500"
+                className="input focus:ring-2 focus:ring-red-400/30"
                 required
               />
             </div>
@@ -306,7 +347,7 @@ const SettingsPage = () => {
                 type="password"
                 value={password.oldPassword}
                 onChange={(e) => setPassword({ ...password, oldPassword: e.target.value })}
-                className="input focus:ring-2 focus:ring-blue-500"
+                className="input focus:ring-2 focus:ring-red-400/30"
                 required
               />
             </div>
@@ -318,7 +359,7 @@ const SettingsPage = () => {
                 type="password"
                 value={password.newPassword}
                 onChange={(e) => setPassword({ ...password, newPassword: e.target.value })}
-                className="input focus:ring-2 focus:ring-blue-500"
+                className="input focus:ring-2 focus:ring-red-400/30"
                 required
                 minLength={6}
               />
@@ -331,7 +372,7 @@ const SettingsPage = () => {
                 type="password"
                 value={password.confirmPassword}
                 onChange={(e) => setPassword({ ...password, confirmPassword: e.target.value })}
-                className="input focus:ring-2 focus:ring-blue-500"
+                className="input focus:ring-2 focus:ring-red-400/30"
                 required
                 minLength={6}
               />

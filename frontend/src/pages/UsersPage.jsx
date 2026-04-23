@@ -168,7 +168,7 @@ const UsersPage = () => {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-slate-50 border-b border-slate-200">
+                <thead className="border-b border-white/50 bg-white/35 backdrop-blur-sm">
                   <tr>
                     <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                       Nama
@@ -187,11 +187,11 @@ const UsersPage = () => {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-slate-100">
+                <tbody className="divide-y divide-white/50 bg-white/20">
                   {users.map((user) => (
                     <tr 
                       key={user.id} 
-                      className="hover:bg-slate-50"
+                      className="hover:bg-white/40"
                     >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
@@ -231,9 +231,9 @@ const UsersPage = () => {
       {/* Add User Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl">
+          <div className="w-full max-w-md overflow-hidden rounded-2xl border border-white/60 bg-white/70 shadow-2xl backdrop-blur-xl">
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+            <div className="flex items-center justify-between border-b border-white/60 px-5 py-4">
               <h2 className="text-base font-semibold text-slate-900">Tambah User Baru</h2>
               <button
                 onClick={() => setShowModal(false)}
@@ -257,7 +257,7 @@ const UsersPage = () => {
                   name="nama"
                   value={formData.nama}
                   onChange={handleChange}
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                  className="w-full rounded-xl border border-white/60 bg-white/65 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-red-400/25"
                   placeholder="Masukkan nama lengkap"
                   required
                   disabled={submitting}
@@ -275,7 +275,7 @@ const UsersPage = () => {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                  className="w-full rounded-xl border border-white/60 bg-white/65 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-red-400/25"
                   placeholder="user@example.com"
                   required
                   disabled={submitting}
@@ -294,7 +294,7 @@ const UsersPage = () => {
                     name="password"
                     value={formData.password}
                     onChange={handleChange}
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 pr-11 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                    className="w-full rounded-xl border border-white/60 bg-white/65 px-3 py-2.5 pr-11 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-red-400/25"
                     placeholder="Minimal 6 karakter"
                     required
                     disabled={submitting}
@@ -322,7 +322,7 @@ const UsersPage = () => {
                   name="role"
                   value={formData.role}
                   onChange={handleChange}
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                  className="w-full rounded-xl border border-white/60 bg-white/65 px-3 py-2.5 text-sm text-slate-900 shadow-sm backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-red-400/25"
                   required
                   disabled={submitting}
                 >
