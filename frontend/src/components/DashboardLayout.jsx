@@ -71,7 +71,9 @@ const DashboardLayout = ({ children }) => {
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex items-center justify-between h-16 px-6 border-b border-slate-800">
+          <div className="flex items-center justify-between h-16 px-6 border-b border-slate-800 relative overflow-hidden">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-500/40 to-transparent" />
+            <div className="pointer-events-none absolute -left-24 -top-24 h-48 w-48 rounded-full bg-red-600/10 blur-2xl" />
             <div className="flex items-center gap-3">
               <Logo variant="white" size="md" className="rounded-lg" />
               <div>
@@ -103,13 +105,13 @@ const DashboardLayout = ({ children }) => {
                       window.open(item.href, '_blank')
                       closeSidebar()
                     }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors relative ${
                       active
-                        ? 'bg-red-600/15 text-red-200 ring-1 ring-inset ring-red-500/20'
+                        ? 'bg-slate-800 text-white ring-1 ring-inset ring-slate-700 before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:rounded-r before:bg-red-500'
                         : 'text-slate-200 hover:bg-slate-800/70 hover:text-white'
                     }`}
                   >
-                    <Icon className="w-5 h-5" />
+                    <Icon className={`w-5 h-5 ${active ? 'text-red-300' : ''}`} />
                     <span>{item.name}</span>
                   </button>
                 ) : (
@@ -117,13 +119,13 @@ const DashboardLayout = ({ children }) => {
                     key={item.name}
                     to={item.href}
                     onClick={closeSidebar}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors relative ${
                       active
-                        ? 'bg-red-600/15 text-red-200 ring-1 ring-inset ring-red-500/20'
+                        ? 'bg-slate-800 text-white ring-1 ring-inset ring-slate-700 before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1 before:rounded-r before:bg-red-500'
                         : 'text-slate-200 hover:bg-slate-800/70 hover:text-white'
                     }`}
                   >
-                    <Icon className="w-5 h-5" />
+                    <Icon className={`w-5 h-5 ${active ? 'text-red-300' : ''}`} />
                     <span>{item.name}</span>
                   </Link>
                 )

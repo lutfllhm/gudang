@@ -134,7 +134,7 @@ const DashboardPage = () => {
           <Card className="p-5">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <div className="rounded-lg bg-red-600 p-2 text-white">
+                <div className="rounded-lg bg-gradient-to-br from-red-600 to-red-700 p-2 text-white shadow-sm shadow-red-600/20 ring-1 ring-inset ring-white/10">
                   <TrendingUp className="h-4 w-4" />
                 </div>
                 <h3 className="text-sm font-semibold text-slate-900">Penjualan 7 hari terakhir</h3>
@@ -165,7 +165,7 @@ const DashboardPage = () => {
           {/* Recent Activity */}
           <Card className="p-5">
             <div className="mb-4 flex items-center gap-2">
-              <div className="rounded-lg bg-red-600 p-2 text-white">
+              <div className="rounded-lg bg-gradient-to-br from-red-600 to-red-700 p-2 text-white shadow-sm shadow-red-600/20 ring-1 ring-inset ring-white/10">
                 <ShoppingCart className="h-4 w-4" />
               </div>
               <h3 className="text-sm font-semibold text-slate-900">Sales order terbaru</h3>
@@ -202,7 +202,7 @@ const DashboardPage = () => {
         {stats?.accurateStatus && (
           <Card className="p-5">
             <div className="flex items-start gap-4">
-              <div className="rounded-lg bg-red-600 p-2.5 text-white">
+              <div className="rounded-lg bg-gradient-to-br from-red-600 to-red-700 p-2.5 text-white shadow-sm shadow-red-600/20 ring-1 ring-inset ring-white/10">
                 <Package className="h-5 w-5" />
               </div>
               <div className="flex-1">

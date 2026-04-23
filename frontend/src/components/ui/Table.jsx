@@ -4,7 +4,7 @@ const Table = ({ columns, children }) => {
   return (
     <div className="overflow-x-auto">
       <table className="w-full">
-        <thead className="bg-slate-50 border-b border-slate-200">
+        <thead className="bg-slate-50 border-b border-slate-200 relative after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-gradient-to-r after:from-transparent after:via-red-200/90 after:to-transparent">
           <tr>
             {columns.map((col) => (
               <th
