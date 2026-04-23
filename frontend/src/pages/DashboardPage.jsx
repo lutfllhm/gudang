@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react'
 import DashboardLayout from '../components/DashboardLayout'
 import LoadingSpinner from '../components/LoadingSpinner'
+import PageHeader from '../components/ui/PageHeader'
+import Card from '../components/ui/Card'
+import StatCard from '../components/ui/StatCard'
+import EmptyState from '../components/ui/EmptyState'
 import usePageTitle from '../hooks/usePageTitle'
 import api from '../utils/api'
 import { formatCurrency, formatNumber, formatRelativeTime } from '../utils/helpers'
@@ -77,98 +81,65 @@ const DashboardPage = () => {
       title: 'Total Items',
       value: formatNumber(stats?.items?.total || 0),
       icon: Package,
-      color: 'blue',
       subtitle: `${formatNumber(stats?.items?.inStock || 0)} in stock`
     },
     {
       title: 'Sales Orders',
       value: formatNumber(stats?.salesOrders?.total || 0),
       icon: ShoppingCart,
-      color: 'green',
       subtitle: `${formatNumber(stats?.salesOrders?.thisMonth || 0)} this month`
     },
     {
       title: 'Total Revenue',
       value: formatCurrency(stats?.salesOrders?.totalRevenue || 0),
       icon: TrendingUp,
-      color: 'purple',
       subtitle: 'All time'
     }
   ]
 
   return (
     <DashboardLayout>
-      <div className="space-y-8 animate-fade-in">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-          <div className="animate-slide-in-left">
-            <h1 className="text-4xl font-bold text-gradient-brand mb-2">Dashboard</h1>
-            <p className="text-gray-600 text-lg">
-              Selamat datang kembali! Berikut ringkasan aktivitas Anda.
-            </p>
-          </div>
-          <button
-            onClick={handleSync}
-            disabled={syncing}
-            className="mt-4 sm:mt-0 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl font-semibold hover:from-red-700 hover:to-red-800 transition-all flex items-center gap-2 shadow-primary hover:shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed animate-slide-in-right"
-          >
-            <RefreshCw className={`w-5 h-5 ${syncing ? 'animate-spin' : ''}`} />
-            <span>Sinkronisasi Accurate</span>
-          </button>
-        </div>
+      <div className="space-y-6">
+        <PageHeader
+          title="Dashboard"
+          description="Ringkasan aktivitas dan integrasi Accurate."
+          actions={
+            <button
+              onClick={handleSync}
+              disabled={syncing}
+              className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-slate-800 disabled:opacity-60"
+            >
+              <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
+              <span>Sync Accurate</span>
+            </button>
+          }
+        />
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {statCards.map((stat, index) => {
-            const Icon = stat.icon
-            const colorClasses = {
-              blue: 'from-blue-600 to-blue-700',
-              green: 'from-green-600 to-green-700',
-              purple: 'from-purple-600 to-purple-700'
-            }
-            const bgClasses = {
-              blue: 'bg-blue-50',
-              green: 'bg-green-50',
-              purple: 'bg-purple-50'
-            }
-
-            return (
-              <div 
-                key={index} 
-                className="relative bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-2xl transition-all duration-500 group cursor-pointer overflow-hidden hover-lift animate-scale-in"
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
-                {/* Background Gradient Overlay */}
-                <div className={`absolute inset-0 ${bgClasses[stat.color]} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
-                
-                <div className="relative z-10 flex items-start justify-between">
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">{stat.title}</p>
-                    <p className="text-4xl font-bold text-gray-900 mb-2 group-hover:scale-105 transition-transform duration-300">{stat.value}</p>
-                    <p className="text-sm text-gray-600 font-medium">{stat.subtitle}</p>
-                  </div>
-                  <div className={`p-4 rounded-2xl bg-gradient-to-br ${colorClasses[stat.color]} shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all duration-500`}>
-                    <Icon className="w-7 h-7 text-white" />
-                  </div>
-                </div>
-
-                {/* Decorative Element */}
-                <div className={`absolute -bottom-2 -right-2 w-24 h-24 bg-gradient-to-br ${colorClasses[stat.color]} opacity-5 rounded-full group-hover:scale-150 transition-transform duration-700`} />
-              </div>
-            )
-          })}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          {statCards.map((stat) => (
+            <StatCard
+              key={stat.title}
+              title={stat.title}
+              value={stat.value}
+              subtitle={stat.subtitle}
+              icon={stat.icon}
+            />
+          ))}
         </div>
 
         {/* Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {/* Sales Chart */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-2xl transition-all duration-500 hover-lift">
-            <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl">
-                <TrendingUp className="text-white" size={20} />
+          <Card className="p-5">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <div className="rounded-lg bg-slate-900 p-2 text-white">
+                  <TrendingUp className="h-4 w-4" />
+                </div>
+                <h3 className="text-sm font-semibold text-slate-900">Penjualan 7 hari terakhir</h3>
               </div>
-              <span>Ringkasan Penjualan (7 Hari Terakhir)</span>
-            </h3>
+            </div>
             {stats?.salesChart && stats.salesChart.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={stats.salesChart}>
@@ -183,95 +154,80 @@ const DashboardPage = () => {
                       boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                     }}
                   />
-                  <Bar dataKey="total" fill="url(#colorGradient)" radius={[8, 8, 0, 0]} />
-                  <defs>
-                    <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#6366f1" />
-                      <stop offset="100%" stopColor="#8b5cf6" />
-                    </linearGradient>
-                  </defs>
+                  <Bar dataKey="total" fill="#0f172a" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-[300px] flex items-center justify-center text-gray-500">
-                <div className="text-center">
-                  <AlertCircle className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>Tidak ada data tersedia</p>
-                </div>
-              </div>
+              <EmptyState icon={AlertCircle} title="Tidak ada data" description="Data chart akan muncul di sini." />
             )}
-          </div>
+          </Card>
 
           {/* Recent Activity */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-2xl transition-all duration-500 hover-lift">
-            <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-br from-green-600 to-green-700 rounded-xl">
-                <ShoppingCart className="text-white" size={20} />
+          <Card className="p-5">
+            <div className="mb-4 flex items-center gap-2">
+              <div className="rounded-lg bg-slate-900 p-2 text-white">
+                <ShoppingCart className="h-4 w-4" />
               </div>
-              <span>Sales Order Terbaru</span>
-            </h3>
-            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-slate-900">Sales order terbaru</h3>
+            </div>
+            <div className="space-y-2">
               {stats?.recentOrders && stats.recentOrders.length > 0 ? (
-                stats.recentOrders.map((order, idx) => (
+                stats.recentOrders.map((order) => (
                   <div
                     key={order.id}
-                    className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-50 hover:from-blue-50 hover:to-purple-50 rounded-xl transition-all duration-300 cursor-pointer border border-gray-200 hover:border-blue-300 hover:shadow-lg group animate-fade-in"
-                    style={{ animationDelay: `${idx * 0.05}s` }}
+                    className="flex items-center justify-between gap-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 hover:bg-slate-100"
                   >
-                    <div className="flex-1">
-                      <p className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{order.transNumber}</p>
-                      <p className="text-sm text-gray-600 mt-1">{order.customerName}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-slate-900">{order.transNumber}</p>
+                      <p className="mt-0.5 truncate text-sm text-slate-600">{order.customerName}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold text-lg text-gray-900 group-hover:text-green-600 transition-colors">
+                      <p className="text-sm font-semibold text-slate-900">
                         {formatCurrency(order.totalAmount)}
                       </p>
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="mt-0.5 text-xs text-slate-500">
                         {formatRelativeTime(order.transDate)}
                       </p>
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="text-center py-12 text-gray-500">
-                  <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                    <AlertCircle className="w-8 h-8 text-gray-400" />
-                  </div>
-                  <p className="font-semibold">Tidak ada order terbaru</p>
-                  <p className="text-sm text-gray-400 mt-1">Order akan muncul di sini</p>
-                </div>
+                <EmptyState icon={AlertCircle} title="Belum ada order" description="Order terbaru akan muncul di sini." />
               )}
             </div>
-          </div>
+          </Card>
         </div>
 
         {/* Accurate Status */}
         {stats?.accurateStatus && (
-          <div className="relative bg-gradient-to-r from-blue-50 via-purple-50 to-blue-50 rounded-2xl shadow-lg border border-blue-200 p-6 hover:shadow-2xl transition-all duration-500 overflow-hidden group">
-            {/* Animated Background */}
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 to-purple-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            
-            <div className="relative z-10 flex items-start gap-4">
-              <div className="p-4 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
-                <Package className="w-7 h-7 text-white" />
+          <Card className="p-5">
+            <div className="flex items-start gap-4">
+              <div className="rounded-lg bg-slate-900 p-2.5 text-white">
+                <Package className="h-5 w-5" />
               </div>
               <div className="flex-1">
-                <h4 className="font-bold text-gray-900 text-xl mb-3">Integrasi Accurate</h4>
-                <p className="text-sm text-gray-700 mb-3">
-                  Sinkronisasi terakhir: <span className="font-bold text-blue-600">{formatRelativeTime(stats.accurateStatus.lastSync)}</span>
+                <h4 className="text-sm font-semibold text-slate-900">Integrasi Accurate</h4>
+                <p className="mt-1 text-sm text-slate-600">
+                  Sinkronisasi terakhir:{' '}
+                  <span className="font-medium text-slate-900">
+                    {formatRelativeTime(stats.accurateStatus.lastSync)}
+                  </span>
                 </p>
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <span className={`w-3 h-3 rounded-full ${stats.accurateStatus.connected ? 'bg-green-500' : 'bg-red-500'} block`}></span>
-                    <span className={`absolute inset-0 w-3 h-3 rounded-full ${stats.accurateStatus.connected ? 'bg-green-500' : 'bg-red-500'} animate-ping`}></span>
-                  </div>
-                  <span className={`text-sm font-bold ${stats.accurateStatus.connected ? 'text-green-600' : 'text-red-600'}`}>
-                    Status: {stats.accurateStatus.connected ? 'Terhubung' : 'Terputus'}
+                <div className="mt-3 flex items-center gap-2">
+                  <span
+                    className={[
+                      'inline-flex items-center rounded-full px-2 py-1 text-xs font-medium',
+                      stats.accurateStatus.connected
+                        ? 'bg-emerald-50 text-emerald-700'
+                        : 'bg-red-50 text-red-700'
+                    ].join(' ')}
+                  >
+                    {stats.accurateStatus.connected ? 'Terhubung' : 'Terputus'}
                   </span>
                 </div>
               </div>
             </div>
-          </div>
+          </Card>
         )}
       </div>
     </DashboardLayout>
