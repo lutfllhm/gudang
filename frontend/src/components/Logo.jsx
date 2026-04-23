@@ -10,6 +10,7 @@ const Logo = ({ variant = 'default', size = 'md', className = '' }) => {
 
   const variants = {
     default: '', // Original logo color
+    red: 'logo-red', // Enterprise red theme
     indigo: 'logo-indigo', // For admin dashboard (indigo/purple theme)
     blue: 'logo-blue', // For homepage/login (blue theme)
     neon: 'logo-neon', // For schedule page (neon cyan theme)
@@ -25,6 +26,23 @@ const Logo = ({ variant = 'default', size = 'md', className = '' }) => {
       />
       
       <style>{`
+        /* Refined red filter for enterprise theme */
+        .logo-red {
+          filter:
+            brightness(0.9)
+            saturate(1.35)
+            hue-rotate(-22deg)
+            drop-shadow(0 0 8px rgba(229, 57, 53, 0.28));
+        }
+
+        .logo-red:hover {
+          filter:
+            brightness(0.95)
+            saturate(1.45)
+            hue-rotate(-22deg)
+            drop-shadow(0 0 12px rgba(198, 40, 40, 0.4));
+        }
+
         /* Indigo/Purple filter for admin dashboard */
         .logo-indigo {
           filter: 
@@ -98,7 +116,7 @@ const Logo = ({ variant = 'default', size = 'md', className = '' }) => {
 }
 
 Logo.propTypes = {
-  variant: PropTypes.oneOf(['default', 'indigo', 'blue', 'neon', 'white']),
+  variant: PropTypes.oneOf(['default', 'red', 'indigo', 'blue', 'neon', 'white']),
   size: PropTypes.oneOf(['sm', 'md', 'lg', 'xl']),
   className: PropTypes.string
 }

@@ -78,7 +78,7 @@ const DashboardLayout = ({ children }) => {
             <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-500/30 to-transparent" />
             <div className="pointer-events-none absolute -left-24 -top-24 h-48 w-48 rounded-full bg-red-500/15 blur-2xl" />
             <div className="flex items-center gap-3">
-              <Logo variant="white" size="md" className="rounded-lg" />
+              <Logo variant="red" size="md" className="rounded-lg" />
               <div>
                 <h1 className="text-base font-semibold text-white leading-5">iware</h1>
                 <span className="text-xs text-slate-300 font-medium">Warehouse System</span>
