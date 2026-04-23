@@ -4,6 +4,7 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import PageHeader from '../components/ui/PageHeader'
 import Card from '../components/ui/Card'
 import EmptyState from '../components/ui/EmptyState'
+import Button from '../components/ui/Button'
 import usePageTitle from '../hooks/usePageTitle'
 import api from '../utils/api'
 import { formatDate, getStatusColor } from '../utils/helpers'
@@ -113,13 +114,12 @@ const UsersPage = () => {
           title="Pengguna"
           description="Kelola pengguna sistem."
           actions={
-            <button
+            <Button
               onClick={() => setShowModal(true)}
-              className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-slate-800"
             >
               <UserPlus className="h-4 w-4" />
               <span>Tambah Pengguna</span>
-            </button>
+            </Button>
           }
         />
 
@@ -144,19 +144,18 @@ const UsersPage = () => {
               />
               <div className="mt-4 flex justify-center gap-2">
                 {error.type === 'auth' ? (
-                  <button
+                  <Button
                     onClick={() => window.location.href = '/login'}
-                    className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
                   >
                     Login ulang
-                  </button>
+                  </Button>
                 ) : (
-                  <button
+                  <Button
+                    variant="secondary"
                     onClick={fetchUsers}
-                    className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
                   >
                     Coba lagi
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>
@@ -335,21 +334,21 @@ const UsersPage = () => {
 
               {/* Modal Footer */}
               <div className="flex gap-2 pt-2">
-                <button
+                <Button
+                  variant="secondary"
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="flex-1 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
                   disabled={submitting}
                 >
                   Batal
-                </button>
-                <button
+                </Button>
+                <Button
+                  className="flex-1"
                   type="submit"
-                  className="flex-1 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed"
                   disabled={submitting}
                 >
                   {submitting ? 'Menyimpan...' : 'Simpan'}
-                </button>
+                </Button>
               </div>
             </form>
           </div>

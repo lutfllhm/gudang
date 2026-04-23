@@ -5,6 +5,7 @@ import PageHeader from '../components/ui/PageHeader'
 import Card from '../components/ui/Card'
 import StatCard from '../components/ui/StatCard'
 import EmptyState from '../components/ui/EmptyState'
+import Button from '../components/ui/Button'
 import usePageTitle from '../hooks/usePageTitle'
 import api from '../utils/api'
 import { formatCurrency, formatNumber, formatRelativeTime } from '../utils/helpers'
@@ -104,14 +105,13 @@ const DashboardPage = () => {
           title="Dashboard"
           description="Ringkasan aktivitas dan integrasi Accurate."
           actions={
-            <button
+            <Button
               onClick={handleSync}
               disabled={syncing}
-              className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-slate-800 disabled:opacity-60"
             >
               <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
               <span>Sync Accurate</span>
-            </button>
+            </Button>
           }
         />
 
@@ -134,7 +134,7 @@ const DashboardPage = () => {
           <Card className="p-5">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <div className="rounded-lg bg-slate-900 p-2 text-white">
+                <div className="rounded-lg bg-red-600 p-2 text-white">
                   <TrendingUp className="h-4 w-4" />
                 </div>
                 <h3 className="text-sm font-semibold text-slate-900">Penjualan 7 hari terakhir</h3>
@@ -154,7 +154,7 @@ const DashboardPage = () => {
                       boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                     }}
                   />
-                  <Bar dataKey="total" fill="#0f172a" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="total" fill="#dc2626" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -165,7 +165,7 @@ const DashboardPage = () => {
           {/* Recent Activity */}
           <Card className="p-5">
             <div className="mb-4 flex items-center gap-2">
-              <div className="rounded-lg bg-slate-900 p-2 text-white">
+              <div className="rounded-lg bg-red-600 p-2 text-white">
                 <ShoppingCart className="h-4 w-4" />
               </div>
               <h3 className="text-sm font-semibold text-slate-900">Sales order terbaru</h3>
@@ -202,7 +202,7 @@ const DashboardPage = () => {
         {stats?.accurateStatus && (
           <Card className="p-5">
             <div className="flex items-start gap-4">
-              <div className="rounded-lg bg-slate-900 p-2.5 text-white">
+              <div className="rounded-lg bg-red-600 p-2.5 text-white">
                 <Package className="h-5 w-5" />
               </div>
               <div className="flex-1">

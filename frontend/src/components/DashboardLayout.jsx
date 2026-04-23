@@ -105,7 +105,7 @@ const DashboardLayout = ({ children }) => {
                     }}
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                       active
-                        ? 'bg-slate-800 text-white'
+                        ? 'bg-red-600/15 text-red-200 ring-1 ring-inset ring-red-500/20'
                         : 'text-slate-200 hover:bg-slate-800/70 hover:text-white'
                     }`}
                   >
@@ -119,7 +119,7 @@ const DashboardLayout = ({ children }) => {
                     onClick={closeSidebar}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                       active
-                        ? 'bg-slate-800 text-white'
+                        ? 'bg-red-600/15 text-red-200 ring-1 ring-inset ring-red-500/20'
                         : 'text-slate-200 hover:bg-slate-800/70 hover:text-white'
                     }`}
                   >
@@ -151,7 +151,7 @@ const DashboardLayout = ({ children }) => {
       {/* Main content */}
       <div className="lg:pl-64">
         {/* Top bar */}
-        <header className="sticky top-0 z-30 bg-white/85 backdrop-blur border-b border-slate-200">
+        <header className="sticky top-0 z-30 bg-white/85 backdrop-blur border-b border-slate-200 relative after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-gradient-to-r after:from-transparent after:via-red-200/80 after:to-transparent">
           <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
             <button
               onClick={openSidebar}
@@ -166,7 +166,7 @@ const DashboardLayout = ({ children }) => {
             {/* User menu */}
             <HeadlessMenu as="div" className="relative">
               <HeadlessMenu.Button className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors">
-                <div className="w-8 h-8 bg-slate-900 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
                   {getInitials(user?.nama)}
                 </div>
                 <span className="hidden md:block text-sm font-semibold text-slate-700">{user?.nama}</span>

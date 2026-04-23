@@ -6,6 +6,7 @@ import Card from '../components/ui/Card'
 import EmptyState from '../components/ui/EmptyState'
 import Table from '../components/ui/Table'
 import Pagination from '../components/ui/Pagination'
+import Button from '../components/ui/Button'
 import usePageTitle from '../hooks/usePageTitle'
 import api from '../utils/api'
 import { formatCurrency, formatDate, debounce, getStatusColor } from '../utils/helpers'
@@ -306,14 +307,13 @@ const SalesOrdersPage = () => {
           title="Sales Orders"
           description="Lihat dan kelola sales orders."
           actions={
-            <button
+            <Button
               onClick={handleSync}
               disabled={syncing}
-              className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-slate-800 disabled:opacity-60"
             >
               <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
               <span>Sync Accurate</span>
-            </button>
+            </Button>
           }
         />
 

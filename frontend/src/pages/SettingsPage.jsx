@@ -5,6 +5,7 @@ import usePageTitle from '../hooks/usePageTitle'
 import AccurateIntegration from '../components/AccurateIntegration'
 import PageHeader from '../components/ui/PageHeader'
 import Card from '../components/ui/Card'
+import Button from '../components/ui/Button'
 import { Save, Key, Users, Settings, Shield, Database, Bell, Mail } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
@@ -108,7 +109,7 @@ const SettingsPage = () => {
                 </div>
                 <button
                   onClick={() => navigate('/users')}
-                  className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-slate-800"
+                  className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-red-700"
                 >
                   <Users size={18} />
                   Kelola Pengguna
@@ -222,14 +223,13 @@ const SettingsPage = () => {
                   </div>
                 </div>
 
-                <button
+                <Button
                   type="submit"
                   disabled={loading}
-                  className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-slate-800 disabled:opacity-60"
                 >
                   <Save className="h-4 w-4" />
                   <span>Simpan Konfigurasi</span>
-                </button>
+                </Button>
               </form>
             </Card>
           </>
@@ -279,14 +279,13 @@ const SettingsPage = () => {
                 disabled
               />
             </div>
-            <button
+            <Button
               type="submit"
               disabled={loading}
-              className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-slate-800 disabled:opacity-60"
             >
               <Save className="h-4 w-4" />
               <span>Simpan Perubahan</span>
-            </button>
+            </Button>
           </form>
         </Card>
 
@@ -337,14 +336,13 @@ const SettingsPage = () => {
                 minLength={6}
               />
             </div>
-            <button
+            <Button
               type="submit"
               disabled={loading}
-              className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-slate-800 disabled:opacity-60"
             >
               <Key className="h-4 w-4" />
               <span>Perbarui Kata Sandi</span>
-            </button>
+            </Button>
           </form>
         </Card>
       </div>

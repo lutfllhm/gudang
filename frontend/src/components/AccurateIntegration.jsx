@@ -13,6 +13,7 @@ import toast from 'react-hot-toast'
 import { formatDateTime } from '../utils/helpers'
 import Card from './ui/Card'
 import EmptyState from './ui/EmptyState'
+import Button from './ui/Button'
 
 const AccurateIntegration = () => {
   const [status, setStatus] = useState(null)
@@ -175,30 +176,29 @@ const AccurateIntegration = () => {
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <button
+              <Button
                 onClick={() => handleSync('current-month')}
                 disabled={syncing}
-                className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-slate-800 disabled:opacity-60"
                 title="Sync bulan berjalan saja (cepat)"
               >
                 <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
                 <span>Sync Bulan Ini</span>
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="secondary"
                 onClick={() => handleSync('from-march-2026')}
                 disabled={syncing}
-                className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
                 title="Full sync dari Maret 2026 (lambat)"
               >
                 <Database className="h-4 w-4" />
                 <span>Full Sync</span>
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="secondary"
                 onClick={handleDisconnect}
-                className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
               >
                 Disconnect
-              </button>
+              </Button>
             </div>
             
             <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
@@ -217,13 +217,12 @@ const AccurateIntegration = () => {
               description="Hubungkan akun Accurate Online agar sinkronisasi data dapat berjalan."
             />
             <div className="flex justify-center">
-              <button
+              <Button
                 onClick={handleConnect}
-                className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-slate-800"
               >
                 <ExternalLink className="h-4 w-4" />
                 <span>Connect Accurate</span>
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -278,12 +277,11 @@ const AccurateIntegration = () => {
               </p>
             </div>
 
-            <button
+            <Button
               onClick={handleUpdateSyncConfig}
-              className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-slate-800"
             >
               Save
-            </button>
+            </Button>
           </div>
         </Card>
       )}

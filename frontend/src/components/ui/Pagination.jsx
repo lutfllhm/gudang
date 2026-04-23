@@ -1,4 +1,5 @@
 import PropTypes from 'prop-types'
+import Button from './Button'
 
 const Pagination = ({ page, limit, total, totalPages, onPageChange, label }) => {
   const start = total === 0 ? 0 : (page - 1) * limit + 1
@@ -12,20 +13,20 @@ const Pagination = ({ page, limit, total, totalPages, onPageChange, label }) => 
         <span className="font-medium text-slate-900">{total}</span> {label}
       </div>
       <div className="flex gap-2">
-        <button
+        <Button
+          variant="secondary"
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
-          className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
         >
           Previous
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="primary"
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages}
-          className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
         >
           Next
-        </button>
+        </Button>
       </div>
     </div>
   )

@@ -11,7 +11,7 @@ const StatCard = ({ title, value, subtitle, icon: Icon }) => {
           {subtitle ? <p className="mt-1 text-sm text-slate-600">{subtitle}</p> : null}
         </div>
         {Icon ? (
-          <div className="rounded-lg bg-slate-900 p-2.5 text-white shadow-sm">
+          <div className="rounded-lg bg-red-600 p-2.5 text-white shadow-sm">
             <Icon className="h-5 w-5" />
           </div>
         ) : null}
