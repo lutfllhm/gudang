@@ -4,13 +4,13 @@ const Table = ({ columns, children }) => {
   return (
     <div className="overflow-x-auto">
       <table className="w-full">
-        <thead className="relative border-b border-white/50 bg-white/35 backdrop-blur-sm after:absolute after:bottom-0 after:inset-x-0 after:h-px after:bg-gradient-to-r after:from-transparent after:via-red-300/80 after:to-transparent">
+        <thead className="relative border-b border-slate-200/80 bg-slate-50/90 backdrop-blur-sm after:absolute after:bottom-0 after:inset-x-0 after:h-px after:bg-gradient-to-r after:from-transparent after:via-red-400/50 after:to-transparent">
           <tr>
             {columns.map((col) => (
               <th
                 key={col.key}
                 className={[
-                  'px-6 py-3.5 text-xs font-semibold text-slate-600 uppercase tracking-wider',
+                  'px-6 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider',
                   col.align === 'right'
                     ? 'text-right'
                     : col.align === 'center'
@@ -23,7 +23,7 @@ const Table = ({ columns, children }) => {
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-white/50 bg-white/20">{children}</tbody>
+        <tbody className="divide-y divide-slate-200/75 bg-white/75">{children}</tbody>
       </table>
     </div>
   )

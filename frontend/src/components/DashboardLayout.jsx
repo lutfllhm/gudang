@@ -54,8 +54,8 @@ const DashboardLayout = ({ children }) => {
   const isActive = (href) => location.pathname === href
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-slate-100">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_10%_20%,rgba(239,68,68,0.24),transparent_40%),radial-gradient(circle_at_90%_10%,rgba(255,255,255,0.8),transparent_35%),radial-gradient(circle_at_80%_80%,rgba(248,113,113,0.22),transparent_45%)]" />
+    <div className="relative min-h-screen overflow-hidden bg-[#f5f6f8]">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_10%_20%,rgba(229,57,53,0.10),transparent_40%),radial-gradient(circle_at_90%_10%,rgba(255,255,255,0.8),transparent_35%),radial-gradient(circle_at_80%_80%,rgba(229,57,53,0.08),transparent_45%)]" />
       <div className="glass-ambient-red pointer-events-none absolute -left-32 top-24 h-72 w-72 rounded-full blur-3xl animate-ambient-drift" />
       <div className="glass-ambient-rose pointer-events-none absolute bottom-0 right-0 h-96 w-96 rounded-full blur-3xl animate-ambient-drift" />
       {/* Mobile sidebar backdrop */}
@@ -68,20 +68,20 @@ const DashboardLayout = ({ children }) => {
 
       {/* Sidebar */}
       <aside
-        className={`glass-sidebar fixed inset-y-0 left-0 z-50 w-64 border-r shadow-2xl shadow-slate-950/45 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+        className={`glass-sidebar fixed inset-y-0 left-0 z-50 w-64 border-r shadow-2xl shadow-slate-950/35 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="relative flex h-16 items-center justify-between overflow-hidden border-b border-white/10 px-6">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-500/40 to-transparent" />
-            <div className="pointer-events-none absolute -left-24 -top-24 h-48 w-48 rounded-full bg-red-500/20 blur-2xl" />
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-500/30 to-transparent" />
+            <div className="pointer-events-none absolute -left-24 -top-24 h-48 w-48 rounded-full bg-red-500/15 blur-2xl" />
             <div className="flex items-center gap-3">
               <Logo variant="white" size="md" className="rounded-lg" />
               <div>
                 <h1 className="text-base font-semibold text-white leading-5">iware</h1>
-                <span className="text-xs text-slate-400 font-medium">Warehouse System</span>
+                <span className="text-xs text-slate-300 font-medium">Warehouse System</span>
               </div>
             </div>
             <button
@@ -110,11 +110,11 @@ const DashboardLayout = ({ children }) => {
                     }}
                     className={`relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-300 hover:translate-x-0.5 ${
                       active
-                        ? 'bg-white/10 text-white ring-1 ring-inset ring-white/20 before:absolute before:bottom-2 before:left-0 before:top-2 before:w-1 before:rounded-r before:glass-accent-line'
+                        ? 'bg-white/12 text-white ring-1 ring-inset ring-red-300/35 before:absolute before:bottom-2 before:left-0 before:top-2 before:w-1 before:rounded-r before:glass-accent-line'
                         : 'text-slate-200/95 hover:bg-white/10 hover:text-white'
                     }`}
                   >
-                    <Icon className={`w-5 h-5 ${active ? 'text-red-300' : ''}`} />
+                    <Icon className={`w-5 h-5 ${active ? 'text-red-200' : ''}`} />
                     <span>{item.name}</span>
                   </button>
                 ) : (
@@ -124,11 +124,11 @@ const DashboardLayout = ({ children }) => {
                     onClick={closeSidebar}
                     className={`relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-300 hover:translate-x-0.5 ${
                       active
-                        ? 'bg-white/10 text-white ring-1 ring-inset ring-white/20 before:absolute before:bottom-2 before:left-0 before:top-2 before:w-1 before:rounded-r before:glass-accent-line'
+                        ? 'bg-white/12 text-white ring-1 ring-inset ring-red-300/35 before:absolute before:bottom-2 before:left-0 before:top-2 before:w-1 before:rounded-r before:glass-accent-line'
                         : 'text-slate-200/95 hover:bg-white/10 hover:text-white'
                     }`}
                   >
-                    <Icon className={`w-5 h-5 ${active ? 'text-red-300' : ''}`} />
+                    <Icon className={`w-5 h-5 ${active ? 'text-red-200' : ''}`} />
                     <span>{item.name}</span>
                   </Link>
                 )
@@ -139,14 +139,14 @@ const DashboardLayout = ({ children }) => {
           {/* User info */}
           <div className="border-t border-white/10 p-3">
             <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-3 backdrop-blur-sm">
-              <div className="flex-shrink-0 w-9 h-9 bg-slate-200 rounded-full flex items-center justify-center text-slate-900 font-semibold">
+              <div className="flex-shrink-0 w-9 h-9 bg-slate-200 rounded-full flex items-center justify-center text-[#2b2f36] font-semibold">
                 {getInitials(user?.nama)}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-white truncate">
                   {user?.nama}
                 </p>
-                <p className="text-xs text-slate-400 truncate">{user?.email}</p>
+                <p className="text-xs text-slate-300 truncate">{user?.email}</p>
               </div>
             </div>
           </div>
@@ -160,7 +160,7 @@ const DashboardLayout = ({ children }) => {
           <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
             <button
               onClick={openSidebar}
-              className="lg:hidden text-slate-600 hover:text-slate-900 transition-colors"
+              className="lg:hidden text-slate-500 hover:text-slate-700 transition-colors"
               aria-label="Open sidebar"
             >
               <Menu className="w-6 h-6" />
@@ -170,11 +170,11 @@ const DashboardLayout = ({ children }) => {
 
             {/* User menu */}
             <HeadlessMenu as="div" className="relative">
-              <HeadlessMenu.Button className="glass-menu-panel flex items-center gap-2 rounded-xl border px-3 py-2 shadow-lg shadow-red-500/10 transition-colors hover:bg-white/75">
-                <div className="glass-glow flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-red-500 to-rose-500 text-sm font-semibold text-white shadow-sm shadow-red-500/40">
+              <HeadlessMenu.Button className="glass-menu-panel flex items-center gap-2 rounded-xl border px-3 py-2 shadow-lg shadow-slate-900/10 transition-colors hover:bg-white">
+                <div className="glass-glow flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#e53935] to-[#c62828] text-sm font-semibold text-white shadow-sm shadow-red-700/35">
                   {getInitials(user?.nama)}
                 </div>
-                <span className="hidden md:block text-sm font-semibold text-slate-700">{user?.nama}</span>
+                <span className="hidden md:block text-sm font-semibold text-[#2b2f36]">{user?.nama}</span>
                 <ChevronDown className="w-4 h-4 text-slate-500" />
               </HeadlessMenu.Button>
 

@@ -325,7 +325,7 @@ const SalesOrdersPage = () => {
               type="text"
               placeholder="Cari berdasarkan nomor order atau nama customer..."
               onChange={(e) => handleSearchChange(e.target.value)}
-              className="w-full rounded-xl border border-white/60 bg-white/55 py-2.5 pl-10 pr-3 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-red-400/25"
+              className="w-full rounded-xl border border-slate-200/80 bg-white/90 py-2.5 pl-10 pr-3 text-sm text-[#2b2f36] placeholder:text-slate-400 shadow-sm backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-red-700/20"
             />
           </div>
           <div className="flex flex-wrap items-center gap-3 text-sm">
@@ -333,7 +333,7 @@ const SalesOrdersPage = () => {
             <select
               value={month}
               onChange={(e) => handleMonthChange(e.target.value)}
-              className="rounded-xl border border-white/60 bg-white/55 px-3 py-2 text-sm text-slate-900 shadow-sm backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-red-400/25"
+              className="rounded-xl border border-slate-200/80 bg-white/90 px-3 py-2 text-sm text-[#2b2f36] shadow-sm backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-red-700/20"
             >
               <option value="all">Semua Data</option>
               <option value={toYyyyMm(new Date())}>Bulan Ini</option>
@@ -343,7 +343,7 @@ const SalesOrdersPage = () => {
                 type="month"
                 value={month}
                 onChange={(e) => handleMonthChange(e.target.value)}
-                className="rounded-xl border border-white/60 bg-white/55 px-3 py-2 text-sm text-slate-900 shadow-sm backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-red-400/25"
+                className="rounded-xl border border-slate-200/80 bg-white/90 px-3 py-2 text-sm text-[#2b2f36] shadow-sm backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-red-700/20"
               />
             )}
           </div>
@@ -365,20 +365,20 @@ const SalesOrdersPage = () => {
             <>
               <Table columns={columns}>
                 {orders.map((order) => (
-                  <tr key={order.id} className="hover:bg-white/40">
+                  <tr key={order.id} className="hover:bg-slate-50/80">
                     <td className="px-6 py-4">
-                      <div className="text-sm font-semibold text-slate-900">{order.transNumber}</div>
+                      <div className="text-sm font-semibold text-[#2b2f36]">{order.transNumber}</div>
                       {order.description && (
                         <div className="mt-0.5 text-sm text-slate-600">{order.description}</div>
                       )}
                     </td>
                     <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-slate-900">{order.customerName}</div>
+                      <div className="text-sm font-medium text-[#2b2f36]">{order.customerName}</div>
                     </td>
                     <td className="px-6 py-4 text-sm text-slate-700">
                       {formatDate(order.transDate)}
                     </td>
-                    <td className="px-6 py-4 text-right text-sm font-semibold text-slate-900 tabular-nums">
+                    <td className="px-6 py-4 text-right text-sm font-semibold text-[#2b2f36] tabular-nums">
                       {formatCurrency(order.totalAmount)}
                     </td>
                     <td className="px-6 py-4 text-center">

@@ -114,7 +114,7 @@ const DashboardPage = () => {
     soft: {
       gridStroke: '#e2e8f0',
       axisStroke: '#64748b',
-      barFill: '#f87171',
+      barFill: '#d84b48',
       tooltipBackground: 'rgba(255,255,255,0.9)',
       tooltipBorder: '1px solid rgba(255,255,255,0.85)',
       tooltipShadow: '0 8px 24px -10px rgba(15, 23, 42, 0.18)',
@@ -123,7 +123,7 @@ const DashboardPage = () => {
     medium: {
       gridStroke: '#e5e7eb',
       axisStroke: '#6b7280',
-      barFill: '#ef4444',
+      barFill: '#e53935',
       tooltipBackground: 'rgba(255,255,255,0.75)',
       tooltipBorder: '1px solid rgba(255,255,255,0.7)',
       tooltipShadow: '0 10px 30px -8px rgba(15, 23, 42, 0.25)',
@@ -132,7 +132,7 @@ const DashboardPage = () => {
     strong: {
       gridStroke: '#f1f5f9',
       axisStroke: '#94a3b8',
-      barFill: '#dc2626',
+      barFill: '#c62828',
       tooltipBackground: 'rgba(255,255,255,0.62)',
       tooltipBorder: '1px solid rgba(255,255,255,0.55)',
       tooltipShadow: '0 14px 34px -8px rgba(15, 23, 42, 0.32)',
@@ -178,10 +178,10 @@ const DashboardPage = () => {
           <Card className="p-5 animate-fade-in">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <div className="glass-glow rounded-xl bg-gradient-to-br from-red-500 to-rose-500 p-2 text-white shadow-sm shadow-red-500/25 ring-1 ring-inset ring-white/20">
+                <div className="glass-glow rounded-xl bg-gradient-to-br from-[#e53935] to-[#c62828] p-2 text-white shadow-sm shadow-red-700/20 ring-1 ring-inset ring-white/20">
                   <TrendingUp className="h-4 w-4" />
                 </div>
-                <h3 className="text-sm font-semibold text-slate-900">Penjualan 7 hari terakhir</h3>
+                <h3 className="text-sm font-semibold text-[#2b2f36]">Penjualan 7 hari terakhir</h3>
               </div>
             </div>
             {stats?.salesChart && stats.salesChart.length > 0 ? (
@@ -217,10 +217,10 @@ const DashboardPage = () => {
           {/* Recent Activity */}
           <Card className="p-5 animate-fade-in">
             <div className="mb-4 flex items-center gap-2">
-                <div className="glass-glow rounded-xl bg-gradient-to-br from-red-500 to-rose-500 p-2 text-white shadow-sm shadow-red-500/25 ring-1 ring-inset ring-white/20">
+                <div className="glass-glow rounded-xl bg-gradient-to-br from-[#e53935] to-[#c62828] p-2 text-white shadow-sm shadow-red-700/20 ring-1 ring-inset ring-white/20">
                 <ShoppingCart className="h-4 w-4" />
               </div>
-              <h3 className="text-sm font-semibold text-slate-900">Sales order terbaru</h3>
+              <h3 className="text-sm font-semibold text-[#2b2f36]">Sales order terbaru</h3>
             </div>
             <div className="space-y-2">
               {stats?.recentOrders && stats.recentOrders.length > 0 ? (
@@ -230,11 +230,11 @@ const DashboardPage = () => {
                     className="glass-hover flex items-center justify-between gap-4 rounded-xl border border-white/60 bg-white/45 px-4 py-3 backdrop-blur-sm hover:bg-white/65"
                   >
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-slate-900">{order.transNumber}</p>
+                      <p className="truncate text-sm font-semibold text-[#2b2f36]">{order.transNumber}</p>
                       <p className="mt-0.5 truncate text-sm text-slate-600">{order.customerName}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-semibold text-slate-900">
+                      <p className="text-sm font-semibold text-[#2b2f36]">
                         {formatCurrency(order.totalAmount)}
                       </p>
                       <p className="mt-0.5 text-xs text-slate-500">
@@ -254,14 +254,14 @@ const DashboardPage = () => {
         {stats?.accurateStatus && (
           <Card className="p-5 animate-fade-in">
             <div className="flex items-start gap-4">
-              <div className="rounded-xl bg-gradient-to-br from-red-500 to-rose-500 p-2.5 text-white shadow-sm shadow-red-500/25 ring-1 ring-inset ring-white/20">
+              <div className="rounded-xl bg-gradient-to-br from-[#e53935] to-[#c62828] p-2.5 text-white shadow-sm shadow-red-700/20 ring-1 ring-inset ring-white/20">
                 <Package className="h-5 w-5" />
               </div>
               <div className="flex-1">
-                <h4 className="text-sm font-semibold text-slate-900">Integrasi Accurate</h4>
+                <h4 className="text-sm font-semibold text-[#2b2f36]">Integrasi Accurate</h4>
                 <p className="mt-1 text-sm text-slate-600">
                   Sinkronisasi terakhir:{' '}
-                  <span className="font-medium text-slate-900">
+                  <span className="font-medium text-[#2b2f36]">
                     {formatRelativeTime(stats.accurateStatus.lastSync)}
                   </span>
                 </p>

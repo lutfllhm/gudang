@@ -9,16 +9,16 @@ const Button = ({
   ...props
 }) => {
   const base =
-    'inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40 focus-visible:ring-offset-2'
+    'inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700/35 focus-visible:ring-offset-2'
 
   const variants = {
     primary:
-      'border border-white/20 bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-lg shadow-red-500/25 hover:from-red-600 hover:to-rose-600 hover:shadow-red-500/35 active:translate-y-[0.5px]',
+      'border border-red-700/10 bg-gradient-to-r from-[#e53935] to-[#c62828] text-white shadow-lg shadow-red-700/20 hover:from-[#d23430] hover:to-[#b72222] hover:shadow-red-800/25 active:translate-y-[0.5px]',
     secondary:
-      'border border-white/60 bg-white/50 text-slate-700 shadow-lg shadow-slate-900/5 backdrop-blur-sm hover:bg-white/70 active:translate-y-[0.5px]',
-    ghost: 'bg-transparent text-slate-700 hover:bg-white/40',
+      'border border-slate-200/85 bg-slate-50/85 text-slate-700 shadow-sm shadow-slate-900/5 backdrop-blur-sm hover:bg-slate-100/90 active:translate-y-[0.5px]',
+    ghost: 'bg-transparent text-slate-700 hover:bg-slate-100/75',
     danger:
-      'bg-red-50 text-red-700 hover:bg-red-100 focus-visible:ring-red-500/30'
+      'border border-red-200/80 bg-red-50 text-red-700 hover:bg-red-100/85 focus-visible:ring-red-700/30'
   }
 
   return (

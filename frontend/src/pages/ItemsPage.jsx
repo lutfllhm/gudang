@@ -126,7 +126,7 @@ const ItemsPage = () => {
               type="text"
               placeholder="Cari items berdasarkan nama atau nomor..."
               onChange={(e) => handleSearchChange(e.target.value)}
-              className="w-full rounded-xl border border-white/60 bg-white/55 py-2.5 pl-10 pr-3 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-red-400/25"
+              className="w-full rounded-xl border border-slate-200/80 bg-white/90 py-2.5 pl-10 pr-3 text-sm text-[#2b2f36] placeholder:text-slate-400 shadow-sm backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-red-700/20"
             />
           </div>
         </Card>
@@ -147,9 +147,9 @@ const ItemsPage = () => {
             <>
               <Table columns={columns}>
                 {items.map((item) => (
-                  <tr key={item.id} className="hover:bg-white/40">
+                  <tr key={item.id} className="hover:bg-slate-50/80">
                     <td className="px-6 py-4">
-                      <div className="text-sm font-semibold text-slate-900">{item.name}</div>
+                      <div className="text-sm font-semibold text-[#2b2f36]">{item.name}</div>
                       {item.description && (
                         <div className="mt-0.5 text-sm text-slate-600">{item.description}</div>
                       )}
@@ -165,7 +165,7 @@ const ItemsPage = () => {
                         <span className="text-sm text-slate-500">{item.unitName}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-right text-sm font-semibold text-slate-900 tabular-nums">
+                    <td className="px-6 py-4 text-right text-sm font-semibold text-[#2b2f36] tabular-nums">
                       {formatNumber(item.unitPrice)}
                     </td>
                     <td className="px-6 py-4 text-center">

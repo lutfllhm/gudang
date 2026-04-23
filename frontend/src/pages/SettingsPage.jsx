@@ -121,7 +121,7 @@ const SettingsPage = () => {
             <select
               value={glassIntensity}
               onChange={(e) => handleGlassIntensityChange(e.target.value)}
-              className="w-full rounded-xl border border-white/60 bg-white/55 px-3 py-2.5 text-sm text-slate-900 shadow-sm backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-red-400/25"
+              className="w-full rounded-xl border border-slate-200/80 bg-white/90 px-3 py-2.5 text-sm text-[#2b2f36] shadow-sm backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-red-700/20"
             >
               <option value="soft">Soft</option>
               <option value="medium">Medium</option>
@@ -140,8 +140,8 @@ const SettingsPage = () => {
             <Card className="p-6">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <h2 className="text-base font-semibold text-slate-900 flex items-center gap-2">
-                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-slate-900 text-white">
+                  <h2 className="text-base font-semibold text-[#2b2f36] flex items-center gap-2">
+                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[#2b2f36] text-white">
                       <Shield size={18} />
                     </span>
                     <span>Manajemen Superadmin</span>
@@ -150,7 +150,7 @@ const SettingsPage = () => {
                 </div>
                 <button
                   onClick={() => navigate('/users')}
-                  className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-gradient-to-r from-red-500 to-rose-500 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-red-500/25 hover:from-red-600 hover:to-rose-600"
+                  className="inline-flex items-center gap-2 rounded-xl border border-red-700/10 bg-gradient-to-r from-[#e53935] to-[#c62828] px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-red-700/20 hover:from-[#d23430] hover:to-[#b72222]"
                 >
                   <Users size={18} />
                   Kelola Pengguna
@@ -160,8 +160,8 @@ const SettingsPage = () => {
 
             {/* Application Configuration */}
             <Card className="p-6">
-              <h2 className="text-base font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-slate-900 text-white">
+              <h2 className="text-base font-semibold text-[#2b2f36] mb-4 flex items-center gap-2">
+                <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[#2b2f36] text-white">
                   <Settings className="text-white" size={18} />
                 </span>
                 <span>Konfigurasi Aplikasi</span>
@@ -176,7 +176,7 @@ const SettingsPage = () => {
                     type="text"
                     value={appSettings.appName}
                     onChange={(e) => setAppSettings({ ...appSettings, appName: e.target.value })}
-                    className="input focus:ring-2 focus:ring-red-400/30"
+                    className="input"
                     required
                   />
                 </div>
@@ -184,11 +184,11 @@ const SettingsPage = () => {
                 {/* Toggle Settings */}
                 <div className="space-y-4">
                   {/* Maintenance Mode */}
-                  <div className="flex items-center justify-between gap-4 rounded-xl border border-white/60 bg-white/45 p-4 backdrop-blur-sm">
+                  <div className="flex items-center justify-between gap-4 rounded-xl border border-slate-200/80 bg-white/85 p-4 backdrop-blur-sm">
                     <div className="flex items-center gap-3">
                       <Database className="text-slate-700" size={20} />
                       <div>
-                        <p className="font-medium text-slate-900">Mode Maintenance</p>
+                        <p className="font-medium text-[#2b2f36]">Mode Maintenance</p>
                         <p className="text-sm text-slate-600">Nonaktifkan akses sementara untuk maintenance</p>
                       </div>
                     </div>
@@ -199,16 +199,16 @@ const SettingsPage = () => {
                         onChange={(e) => setAppSettings({ ...appSettings, maintenanceMode: e.target.checked })}
                         className="sr-only peer"
                       />
-                      <div className="h-6 w-11 rounded-full bg-gray-200 peer peer-checked:bg-red-500 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-200 peer-checked:after:translate-x-full peer-checked:after:border-white after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-['']"></div>
+                      <div className="h-6 w-11 rounded-full bg-slate-200 peer peer-checked:bg-[#e53935] peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-700/20 peer-checked:after:translate-x-full peer-checked:after:border-white after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-slate-300 after:bg-white after:transition-all after:content-['']"></div>
                     </label>
                   </div>
 
                   {/* Allow Registration */}
-                  <div className="flex items-center justify-between gap-4 rounded-xl border border-white/60 bg-white/45 p-4 backdrop-blur-sm">
+                  <div className="flex items-center justify-between gap-4 rounded-xl border border-slate-200/80 bg-white/85 p-4 backdrop-blur-sm">
                     <div className="flex items-center gap-3">
                       <Users className="text-slate-700" size={20} />
                       <div>
-                        <p className="font-medium text-slate-900">Izinkan Registrasi</p>
+                        <p className="font-medium text-[#2b2f36]">Izinkan Registrasi</p>
                         <p className="text-sm text-slate-600">Pengguna baru dapat mendaftar sendiri</p>
                       </div>
                     </div>
@@ -219,16 +219,16 @@ const SettingsPage = () => {
                         onChange={(e) => setAppSettings({ ...appSettings, allowRegistration: e.target.checked })}
                         className="sr-only peer"
                       />
-                      <div className="h-6 w-11 rounded-full bg-gray-200 peer peer-checked:bg-red-500 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-200 peer-checked:after:translate-x-full peer-checked:after:border-white after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-['']"></div>
+                      <div className="h-6 w-11 rounded-full bg-slate-200 peer peer-checked:bg-[#e53935] peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-700/20 peer-checked:after:translate-x-full peer-checked:after:border-white after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-slate-300 after:bg-white after:transition-all after:content-['']"></div>
                     </label>
                   </div>
 
                   {/* Email Notifications */}
-                  <div className="flex items-center justify-between gap-4 rounded-xl border border-white/60 bg-white/45 p-4 backdrop-blur-sm">
+                  <div className="flex items-center justify-between gap-4 rounded-xl border border-slate-200/80 bg-white/85 p-4 backdrop-blur-sm">
                     <div className="flex items-center gap-3">
                       <Mail className="text-slate-700" size={20} />
                       <div>
-                        <p className="font-medium text-slate-900">Notifikasi Email</p>
+                        <p className="font-medium text-[#2b2f36]">Notifikasi Email</p>
                         <p className="text-sm text-slate-600">Kirim notifikasi penting via email</p>
                       </div>
                     </div>
@@ -239,16 +239,16 @@ const SettingsPage = () => {
                         onChange={(e) => setAppSettings({ ...appSettings, emailNotifications: e.target.checked })}
                         className="sr-only peer"
                       />
-                      <div className="h-6 w-11 rounded-full bg-gray-200 peer peer-checked:bg-red-500 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-200 peer-checked:after:translate-x-full peer-checked:after:border-white after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-['']"></div>
+                      <div className="h-6 w-11 rounded-full bg-slate-200 peer peer-checked:bg-[#e53935] peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-700/20 peer-checked:after:translate-x-full peer-checked:after:border-white after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-slate-300 after:bg-white after:transition-all after:content-['']"></div>
                     </label>
                   </div>
 
                   {/* Auto Backup */}
-                  <div className="flex items-center justify-between gap-4 rounded-xl border border-white/60 bg-white/45 p-4 backdrop-blur-sm">
+                  <div className="flex items-center justify-between gap-4 rounded-xl border border-slate-200/80 bg-white/85 p-4 backdrop-blur-sm">
                     <div className="flex items-center gap-3">
                       <Database className="text-slate-700" size={20} />
                       <div>
-                        <p className="font-medium text-slate-900">Backup Otomatis</p>
+                        <p className="font-medium text-[#2b2f36]">Backup Otomatis</p>
                         <p className="text-sm text-slate-600">Backup database secara otomatis setiap hari</p>
                       </div>
                     </div>
@@ -259,7 +259,7 @@ const SettingsPage = () => {
                         onChange={(e) => setAppSettings({ ...appSettings, autoBackup: e.target.checked })}
                         className="sr-only peer"
                       />
-                      <div className="h-6 w-11 rounded-full bg-gray-200 peer peer-checked:bg-red-500 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-200 peer-checked:after:translate-x-full peer-checked:after:border-white after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-['']"></div>
+                      <div className="h-6 w-11 rounded-full bg-slate-200 peer peer-checked:bg-[#e53935] peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-700/20 peer-checked:after:translate-x-full peer-checked:after:border-white after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-slate-300 after:bg-white after:transition-all after:content-['']"></div>
                     </label>
                   </div>
                 </div>
@@ -278,8 +278,8 @@ const SettingsPage = () => {
 
         {/* Profile Settings */}
         <Card className="p-6">
-          <h2 className="text-base font-semibold text-slate-900 mb-4 flex items-center gap-2">
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-slate-900 text-white">
+          <h2 className="text-base font-semibold text-[#2b2f36] mb-4 flex items-center gap-2">
+            <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[#2b2f36] text-white">
               <Users className="text-white" size={18} />
             </span>
             <span>Informasi Profil</span>
@@ -293,7 +293,7 @@ const SettingsPage = () => {
                 type="text"
                 value={profile.nama}
                 onChange={(e) => setProfile({ ...profile, nama: e.target.value })}
-                className="input focus:ring-2 focus:ring-red-400/30"
+                className="input"
                 required
               />
             </div>
@@ -305,7 +305,7 @@ const SettingsPage = () => {
                 type="email"
                 value={profile.email}
                 onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                className="input focus:ring-2 focus:ring-red-400/30"
+                className="input"
                 required
               />
             </div>
@@ -316,7 +316,7 @@ const SettingsPage = () => {
               <input
                 type="text"
                 value={user?.role || ''}
-                className="input bg-gray-50"
+                className="input bg-slate-100/80"
                 disabled
               />
             </div>
@@ -332,8 +332,8 @@ const SettingsPage = () => {
 
         {/* Change Password */}
         <Card className="p-6">
-          <h2 className="text-base font-semibold text-slate-900 mb-4 flex items-center gap-2">
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-slate-900 text-white">
+          <h2 className="text-base font-semibold text-[#2b2f36] mb-4 flex items-center gap-2">
+            <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[#2b2f36] text-white">
               <Key className="text-white" size={18} />
             </span>
             <span>Ubah Kata Sandi</span>
@@ -347,7 +347,7 @@ const SettingsPage = () => {
                 type="password"
                 value={password.oldPassword}
                 onChange={(e) => setPassword({ ...password, oldPassword: e.target.value })}
-                className="input focus:ring-2 focus:ring-red-400/30"
+                className="input"
                 required
               />
             </div>
@@ -359,7 +359,7 @@ const SettingsPage = () => {
                 type="password"
                 value={password.newPassword}
                 onChange={(e) => setPassword({ ...password, newPassword: e.target.value })}
-                className="input focus:ring-2 focus:ring-red-400/30"
+                className="input"
                 required
                 minLength={6}
               />
@@ -372,7 +372,7 @@ const SettingsPage = () => {
                 type="password"
                 value={password.confirmPassword}
                 onChange={(e) => setPassword({ ...password, confirmPassword: e.target.value })}
-                className="input focus:ring-2 focus:ring-red-400/30"
+                className="input"
                 required
                 minLength={6}
               />
