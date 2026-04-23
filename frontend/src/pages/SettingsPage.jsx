@@ -3,6 +3,8 @@ import DashboardLayout from '../components/DashboardLayout'
 import { useAuth } from '../context/AuthContext'
 import usePageTitle from '../hooks/usePageTitle'
 import AccurateIntegration from '../components/AccurateIntegration'
+import PageHeader from '../components/ui/PageHeader'
+import Card from '../components/ui/Card'
 import { Save, Key, Users, Settings, Shield, Database, Bell, Mail } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
@@ -80,11 +82,11 @@ const SettingsPage = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-8 max-w-4xl animate-fade-in">
-        <div className="animate-slide-in-left">
-          <h1 className="text-4xl font-bold text-gradient-brand mb-2">Pengaturan</h1>
-          <p className="text-gray-600 text-lg">Kelola pengaturan akun dan integrasi Anda</p>
-        </div>
+      <div className="space-y-6 max-w-4xl">
+        <PageHeader
+          title="Pengaturan"
+          description="Kelola pengaturan akun dan integrasi."
+        />
 
         {/* Accurate Integration */}
         <AccurateIntegration />
@@ -93,40 +95,33 @@ const SettingsPage = () => {
         {isSuperAdmin && (
           <>
             {/* Quick Access to User Management */}
-            <div className="relative bg-gradient-to-r from-red-600 to-red-700 text-white rounded-2xl shadow-lg p-8 hover:shadow-2xl transition-all duration-500 overflow-hidden group hover-lift">
-              {/* Animated Background */}
-              <div className="absolute inset-0 bg-gradient-to-r from-red-700 to-red-800 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              
-              <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+            <Card className="p-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold mb-3 flex items-center gap-3">
-                    <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
-                      <Shield size={28} />
-                    </div>
+                  <h2 className="text-base font-semibold text-slate-900 flex items-center gap-2">
+                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-slate-900 text-white">
+                      <Shield size={18} />
+                    </span>
                     <span>Manajemen Superadmin</span>
                   </h2>
-                  <p className="text-red-100 text-lg">Kelola pengguna dan konfigurasi sistem</p>
+                  <p className="mt-1 text-sm text-slate-600">Kelola pengguna dan konfigurasi sistem.</p>
                 </div>
                 <button
                   onClick={() => navigate('/users')}
-                  className="px-6 py-3 bg-white text-red-600 rounded-xl font-bold hover:bg-red-50 transition-all flex items-center gap-2 shadow-lg hover:shadow-xl hover:scale-105"
+                  className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-slate-800"
                 >
-                  <Users size={20} />
+                  <Users size={18} />
                   Kelola Pengguna
                 </button>
               </div>
-
-              {/* Decorative Elements */}
-              <div className="absolute -bottom-4 -right-4 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
-              <div className="absolute -top-4 -left-4 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
-            </div>
+            </Card>
 
             {/* Application Configuration */}
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 hover:shadow-2xl transition-all duration-500 hover-lift">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                <div className="p-2 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl">
-                  <Settings className="text-white" size={24} />
-                </div>
+            <Card className="p-6">
+              <h2 className="text-base font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-slate-900 text-white">
+                  <Settings className="text-white" size={18} />
+                </span>
                 <span>Konfigurasi Aplikasi</span>
               </h2>
               <form onSubmit={handleAppSettingsSubmit} className="space-y-6">
@@ -147,12 +142,12 @@ const SettingsPage = () => {
                 {/* Toggle Settings */}
                 <div className="space-y-4">
                   {/* Maintenance Mode */}
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center justify-between gap-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
                     <div className="flex items-center gap-3">
-                      <Database className="text-gray-600" size={20} />
+                      <Database className="text-slate-700" size={20} />
                       <div>
-                        <p className="font-medium text-gray-900">Mode Maintenance</p>
-                        <p className="text-sm text-gray-600">Nonaktifkan akses sementara untuk maintenance</p>
+                        <p className="font-medium text-slate-900">Mode Maintenance</p>
+                        <p className="text-sm text-slate-600">Nonaktifkan akses sementara untuk maintenance</p>
                       </div>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -167,12 +162,12 @@ const SettingsPage = () => {
                   </div>
 
                   {/* Allow Registration */}
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center justify-between gap-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
                     <div className="flex items-center gap-3">
-                      <Users className="text-gray-600" size={20} />
+                      <Users className="text-slate-700" size={20} />
                       <div>
-                        <p className="font-medium text-gray-900">Izinkan Registrasi</p>
-                        <p className="text-sm text-gray-600">Pengguna baru dapat mendaftar sendiri</p>
+                        <p className="font-medium text-slate-900">Izinkan Registrasi</p>
+                        <p className="text-sm text-slate-600">Pengguna baru dapat mendaftar sendiri</p>
                       </div>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -187,12 +182,12 @@ const SettingsPage = () => {
                   </div>
 
                   {/* Email Notifications */}
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center justify-between gap-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
                     <div className="flex items-center gap-3">
-                      <Mail className="text-gray-600" size={20} />
+                      <Mail className="text-slate-700" size={20} />
                       <div>
-                        <p className="font-medium text-gray-900">Notifikasi Email</p>
-                        <p className="text-sm text-gray-600">Kirim notifikasi penting via email</p>
+                        <p className="font-medium text-slate-900">Notifikasi Email</p>
+                        <p className="text-sm text-slate-600">Kirim notifikasi penting via email</p>
                       </div>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -207,12 +202,12 @@ const SettingsPage = () => {
                   </div>
 
                   {/* Auto Backup */}
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center justify-between gap-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
                     <div className="flex items-center gap-3">
-                      <Database className="text-gray-600" size={20} />
+                      <Database className="text-slate-700" size={20} />
                       <div>
-                        <p className="font-medium text-gray-900">Backup Otomatis</p>
-                        <p className="text-sm text-gray-600">Backup database secara otomatis setiap hari</p>
+                        <p className="font-medium text-slate-900">Backup Otomatis</p>
+                        <p className="text-sm text-slate-600">Backup database secara otomatis setiap hari</p>
                       </div>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -230,22 +225,22 @@ const SettingsPage = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl font-semibold hover:from-red-700 hover:to-red-800 transition-all flex items-center gap-2 shadow-lg hover:shadow-xl hover:scale-105 disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-slate-800 disabled:opacity-60"
                 >
-                  <Save className="w-5 h-5" />
+                  <Save className="h-4 w-4" />
                   <span>Simpan Konfigurasi</span>
                 </button>
               </form>
-            </div>
+            </Card>
           </>
         )}
 
         {/* Profile Settings */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 hover:shadow-2xl transition-all duration-500 hover-lift">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-br from-green-600 to-green-700 rounded-xl">
-              <Users className="text-white" size={24} />
-            </div>
+        <Card className="p-6">
+          <h2 className="text-base font-semibold text-slate-900 mb-4 flex items-center gap-2">
+            <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-slate-900 text-white">
+              <Users className="text-white" size={18} />
+            </span>
             <span>Informasi Profil</span>
           </h2>
           <form onSubmit={handleProfileSubmit} className="space-y-4">
@@ -287,20 +282,20 @@ const SettingsPage = () => {
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl font-semibold hover:from-red-700 hover:to-red-800 transition-all flex items-center gap-2 shadow-lg hover:shadow-xl hover:scale-105 disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-slate-800 disabled:opacity-60"
             >
-              <Save className="w-5 h-5" />
+              <Save className="h-4 w-4" />
               <span>Simpan Perubahan</span>
             </button>
           </form>
-        </div>
+        </Card>
 
         {/* Change Password */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 hover:shadow-2xl transition-all duration-500 hover-lift">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-br from-purple-600 to-purple-700 rounded-xl">
-              <Key className="text-white" size={24} />
-            </div>
+        <Card className="p-6">
+          <h2 className="text-base font-semibold text-slate-900 mb-4 flex items-center gap-2">
+            <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-slate-900 text-white">
+              <Key className="text-white" size={18} />
+            </span>
             <span>Ubah Kata Sandi</span>
           </h2>
           <form onSubmit={handlePasswordSubmit} className="space-y-4">
@@ -345,13 +340,13 @@ const SettingsPage = () => {
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl font-semibold hover:from-red-700 hover:to-red-800 transition-all flex items-center gap-2 shadow-lg hover:shadow-xl hover:scale-105 disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-slate-800 disabled:opacity-60"
             >
-              <Key className="w-5 h-5" />
+              <Key className="h-4 w-4" />
               <span>Perbarui Kata Sandi</span>
             </button>
           </form>
-        </div>
+        </Card>
       </div>
     </DashboardLayout>
   )

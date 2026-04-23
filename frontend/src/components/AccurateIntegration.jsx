@@ -11,6 +11,8 @@ import {
 import api from '../utils/api'
 import toast from 'react-hot-toast'
 import { formatDateTime } from '../utils/helpers'
+import Card from './ui/Card'
+import EmptyState from './ui/EmptyState'
 
 const AccurateIntegration = () => {
   const [status, setStatus] = useState(null)
@@ -121,32 +123,32 @@ const AccurateIntegration = () => {
 
   if (loading) {
     return (
-      <div className="card">
+      <Card className="p-6">
         <div className="flex items-center justify-center py-8">
-          <RefreshCw className="w-8 h-8 animate-spin text-blue-600" />
+          <RefreshCw className="h-6 w-6 animate-spin text-slate-600" />
         </div>
-      </div>
+      </Card>
     )
   }
 
   return (
     <div className="space-y-6">
       {/* Connection Status */}
-      <div className="card">
-        <div className="flex items-start justify-between mb-6">
+      <Card className="p-6">
+        <div className="mb-5 flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900">Accurate Online Integration</h2>
-            <p className="text-gray-600 mt-1">Manage your Accurate Online connection</p>
+            <h2 className="text-base font-semibold text-slate-900">Integrasi Accurate Online</h2>
+            <p className="mt-1 text-sm text-slate-600">Kelola koneksi dan sinkronisasi data.</p>
           </div>
           {status?.connected ? (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-green-100 text-green-700 rounded-full text-sm font-medium">
-              <CheckCircle className="w-4 h-4" />
-              <span>Connected</span>
+            <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-700">
+              <CheckCircle className="h-4 w-4" />
+              <span>Terhubung</span>
             </div>
           ) : (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-red-100 text-red-700 rounded-full text-sm font-medium">
-              <XCircle className="w-4 h-4" />
-              <span>Not Connected</span>
+            <div className="inline-flex items-center gap-2 rounded-full bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700">
+              <XCircle className="h-4 w-4" />
+              <span>Belum terhubung</span>
             </div>
           )}
         </div>
@@ -154,89 +156,89 @@ const AccurateIntegration = () => {
         {status?.connected ? (
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <div className="flex items-center gap-2 text-gray-600 mb-1">
-                  <Clock className="w-4 h-4" />
-                  <span className="text-sm font-medium">Token Expires</span>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <div className="mb-1 flex items-center gap-2 text-slate-600">
+                  <Clock className="h-4 w-4" />
+                  <span className="text-sm font-medium">Token Expired</span>
                 </div>
-                <p className="text-gray-900 font-semibold">
+                <p className="text-sm font-semibold text-slate-900">
                   {status.expiresAt ? formatDateTime(status.expiresAt) : 'N/A'}
                 </p>
               </div>
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <div className="flex items-center gap-2 text-gray-600 mb-1">
-                  <Database className="w-4 h-4" />
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <div className="mb-1 flex items-center gap-2 text-slate-600">
+                  <Database className="h-4 w-4" />
                   <span className="text-sm font-medium">Status</span>
                 </div>
-                <p className="text-gray-900 font-semibold">{status.message}</p>
+                <p className="text-sm font-semibold text-slate-900">{status.message}</p>
               </div>
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => handleSync('current-month')}
                 disabled={syncing}
-                className="btn btn-primary flex items-center gap-2"
+                className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-slate-800 disabled:opacity-60"
                 title="Sync bulan berjalan saja (cepat)"
               >
-                <RefreshCw className={`w-5 h-5 ${syncing ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
                 <span>Sync Bulan Ini</span>
               </button>
               <button
                 onClick={() => handleSync('from-march-2026')}
                 disabled={syncing}
-                className="btn btn-secondary flex items-center gap-2"
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
                 title="Full sync dari Maret 2026 (lambat)"
               >
-                <Database className="w-5 h-5" />
+                <Database className="h-4 w-4" />
                 <span>Full Sync</span>
               </button>
               <button
                 onClick={handleDisconnect}
-                className="btn btn-secondary"
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
               >
                 Disconnect
               </button>
             </div>
             
-            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-800">
-                <strong>Sync Bulan Ini:</strong> Hanya mengambil data bulan berjalan (cepat, untuk update rutin)
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <p className="text-sm text-slate-700">
+                <span className="font-medium">Sync Bulan Ini</span>: update rutin (cepat).
                 <br />
-                <strong>Full Sync:</strong> Mengambil semua data dari Maret 2026 (lambat, untuk setup awal)
+                <span className="font-medium">Full Sync</span>: setup awal / tarik data lama (lebih lama).
               </p>
             </div>
           </div>
         ) : (
-          <div className="text-center py-8">
-            <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Not Connected to Accurate Online
-            </h3>
-            <p className="text-gray-600 mb-6">
-              Connect your Accurate Online account to sync data automatically
-            </p>
-            <button
-              onClick={handleConnect}
-              className="btn btn-primary flex items-center gap-2 mx-auto"
-            >
-              <ExternalLink className="w-5 h-5" />
-              <span>Connect to Accurate Online</span>
-            </button>
+          <div className="space-y-4">
+            <EmptyState
+              icon={AlertCircle}
+              title="Belum terhubung ke Accurate Online"
+              description="Hubungkan akun Accurate Online agar sinkronisasi data dapat berjalan."
+            />
+            <div className="flex justify-center">
+              <button
+                onClick={handleConnect}
+                className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-slate-800"
+              >
+                <ExternalLink className="h-4 w-4" />
+                <span>Connect Accurate</span>
+              </button>
+            </div>
           </div>
         )}
-      </div>
+      </Card>
 
       {/* Sync Configuration */}
       {status?.connected && (
-        <div className="card">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Sync Configuration</h3>
+        <Card className="p-6">
+          <h3 className="text-base font-semibold text-slate-900 mb-4">Konfigurasi Sync</h3>
           
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div className="flex items-center justify-between gap-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
               <div>
-                <p className="font-medium text-gray-900">Auto Sync</p>
-                <p className="text-sm text-gray-600">Automatically sync data from Accurate</p>
+                <p className="font-medium text-slate-900">Auto Sync</p>
+                <p className="text-sm text-slate-600">Sinkronisasi otomatis dari Accurate.</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
@@ -253,8 +255,8 @@ const AccurateIntegration = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Sync Interval (seconds)
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Interval Sync
               </label>
               <select
                 value={syncConfig.sync_interval_seconds}
@@ -262,7 +264,7 @@ const AccurateIntegration = () => {
                   ...syncConfig,
                   sync_interval_seconds: parseInt(e.target.value)
                 })}
-                className="input"
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
               >
                 <option value={60}>1 minute</option>
                 <option value={300}>5 minutes</option>
@@ -271,55 +273,55 @@ const AccurateIntegration = () => {
                 <option value={1800}>30 minutes</option>
                 <option value={3600}>1 hour</option>
               </select>
-              <p className="text-sm text-gray-500 mt-1">
-                How often to sync data from Accurate Online
+              <p className="mt-1 text-sm text-slate-500">
+                Seberapa sering data diambil dari Accurate Online.
               </p>
             </div>
 
             <button
               onClick={handleUpdateSyncConfig}
-              className="btn btn-primary"
+              className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-slate-800"
             >
-              Save Configuration
+              Save
             </button>
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Quick Sync Actions */}
       {status?.connected && (
-        <div className="card">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Sync</h3>
+        <Card className="p-6">
+          <h3 className="text-base font-semibold text-slate-900 mb-4">Quick Sync</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <button
               onClick={() => handleSync('items')}
               disabled={syncing}
-              className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
+              className="rounded-lg border border-slate-200 bg-white p-4 text-left hover:bg-slate-50 disabled:opacity-60"
             >
-              <Database className="w-6 h-6 text-blue-600 mb-2" />
-              <p className="font-medium text-gray-900">Sync Items</p>
-              <p className="text-sm text-gray-600">Sync master barang</p>
+              <Database className="mb-2 h-5 w-5 text-slate-700" />
+              <p className="text-sm font-medium text-slate-900">Sync Items</p>
+              <p className="text-sm text-slate-600">Sync master barang</p>
             </button>
             <button
               onClick={() => handleSync('sales_orders')}
               disabled={syncing}
-              className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
+              className="rounded-lg border border-slate-200 bg-white p-4 text-left hover:bg-slate-50 disabled:opacity-60"
             >
-              <Database className="w-6 h-6 text-green-600 mb-2" />
-              <p className="font-medium text-gray-900">Sync Sales Orders</p>
-              <p className="text-sm text-gray-600">Sync pesanan penjualan</p>
+              <Database className="mb-2 h-5 w-5 text-slate-700" />
+              <p className="text-sm font-medium text-slate-900">Sync Sales Orders</p>
+              <p className="text-sm text-slate-600">Sync pesanan penjualan</p>
             </button>
             <button
               onClick={() => handleSync('full')}
               disabled={syncing}
-              className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
+              className="rounded-lg border border-slate-200 bg-white p-4 text-left hover:bg-slate-50 disabled:opacity-60"
             >
-              <RefreshCw className="w-6 h-6 text-purple-600 mb-2" />
-              <p className="font-medium text-gray-900">Full Sync</p>
-              <p className="text-sm text-gray-600">Sync all data</p>
+              <RefreshCw className="mb-2 h-5 w-5 text-slate-700" />
+              <p className="text-sm font-medium text-slate-900">Full Sync</p>
+              <p className="text-sm text-slate-600">Sync semua data</p>
             </button>
           </div>
-        </div>
+        </Card>
       )}
     </div>
   )

@@ -1,6 +1,11 @@
 import { useState, useEffect, useMemo } from 'react'
 import DashboardLayout from '../components/DashboardLayout'
 import LoadingSpinner from '../components/LoadingSpinner'
+import PageHeader from '../components/ui/PageHeader'
+import Card from '../components/ui/Card'
+import EmptyState from '../components/ui/EmptyState'
+import Table from '../components/ui/Table'
+import Pagination from '../components/ui/Pagination'
 import usePageTitle from '../hooks/usePageTitle'
 import api from '../utils/api'
 import { formatCurrency, formatDate, debounce, getStatusColor } from '../utils/helpers'
@@ -236,6 +241,14 @@ const SalesOrdersPage = () => {
     setPagination({ ...pagination, page: 1 })
   }
 
+  const columns = [
+    { key: 'order_number', header: 'Order Number', align: 'left' },
+    { key: 'customer', header: 'Customer', align: 'left' },
+    { key: 'date', header: 'Date', align: 'left' },
+    { key: 'amount', header: 'Amount', align: 'right' },
+    { key: 'status', header: 'Status', align: 'center' },
+  ]
+
   const formatStatusLabel = (status) => {
     const s = (status || '').toLowerCase().trim()
 
@@ -288,42 +301,39 @@ const SalesOrdersPage = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-8 animate-fade-in">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="animate-slide-in-left">
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-4xl font-bold text-gradient-brand">Sales Orders</h1>
-            </div>
-            <p className="text-gray-600 text-lg">Lihat dan kelola sales orders</p>
-          </div>
-          <button
-            onClick={handleSync}
-            disabled={syncing}
-            className="px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl font-semibold hover:from-red-700 hover:to-red-800 transition-all flex items-center gap-2 shadow-primary hover:shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed animate-slide-in-right"
-          >
-            <RefreshCw className={`w-5 h-5 ${syncing ? 'animate-spin' : ''}`} />
-            <span>Sync dari Accurate</span>
-          </button>
-        </div>
+      <div className="space-y-6">
+        <PageHeader
+          title="Sales Orders"
+          description="Lihat dan kelola sales orders."
+          actions={
+            <button
+              onClick={handleSync}
+              disabled={syncing}
+              className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-slate-800 disabled:opacity-60"
+            >
+              <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
+              <span>Sync Accurate</span>
+            </button>
+          }
+        />
 
         {/* Search + Month Filter */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-all duration-300 space-y-4">
+        <Card className="p-5 space-y-4">
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input
               type="text"
               placeholder="Cari berdasarkan nomor order atau nama customer..."
               onChange={(e) => handleSearchChange(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all bg-gray-50 hover:bg-white"
+              className="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
             />
           </div>
           <div className="flex flex-wrap items-center gap-3 text-sm">
-            <span className="font-semibold text-gray-600">Filter Bulan</span>
+            <span className="font-medium text-slate-600">Filter Bulan</span>
             <select
               value={month}
               onChange={(e) => handleMonthChange(e.target.value)}
-              className="border-2 border-gray-200 rounded-xl px-4 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent bg-gray-50 hover:bg-white"
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
             >
               <option value="all">Semua Data</option>
               <option value={toYyyyMm(new Date())}>Bulan Ini</option>
@@ -333,118 +343,73 @@ const SalesOrdersPage = () => {
                 type="month"
                 value={month}
                 onChange={(e) => handleMonthChange(e.target.value)}
-                className="border-2 border-gray-200 rounded-xl px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent bg-gray-50 hover:bg-white"
+                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
               />
             )}
           </div>
-        </div>
+        </Card>
 
         {/* Orders Table */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-2xl transition-all duration-500">
+        <Card className="overflow-hidden">
           {loading ? (
-            <div className="p-20">
+            <div className="p-12">
               <LoadingSpinner />
             </div>
           ) : orders.length === 0 ? (
-            <div className="text-center py-20">
-              <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center">
-                <ShoppingCart className="w-12 h-12 text-gray-400" />
-              </div>
-              <p className="text-xl font-bold text-gray-900 mb-2">Tidak ada sales orders ditemukan</p>
-              <p className="text-gray-500">Coba ubah kata kunci pencarian atau sync dari Accurate</p>
-            </div>
+            <EmptyState
+              icon={ShoppingCart}
+              title="Tidak ada sales order"
+              description="Coba ubah kata kunci pencarian atau lakukan sync dari Accurate."
+            />
           ) : (
             <>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
-                    <tr>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                        Order Number
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                        Customer
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                        Date
-                      </th>
-                      <th className="px-6 py-4 text-right text-xs font-bold text-gray-700 uppercase tracking-wider">
-                        Amount
-                      </th>
-                      <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">
-                        Status
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-100">
-                    {orders.map((order, idx) => (
-                      <tr 
-                        key={order.id} 
-                        className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300 group animate-fade-in"
-                        style={{ animationDelay: `${idx * 0.03}s` }}
-                      >
-                        <td className="px-6 py-5">
-                          <div className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{order.transNumber}</div>
-                          {order.description && (
-                            <div className="text-sm text-gray-500 mt-1">{order.description}</div>
-                          )}
-                        </td>
-                        <td className="px-6 py-5">
-                          <div className="text-base font-semibold text-gray-900">{order.customerName}</div>
-                        </td>
-                        <td className="px-6 py-5 text-sm font-medium text-gray-600">
-                          {formatDate(order.transDate)}
-                        </td>
-                        <td className="px-6 py-5 text-right text-lg font-bold text-green-600">
-                          {formatCurrency(order.totalAmount)}
-                        </td>
-                        <td className="px-6 py-5 text-center">
-                          <div className="flex flex-col items-center gap-1">
-                            <span
-                              className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold tracking-wider badge-${getStatusColor(order.status || 'menunggu diproses')}`}
-                            >
-                              {formatStatusLabel(order.status)}
-                            </span>
-                            {order.invoiceCreatedBy && ['Terproses', 'Sebagian diproses'].includes(formatStatusLabel(order.status)) && (
-                              <span className="text-[11px] text-gray-500">
-                                oleh: {order.invoiceCreatedBy}
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <Table columns={columns}>
+                {orders.map((order) => (
+                  <tr key={order.id} className="hover:bg-slate-50">
+                    <td className="px-6 py-4">
+                      <div className="text-sm font-semibold text-slate-900">{order.transNumber}</div>
+                      {order.description && (
+                        <div className="mt-0.5 text-sm text-slate-600">{order.description}</div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm font-medium text-slate-900">{order.customerName}</div>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-700">
+                      {formatDate(order.transDate)}
+                    </td>
+                    <td className="px-6 py-4 text-right text-sm font-semibold text-slate-900 tabular-nums">
+                      {formatCurrency(order.totalAmount)}
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <div className="flex flex-col items-center gap-1">
+                        <span
+                          className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium badge-${getStatusColor(order.status || 'menunggu diproses')}`}
+                        >
+                          {formatStatusLabel(order.status)}
+                        </span>
+                        {order.invoiceCreatedBy && ['Terproses', 'Sebagian diproses'].includes(formatStatusLabel(order.status)) && (
+                          <span className="text-[11px] text-slate-500">
+                            oleh: {order.invoiceCreatedBy}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </Table>
 
-              {/* Pagination */}
-              <div className="px-6 py-5 bg-gray-50 border-t-2 border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="text-sm font-medium text-gray-700">
-                  Menampilkan <span className="font-bold text-gray-900">{((pagination.page - 1) * pagination.limit) + 1}</span> sampai{' '}
-                  <span className="font-bold text-gray-900">{Math.min(pagination.page * pagination.limit, pagination.total)}</span> dari{' '}
-                  <span className="font-bold text-gray-900">{pagination.total}</span> orders
-                </div>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setPagination({ ...pagination, page: pagination.page - 1 })}
-                    disabled={pagination.page === 1}
-                    className="px-5 py-2.5 bg-white border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 hover:border-gray-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
-                  >
-                    Previous
-                  </button>
-                  <button
-                    onClick={() => setPagination({ ...pagination, page: pagination.page + 1 })}
-                    disabled={pagination.page >= pagination.totalPages}
-                    className="px-5 py-2.5 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl font-semibold hover:from-red-700 hover:to-red-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 shadow-lg"
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
+              <Pagination
+                page={pagination.page}
+                limit={pagination.limit}
+                total={pagination.total}
+                totalPages={pagination.totalPages}
+                label="orders"
+                onPageChange={(nextPage) => setPagination({ ...pagination, page: nextPage })}
+              />
             </>
           )}
-        </div>
+        </Card>
       </div>
     </DashboardLayout>
   )

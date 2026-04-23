@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
 import DashboardLayout from '../components/DashboardLayout'
 import LoadingSpinner from '../components/LoadingSpinner'
+import PageHeader from '../components/ui/PageHeader'
+import Card from '../components/ui/Card'
+import EmptyState from '../components/ui/EmptyState'
 import usePageTitle from '../hooks/usePageTitle'
 import api from '../utils/api'
 import { formatDate, getStatusColor } from '../utils/helpers'
@@ -105,114 +108,116 @@ const UsersPage = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-8 animate-fade-in">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="animate-slide-in-left">
-            <h1 className="text-4xl font-bold text-gradient-brand mb-2">Pengguna</h1>
-            <p className="text-gray-600 text-lg">Kelola pengguna sistem</p>
-          </div>
-          <button 
-            onClick={() => setShowModal(true)}
-            className="px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl font-semibold hover:from-red-700 hover:to-red-800 transition-all flex items-center gap-2 shadow-primary hover:shadow-xl hover:scale-105 animate-slide-in-right"
-          >
-            <UserPlus className="w-5 h-5" />
-            <span>Tambah Pengguna</span>
-          </button>
-        </div>
+      <div className="space-y-6">
+        <PageHeader
+          title="Pengguna"
+          description="Kelola pengguna sistem."
+          actions={
+            <button
+              onClick={() => setShowModal(true)}
+              className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-slate-800"
+            >
+              <UserPlus className="h-4 w-4" />
+              <span>Tambah Pengguna</span>
+            </button>
+          }
+        />
 
         {/* Users Table */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-2xl transition-all duration-500">
+        <Card className="overflow-hidden">
           {loading ? (
-            <div className="p-20">
+            <div className="p-12">
               <LoadingSpinner />
             </div>
           ) : error ? (
-            <div className="text-center py-20 px-6">
-              <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-red-100 to-red-200 rounded-full flex items-center justify-center">
-                <Users className="w-12 h-12 text-red-500" />
+            <div className="p-5">
+              <EmptyState
+                icon={Users}
+                title={
+                  error.type === 'auth'
+                    ? 'Sesi berakhir'
+                    : error.type === 'permission'
+                      ? 'Akses ditolak'
+                      : 'Terjadi kesalahan'
+                }
+                description={error.message}
+              />
+              <div className="mt-4 flex justify-center gap-2">
+                {error.type === 'auth' ? (
+                  <button
+                    onClick={() => window.location.href = '/login'}
+                    className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+                  >
+                    Login ulang
+                  </button>
+                ) : (
+                  <button
+                    onClick={fetchUsers}
+                    className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                  >
+                    Coba lagi
+                  </button>
+                )}
               </div>
-              <p className="text-xl font-bold text-gray-900 mb-2">
-                {error.type === 'auth' ? 'Sesi Berakhir' : error.type === 'permission' ? 'Akses Ditolak' : 'Terjadi Kesalahan'}
-              </p>
-              <p className="text-gray-600 mb-6 max-w-md mx-auto">{error.message}</p>
-              {error.type === 'auth' ? (
-                <button
-                  onClick={() => window.location.href = '/login'}
-                  className="px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl font-semibold hover:from-red-700 hover:to-red-800 transition-all shadow-lg hover:shadow-xl hover:scale-105"
-                >
-                  Login Ulang
-                </button>
-              ) : (
-                <button
-                  onClick={fetchUsers}
-                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl hover:scale-105"
-                >
-                  Coba Lagi
-                </button>
-              )}
             </div>
           ) : users.length === 0 ? (
-            <div className="text-center py-20">
-              <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center">
-                <Users className="w-12 h-12 text-gray-400" />
-              </div>
-              <p className="text-xl font-bold text-gray-900 mb-2">Tidak ada pengguna ditemukan</p>
-              <p className="text-gray-500 mb-4">Klik tombol "Tambah Pengguna" untuk menambahkan pengguna baru</p>
-            </div>
+            <EmptyState
+              icon={Users}
+              title="Belum ada pengguna"
+              description='Klik tombol "Tambah Pengguna" untuk menambahkan pengguna baru.'
+            />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
+                <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                       Nama
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                       Email
                     </th>
-                    <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-3.5 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">
                       Role
                     </th>
-                    <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-3.5 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                       Login Terakhir
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-100">
-                  {users.map((user, idx) => (
+                <tbody className="bg-white divide-y divide-slate-100">
+                  {users.map((user) => (
                     <tr 
                       key={user.id} 
-                      className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300 group animate-fade-in"
-                      style={{ animationDelay: `${idx * 0.03}s` }}
+                      className="hover:bg-slate-50"
                     >
-                      <td className="px-6 py-5">
+                      <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-gradient-to-br from-red-600 to-red-700 rounded-full flex items-center justify-center text-white font-bold shadow-lg group-hover:scale-110 transition-transform">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">
                             {user.nama.charAt(0).toUpperCase()}
                           </div>
-                          <div className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{user.nama}</div>
+                          <div className="text-sm font-semibold text-slate-900">{user.nama}</div>
                         </div>
                       </td>
-                      <td className="px-6 py-5 text-sm font-medium text-gray-600">{user.email}</td>
-                      <td className="px-6 py-5 text-center">
-                        <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider ${
+                      <td className="px-6 py-4 text-sm text-slate-700">{user.email}</td>
+                      <td className="px-6 py-4 text-center">
+                        <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
                           user.role === 'superadmin' 
-                            ? 'bg-red-100 text-red-700 border border-red-300' 
-                            : 'bg-blue-100 text-blue-700 border border-blue-300'
+                            ? 'bg-red-50 text-red-700' 
+                            : 'bg-slate-100 text-slate-700'
                         }`}>
                           {user.role}
                         </span>
                       </td>
-                      <td className="px-6 py-5 text-center">
-                        <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider badge-${getStatusColor(user.status)}`}>
+                      <td className="px-6 py-4 text-center">
+                        <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium badge-${getStatusColor(user.status)}`}>
                           {user.status}
                         </span>
                       </td>
-                      <td className="px-6 py-5 text-sm font-medium text-gray-600">
+                      <td className="px-6 py-4 text-sm text-slate-700">
                         {formatDate(user.last_login) || 'Belum pernah login'}
                       </td>
                     </tr>
@@ -221,29 +226,30 @@ const UsersPage = () => {
               </table>
             </div>
           )}
-        </div>
+        </Card>
       </div>
 
       {/* Add User Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full animate-scale-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl">
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-red-50 to-purple-50">
-              <h2 className="text-2xl font-bold text-gray-900">Tambah User Baru</h2>
+            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+              <h2 className="text-base font-semibold text-slate-900">Tambah User Baru</h2>
               <button
                 onClick={() => setShowModal(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors hover:rotate-90 duration-300"
+                className="rounded-lg p-1 text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                aria-label="Tutup"
               >
-                <X className="w-6 h-6" />
+                <X className="h-5 w-5" />
               </button>
             </div>
 
             {/* Modal Body */}
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4 p-5">
               {/* Nama */}
               <div>
-                <label htmlFor="nama" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="nama" className="mb-2 block text-sm font-medium text-slate-700">
                   Nama Lengkap
                 </label>
                 <input
@@ -252,7 +258,7 @@ const UsersPage = () => {
                   name="nama"
                   value={formData.nama}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                   placeholder="Masukkan nama lengkap"
                   required
                   disabled={submitting}
@@ -261,7 +267,7 @@ const UsersPage = () => {
 
               {/* Email */}
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-700">
                   Email
                 </label>
                 <input
@@ -270,7 +276,7 @@ const UsersPage = () => {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                   placeholder="user@example.com"
                   required
                   disabled={submitting}
@@ -279,7 +285,7 @@ const UsersPage = () => {
 
               {/* Password */}
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="password" className="mb-2 block text-sm font-medium text-slate-700">
                   Password
                 </label>
                 <div className="relative">
@@ -289,7 +295,7 @@ const UsersPage = () => {
                     name="password"
                     value={formData.password}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 pr-11 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                     placeholder="Minimal 6 karakter"
                     required
                     disabled={submitting}
@@ -298,17 +304,18 @@ const UsersPage = () => {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-500 hover:bg-slate-50 hover:text-slate-900"
                     disabled={submitting}
+                    aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
                   >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
                 </div>
               </div>
 
               {/* Role */}
               <div>
-                <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="role" className="mb-2 block text-sm font-medium text-slate-700">
                   Role
                 </label>
                 <select
@@ -316,7 +323,7 @@ const UsersPage = () => {
                   name="role"
                   value={formData.role}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                   required
                   disabled={submitting}
                 >
@@ -327,18 +334,18 @@ const UsersPage = () => {
               </div>
 
               {/* Modal Footer */}
-              <div className="flex gap-3 pt-6">
+              <div className="flex gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="flex-1 px-4 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 hover:border-gray-400 transition-all"
+                  className="flex-1 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
                   disabled={submitting}
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl font-semibold hover:from-red-700 hover:to-red-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:scale-105"
+                  className="flex-1 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed"
                   disabled={submitting}
                 >
                   {submitting ? 'Menyimpan...' : 'Simpan'}
