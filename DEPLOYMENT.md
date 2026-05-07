@@ -41,34 +41,83 @@ Port wajib terbuka:
 
 **Tujuan langkah ini:** menyiapkan engine container di VPS.
 
-Jalankan:
+### 1.1 Update sistem dan install dependencies
 
 ```bash
 sudo apt update
 sudo apt install -y ca-certificates curl gnupg lsb-release
+```
+
+### 1.2 Buat direktori untuk GPG key Docker
+
+```bash
 sudo install -m 0755 -d /etc/apt/keyrings
+```
+
+### 1.3 Download dan simpan GPG key Docker
+
+```bash
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
-  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+```
+
+**Penjelasan:** Command ini mengunduh kunci keamanan Docker dan menyimpannya di sistem.
+
+### 1.4 Tambahkan repository Docker ke APT sources
+
+```bash
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+```
+
+**Penjelasan:** Command ini menambahkan repository resmi Docker ke daftar sumber paket Ubuntu.
+
+**Catatan:** Pastikan command di atas dijalankan dalam **satu baris** (copy-paste sekaligus).
+
+### 1.5 Update package list dan install Docker
+
+```bash
 sudo apt update
 sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+```
+
+**Penjelasan paket:**
+- `docker-ce`: Docker Engine
+- `docker-ce-cli`: Command line interface Docker
+- `containerd.io`: Runtime container
+- `docker-buildx-plugin`: Plugin untuk build image
+- `docker-compose-plugin`: Plugin Docker Compose v2
+
+### 1.6 Aktifkan dan jalankan Docker service
+
+```bash
 sudo systemctl enable docker
 sudo systemctl start docker
+```
+
+### 1.7 Tambahkan user ke group docker (agar tidak perlu sudo)
+
+```bash
 sudo usermod -aG docker $USER
 ```
 
-Logout SSH lalu login lagi agar group `docker` aktif.
+**Penting:** Setelah command ini, **logout dari SSH** lalu **login lagi** agar perubahan group aktif.
 
-Verifikasi:
+```bash
+exit
+# Login SSH lagi
+```
+
+### 1.8 Verifikasi instalasi
 
 ```bash
 docker --version
 docker compose version
 ```
 
-**Indikator berhasil:** dua command di atas menampilkan versi, bukan error.
+**Indikator berhasil:** 
+- `docker --version` menampilkan versi Docker (contoh: `Docker version 24.0.7`)
+- `docker compose version` menampilkan versi Docker Compose (contoh: `Docker Compose version v2.23.0`)
+
+**Jika ada error "permission denied":** berarti belum logout-login lagi setelah langkah 1.7.
 
 ---
 
