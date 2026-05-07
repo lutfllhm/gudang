@@ -13,7 +13,7 @@ services:
       - mysql_data:/var/lib/mysql
       - ./backend/database/schema.sql:/docker-entrypoint-initdb.d/001_schema.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-pJasadenam66/"]
       interval: 15s
       timeout: 5s
       retries: 20
@@ -24,13 +24,11 @@ services:
     image: redis:7-alpine
     container_name: iware-redis
     restart: unless-stopped
-    env_file:
-      - .env.production
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    command: redis-server --appendonly yes --requirepass Jasadenam66/
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli -a $$REDIS_PASSWORD ping"]
+      test: ["CMD", "redis-cli", "-a", "Jasadenam66/", "ping"]
       interval: 15s
       timeout: 5s
       retries: 20
