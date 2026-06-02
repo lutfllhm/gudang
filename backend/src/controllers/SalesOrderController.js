@@ -5,7 +5,7 @@ const { success, paginated } = require('../utils/response');
 
 class SalesOrderController {
   static getAll = asyncHandler(async (req, res) => {
-    const { page, limit, search, status, startDate, endDate, sortBy, sortOrder } = req.query;
+    const { page, limit, search, status, startDate, endDate, sortBy, sortOrder, includePendingPrior } = req.query;
 
     const result = await SalesOrderService.getAll({
       page: parseInt(page) || 1,
@@ -15,7 +15,8 @@ class SalesOrderController {
       startDate,
       endDate,
       sortBy,
-      sortOrder
+      sortOrder,
+      includePendingPrior: includePendingPrior === 'true' || includePendingPrior === true
     });
 
     paginated(res, result.orders, result.pagination);

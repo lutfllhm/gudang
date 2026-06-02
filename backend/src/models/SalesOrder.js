@@ -60,7 +60,8 @@ class SalesOrder {
     startDate = null, 
     endDate = null,
     sortBy = 'tanggal_so',
-    sortOrder = 'desc'
+    sortOrder = 'desc',
+    includePendingPrior = false
   }) {
     // Ensure page and limit are integers
     page = parseInt(page) || 1;
@@ -82,8 +83,20 @@ class SalesOrder {
     }
 
     if (startDate && endDate) {
-      whereConditions.push('so.tanggal_so BETWEEN ? AND ?');
-      params.push(startDate, endDate);
+      if (includePendingPrior) {
+        // Calculate date 30 days before startDate
+        const startDt = new Date(startDate);
+        startDt.setDate(startDt.getDate() - 30);
+        const priorDate = startDt.toISOString().slice(0, 10);
+        
+        whereConditions.push(
+          '((so.tanggal_so BETWEEN ? AND ?) OR (so.tanggal_so BETWEEN ? AND ? AND so.status IN ("Menunggu diproses", "Sebagian diproses")))'
+        );
+        params.push(startDate, endDate, priorDate, startDate);
+      } else {
+        whereConditions.push('so.tanggal_so BETWEEN ? AND ?');
+        params.push(startDate, endDate);
+      }
     } else if (startDate) {
       whereConditions.push('so.tanggal_so >= ?');
       params.push(startDate);

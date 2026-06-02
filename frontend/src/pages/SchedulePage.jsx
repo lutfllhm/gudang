@@ -498,7 +498,7 @@ const SchedulePage = () => {
       const { startDate, endDate } = getMonthRange(month)
 
       const firstResponse = await api.get('/sales-orders', {
-        params: { page: 1, limit: INITIAL_LIMIT, startDate, endDate },
+        params: { page: 1, limit: INITIAL_LIMIT, startDate, endDate, includePendingPrior: true },
       })
 
       // Backend returns: { success, message, data: [...], pagination: {...} }
@@ -524,7 +524,7 @@ const SchedulePage = () => {
       // This avoids multiple COUNT queries across pages.
       if (total > INITIAL_LIMIT && total <= MAX_LIMIT) {
         const secondResponse = await api.get('/sales-orders', {
-          params: { page: 1, limit: total, startDate, endDate },
+          params: { page: 1, limit: total, startDate, endDate, includePendingPrior: true },
         })
         if (
           requestId === fetchRequestId.current &&
@@ -544,7 +544,7 @@ const SchedulePage = () => {
         const collected = [...firstOrders]
         for (let page = 2; page <= totalPages; page++) {
           const pageResponse = await api.get('/sales-orders', {
-            params: { page, limit: INITIAL_LIMIT, startDate, endDate },
+            params: { page, limit: INITIAL_LIMIT, startDate, endDate, includePendingPrior: true },
           })
           if (!pageResponse.data?.success) break
           const pageOrders = Array.isArray(pageResponse.data.data)
@@ -684,12 +684,26 @@ const SchedulePage = () => {
     }
   }, [month, playNotificationSound, playNewSOVoice, dismissToast, checkAndTriggerOverdueReminder, showNextToast, activeToast])
 
-  const isOrderInCurrentMonth = useCallback((o) => {
+  const isOrderVisibleInMonth = useCallback((o) => {
     const dateStr = o?.transDate || o?.tanggal_so
     if (!dateStr) return false
     const d = new Date(dateStr)
     if (Number.isNaN(d.getTime())) return false
-    return toYyyyMm(d) === month
+    
+    // Check if it's in the current selected month
+    if (toYyyyMm(d) === month) return true
+    
+    // Otherwise, check if it's within 30 days before the start of the current month
+    // AND is currently active (pending or processing)
+    const { startDate } = getMonthRange(month)
+    const startOfCurrentMonth = new Date(startDate)
+    const minDate = new Date(startOfCurrentMonth)
+    minDate.setDate(minDate.getDate() - 30)
+    
+    const group = getOrderStatusGroup(o)
+    const isActive = group === 'pending' || group === 'processing'
+    
+    return d >= minDate && d < startOfCurrentMonth && isActive
   }, [month])
 
   const normalizeIncomingOrder = useCallback((incoming) => {
@@ -743,29 +757,38 @@ const SchedulePage = () => {
     const upsertIntoStates = (incoming) => {
       incoming = normalizeIncomingOrder(incoming)
       if (!incoming) return
-      if (!isOrderInCurrentMonth(incoming)) return
+
+      const isVisible = isOrderVisibleInMonth(incoming)
+      const key = String(incoming.so_id || incoming.id || incoming.transNumber)
 
       // Update orders (used for counts & footer)
       setOrders((prev) => {
-        const key = String(incoming.so_id || incoming.id || incoming.transNumber)
         const existingMap = new Map(prev.map((o) => [String(o.so_id || o.id || o.transNumber), o]))
-        existingMap.set(key, { ...(existingMap.get(key) || {}), ...incoming })
+        if (isVisible) {
+          existingMap.set(key, { ...(existingMap.get(key) || {}), ...incoming })
+        } else {
+          existingMap.delete(key)
+        }
         return Array.from(existingMap.values())
       })
 
       // Update displayOrders without restarting marquee:
-      // - update existing if found
-      // - append if brand new
-      const key = String(incoming.so_id || incoming.id || incoming.transNumber)
+      // - update existing if found and still visible
+      // - append if brand new and visible
+      // - remove if existing and no longer visible
       const idx = displayOrdersRef.current.findIndex(
         (o) => String(o.so_id || o.id || o.transNumber) === key
       )
       if (idx >= 0) {
         const next = [...displayOrdersRef.current]
-        next[idx] = { ...next[idx], ...incoming }
+        if (isVisible) {
+          next[idx] = { ...next[idx], ...incoming }
+        } else {
+          next.splice(idx, 1)
+        }
         displayOrdersRef.current = next
         setDisplayOrders(next)
-      } else {
+      } else if (isVisible) {
         displayOrdersRef.current = [...displayOrdersRef.current, incoming]
         setDisplayOrders((prev) => [...prev, incoming])
         // Optional: play notification/toast for new SO
@@ -787,7 +810,7 @@ const SchedulePage = () => {
         socket.disconnect()
       } catch (_) {}
     }
-  }, [isOrderInCurrentMonth, normalizeIncomingOrder, playNotificationSound, playNewSOVoice])
+  }, [isOrderVisibleInMonth, normalizeIncomingOrder, playNotificationSound, playNewSOVoice])
 
   useEffect(() => {
     const refreshInterval = setInterval(() => fetchOrders({ silent: true }), AUTO_REFRESH_MS)
