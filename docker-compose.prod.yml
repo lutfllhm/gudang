@@ -42,7 +42,6 @@ services:
     container_name: iware-backend
     restart: always
     ports:
-      - "80:5000"
       - "5000:5000"
     environment:
       - NODE_ENV=${NODE_ENV}
@@ -108,13 +107,14 @@ services:
     container_name: iware-frontend
     restart: always
     ports:
-      - "3000:3000"
+      - "80:80"
+      - "3000:80"
     depends_on:
       - backend
     networks:
       - iware-network
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80"]
       interval: 30s
       timeout: 10s
       retries: 3
