@@ -125,7 +125,7 @@ docker compose version
 
 **Tujuan langkah ini:** menaruh project di lokasi permanen.
 
-Contoh:
+### 2.1 Clone repository
 
 ```bash
 cd /opt
@@ -135,14 +135,65 @@ cd /opt/iware
 git clone <URL_REPOSITORY_ANDA> .
 ```
 
-Cek file penting ada:
+### 2.2 Verifikasi file penting ada
+
+```bash
+ls -la | grep -E 'Dockerfile|docker-compose|\.env'
+ls -la backend/database/
+```
+
+**File yang harus ada:**
 
 - `Dockerfile.backend`
 - `Dockerfile.frontend`
 - `docker-compose.yml`
 - `docker-compose.prod.yml`
-- `backend/database/schema.sql`
 - `.env.production`
+- `backend/database/schema.sql`
+
+### 2.3 Troubleshooting jika file tidak lengkap
+
+**Jika `docker-compose.prod.yml` tidak ada:**
+
+```bash
+# Cek status git
+git status
+
+# Cek file apa saja yang ter-track
+git ls-files | grep docker-compose
+
+# Pull ulang untuk memastikan
+git pull origin main
+```
+
+**Jika tetap tidak ada, kemungkinan file belum di-push dari lokal:**
+
+Di komputer lokal (development):
+```bash
+# Cek apakah file ter-commit
+git ls-files docker-compose.prod.yml
+
+# Jika tidak ada output, berarti belum ter-commit
+git add docker-compose.prod.yml
+git commit -m "Add docker-compose.prod.yml"
+git push origin main
+```
+
+Lalu di VPS, pull lagi:
+```bash
+cd /opt/iware
+git pull origin main
+```
+
+**Alternatif: Upload manual jika urgent**
+
+Dari komputer lokal ke VPS:
+```bash
+scp docker-compose.prod.yml user@ip-vps:/opt/iware/
+scp .env.production user@ip-vps:/opt/iware/
+```
+
+**Indikator berhasil:** semua file penting terlihat di `ls -la` dan tidak ada error saat verifikasi.
 
 ---
 
@@ -200,33 +251,55 @@ WEBHOOK_SECRET: f1e2d3c4b5a6...64 karakter
 
 ---
 
-## 4) Isi `.env.production` (wajib)
+## 4) Isi Environment Variables (wajib)
 
 **Tujuan langkah ini:** memberi semua rahasia dan konfigurasi production.
 
-Edit file:
+### 4.1 Edit file `.env` (untuk Docker Compose)
 
 ```bash
 cd /opt/iware
+nano .env
+```
+
+File `.env` berisi **secret credentials** yang akan dibaca oleh `docker-compose.yml`:
+
+```bash
+# JWT Secrets (WAJIB - gunakan hasil generate dari langkah 3)
+JWT_SECRET=a1b2c3d4e5f6789...hasil_generate_langkah_3
+JWT_REFRESH_SECRET=9z8y7x6w5v4u321...hasil_generate_langkah_3
+
+# Accurate Online API Credentials (WAJIB - dari Accurate Developer Portal)
+ACCURATE_APP_KEY=your_app_key_from_accurate
+ACCURATE_CLIENT_ID=your_client_id_from_accurate
+ACCURATE_CLIENT_SECRET=your_client_secret_from_accurate
+ACCURATE_SIGNATURE_SECRET=your_signature_secret_from_accurate
+ACCURATE_ACCESS_TOKEN=
+ACCURATE_DATABASE_ID=
+
+# Webhook Secret (WAJIB - gunakan hasil generate dari langkah 3)
+WEBHOOK_SECRET=f1e2d3c4b5a6...hasil_generate_langkah_3
+
+# TTS ElevenLabs (OPSIONAL - kosongkan jika tidak digunakan)
+ELEVENLABS_API_KEY=
+```
+
+### 4.2 Edit file `.env.production` (untuk Frontend Build)
+
+```bash
 nano .env.production
 ```
 
+File `.env.production` berisi **konfigurasi lengkap** yang digunakan oleh backend di dalam container:
+
 Pastikan nilai ini **sudah diganti**:
 
-- Database: `DB_PASSWORD`, `DB_ROOT_PASSWORD`
-- Redis: `REDIS_PASSWORD`
+- Database: `DB_PASSWORD`, `DB_ROOT_PASSWORD` (harus sama dengan docker-compose.yml)
+- Redis: `REDIS_PASSWORD` (harus sama dengan docker-compose.yml)
 - JWT: `JWT_SECRET`, `JWT_REFRESH_SECRET` (gunakan hasil generate dari langkah 3)
 - Domain: `CORS_ORIGIN`, `VITE_API_URL`
-- Accurate: `ACCURATE_APP_KEY`, `ACCURATE_CLIENT_ID`, `ACCURATE_CLIENT_SECRET`, `ACCURATE_SIGNATURE_SECRET`, `ACCURATE_REDIRECT_URI`
+- Accurate: semua credential harus sama dengan file `.env`
 - Webhook: `WEBHOOK_SECRET` (gunakan hasil generate dari langkah 3)
-
-Contoh pengisian JWT secret:
-
-```bash
-JWT_SECRET=a1b2c3d4e5f6789...hasil_generate_langkah_3
-JWT_REFRESH_SECRET=9z8y7x6w5v4u321...hasil_generate_langkah_3
-WEBHOOK_SECRET=f1e2d3c4b5a6...hasil_generate_langkah_3
-```
 
 Contoh domain:
 
@@ -234,7 +307,13 @@ Contoh domain:
 - `ACCURATE_REDIRECT_URI=https://domainanda.com/api/accurate/callback`
 - `CORS_ORIGIN=https://domainanda.com,https://www.domainanda.com`
 
-**Indikator berhasil:** tidak ada lagi placeholder seperti `GANTI_` atau `yourdomain`, dan semua JWT secret terisi dengan string random yang panjang.
+**PENTING:**
+- Credential di `.env` dan `.env.production` harus **SAMA PERSIS**
+- Password database/redis di `.env.production` harus **SAMA** dengan yang di `docker-compose.yml`
+- File `.env` dibaca oleh docker-compose untuk inject ke container
+- File `.env.production` adalah dokumentasi lengkap konfigurasi
+
+**Indikator berhasil:** tidak ada lagi placeholder seperti `temporary_`, `GANTI_`, atau `yourdomain`, dan semua JWT secret terisi dengan string random yang panjang.
 
 ---
 
