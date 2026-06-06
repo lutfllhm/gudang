@@ -37,6 +37,42 @@ services:
     restart: unless-stopped
     ports:
       - "5000:5000"
+    environment:
+      - NODE_ENV=${NODE_ENV}
+      - PORT=${PORT}
+      - APP_NAME=${APP_NAME}
+      - DB_HOST=mysql
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - DB_CONNECTION_LIMIT=${DB_CONNECTION_LIMIT}
+      - REDIS_HOST=redis
+      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_DB=${REDIS_DB}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+      - JWT_EXPIRE=${JWT_EXPIRE}
+      - JWT_REFRESH_EXPIRE=${JWT_REFRESH_EXPIRE}
+      - ACCURATE_APP_KEY=${ACCURATE_APP_KEY}
+      - ACCURATE_CLIENT_ID=${ACCURATE_CLIENT_ID}
+      - ACCURATE_CLIENT_SECRET=${ACCURATE_CLIENT_SECRET}
+      - ACCURATE_REDIRECT_URI=${ACCURATE_REDIRECT_URI}
+      - ACCURATE_SIGNATURE_SECRET=${ACCURATE_SIGNATURE_SECRET}
+      - ACCURATE_ACCESS_TOKEN=${ACCURATE_ACCESS_TOKEN}
+      - ACCURATE_DATABASE_ID=${ACCURATE_DATABASE_ID}
+      - CORS_ORIGIN=${CORS_ORIGIN}
+      - CORS_CREDENTIALS=${CORS_CREDENTIALS}
+      - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS}
+      - RATE_LIMIT_MAX_REQUESTS=${RATE_LIMIT_MAX_REQUESTS}
+      - LOG_LEVEL=${LOG_LEVEL}
+      - LOG_FILE_MAX_SIZE=${LOG_FILE_MAX_SIZE}
+      - LOG_FILE_MAX_FILES=${LOG_FILE_MAX_FILES}
+      - AUTO_SYNC_ENABLED=${AUTO_SYNC_ENABLED}
+      - SYNC_INTERVAL_SECONDS=${SYNC_INTERVAL_SECONDS}
+      - SYNC_BATCH_SIZE=${SYNC_BATCH_SIZE}
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET}
     volumes:
       - ./backend/logs:/app/logs
     depends_on:
@@ -49,6 +85,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.frontend
+      args:
+        - VITE_API_URL=${VITE_API_URL}
     container_name: iware-frontend
     restart: unless-stopped
     ports:

@@ -255,65 +255,79 @@ WEBHOOK_SECRET: f1e2d3c4b5a6...64 karakter
 
 **Tujuan langkah ini:** memberi semua rahasia dan konfigurasi production.
 
-### 4.1 Edit file `.env` (untuk Docker Compose)
+### 4.1 Copy dan edit file `.env.production`
+
+**PENTING:** Semua environment variables sekarang diambil dari file `.env.production`. File ini akan dibaca oleh Docker Compose.
 
 ```bash
 cd /opt/iware
+
+# Copy .env.production menjadi .env (jika belum ada)
+cp .env.production .env
+
+# Edit file .env dengan nilai production yang benar
 nano .env
 ```
 
-File `.env` berisi **secret credentials** yang akan dibaca oleh `docker-compose.yml`:
+File `.env` berisi **semua konfigurasi lengkap** yang akan dibaca oleh `docker-compose.yml` dan di-inject ke container backend:
+
+**Yang WAJIB diganti:**
 
 ```bash
 # JWT Secrets (WAJIB - gunakan hasil generate dari langkah 3)
 JWT_SECRET=a1b2c3d4e5f6789...hasil_generate_langkah_3
 JWT_REFRESH_SECRET=9z8y7x6w5v4u321...hasil_generate_langkah_3
 
+# Database & Redis Password (WAJIB - password yang kuat)
+DB_PASSWORD=password_database_anda
+DB_ROOT_PASSWORD=password_database_anda
+REDIS_PASSWORD=password_redis_anda
+
 # Accurate Online API Credentials (WAJIB - dari Accurate Developer Portal)
 ACCURATE_APP_KEY=your_app_key_from_accurate
 ACCURATE_CLIENT_ID=your_client_id_from_accurate
 ACCURATE_CLIENT_SECRET=your_client_secret_from_accurate
 ACCURATE_SIGNATURE_SECRET=your_signature_secret_from_accurate
+ACCURATE_REDIRECT_URI=https://domainanda.com/api/accurate/callback
 ACCURATE_ACCESS_TOKEN=
 ACCURATE_DATABASE_ID=
 
 # Webhook Secret (WAJIB - gunakan hasil generate dari langkah 3)
 WEBHOOK_SECRET=f1e2d3c4b5a6...hasil_generate_langkah_3
 
+# Domain Configuration (WAJIB - ganti dengan domain anda)
+CORS_ORIGIN=https://domainanda.com,https://www.domainanda.com
+VITE_API_URL=https://domainanda.com/api
+
 # TTS ElevenLabs (OPSIONAL - kosongkan jika tidak digunakan)
 ELEVENLABS_API_KEY=
 ```
 
-### 4.2 Edit file `.env.production` (untuk Frontend Build)
+### 4.2 Verifikasi konfigurasi
 
-```bash
-nano .env.production
-```
+Pastikan nilai berikut **sudah diganti** di file `.env`:
 
-File `.env.production` berisi **konfigurasi lengkap** yang digunakan oleh backend di dalam container:
+- ✅ Database: `DB_PASSWORD`, `DB_ROOT_PASSWORD`
+- ✅ Redis: `REDIS_PASSWORD`
+- ✅ JWT: `JWT_SECRET`, `JWT_REFRESH_SECRET` (gunakan hasil generate dari langkah 3)
+- ✅ Domain: `CORS_ORIGIN`, `VITE_API_URL`, `ACCURATE_REDIRECT_URI`
+- ✅ Accurate: `ACCURATE_APP_KEY`, `ACCURATE_CLIENT_ID`, `ACCURATE_CLIENT_SECRET`, `ACCURATE_SIGNATURE_SECRET`
+- ✅ Webhook: `WEBHOOK_SECRET` (gunakan hasil generate dari langkah 3)
 
-Pastikan nilai ini **sudah diganti**:
+**Contoh domain yang benar:**
+- `VITE_API_URL=https://iwareid.com/api`
+- `ACCURATE_REDIRECT_URI=https://iwareid.com/api/accurate/callback`
+- `CORS_ORIGIN=https://iwareid.com,https://www.iwareid.com`
 
-- Database: `DB_PASSWORD`, `DB_ROOT_PASSWORD` (harus sama dengan docker-compose.yml)
-- Redis: `REDIS_PASSWORD` (harus sama dengan docker-compose.yml)
-- JWT: `JWT_SECRET`, `JWT_REFRESH_SECRET` (gunakan hasil generate dari langkah 3)
-- Domain: `CORS_ORIGIN`, `VITE_API_URL`
-- Accurate: semua credential harus sama dengan file `.env`
-- Webhook: `WEBHOOK_SECRET` (gunakan hasil generate dari langkah 3)
+**Indikator berhasil:** 
+- Tidak ada lagi placeholder seperti `temporary_`, `GANTI_`, atau `yourdomain`
+- Semua JWT secret terisi dengan string random yang panjang (128 karakter)
+- Domain sudah sesuai dengan domain VPS anda
 
-Contoh domain:
-
-- `VITE_API_URL=https://domainanda.com/api`
-- `ACCURATE_REDIRECT_URI=https://domainanda.com/api/accurate/callback`
-- `CORS_ORIGIN=https://domainanda.com,https://www.domainanda.com`
-
-**PENTING:**
-- Credential di `.env` dan `.env.production` harus **SAMA PERSIS**
-- Password database/redis di `.env.production` harus **SAMA** dengan yang di `docker-compose.yml`
-- File `.env` dibaca oleh docker-compose untuk inject ke container
-- File `.env.production` adalah dokumentasi lengkap konfigurasi
-
-**Indikator berhasil:** tidak ada lagi placeholder seperti `temporary_`, `GANTI_`, atau `yourdomain`, dan semua JWT secret terisi dengan string random yang panjang.
+**Catatan:**
+- File `.env.production` adalah template/contoh lengkap
+- File `.env` adalah file aktif yang dibaca oleh Docker Compose
+- Environment variables dari `.env` akan di-inject ke container backend
 
 ---
 
