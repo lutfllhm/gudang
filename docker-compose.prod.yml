@@ -1,30 +1,89 @@
+version: '3.8'
+
 services:
   mysql:
     image: mysql:8.0
-    ports: []
+    container_name: iware-mysql-prod
+    restart: always
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend/database/schema.sql:/docker-entrypoint-initdb.d/001_schema.sql:ro
+    networks:
+      - iware-network
     logging:
+      driver: "json-file"
       options:
-        max-size: "20m"
-        max-file: "5"
+        max-size: "10m"
+        max-file: "3"
 
   redis:
     image: redis:7-alpine
-    ports: []
+    container_name: iware-redis-prod
+    restart: always
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    networks:
+      - iware-network
     logging:
+      driver: "json-file"
       options:
-        max-size: "20m"
-        max-file: "5"
+        max-size: "10m"
+        max-file: "3"
 
   backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: iware-backend-prod
+    restart: always
+    env_file:
+      - ./backend/.env
     environment:
       NODE_ENV: production
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend/logs:/app/logs
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - iware-network
     logging:
+      driver: "json-file"
       options:
-        max-size: "20m"
-        max-file: "5"
+        max-size: "10m"
+        max-file: "3"
 
   frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: iware-frontend-prod
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - iware-network
     logging:
+      driver: "json-file"
       options:
-        max-size: "20m"
-        max-file: "5"
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  iware-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  redis_data:
