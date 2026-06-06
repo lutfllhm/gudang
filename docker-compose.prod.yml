@@ -36,22 +36,8 @@ services:
         max-file: "3"
 
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: iware-backend-prod
-    restart: always
-    environment:
-      NODE_ENV: production
     ports:
       - "5000:5000"
-    volumes:
-      - ./backend/logs:/app/logs
-    depends_on:
-      - mysql
-      - redis
-    networks:
-      - iware-network
     logging:
       driver: "json-file"
       options:
@@ -59,17 +45,8 @@ services:
         max-file: "3"
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: iware-frontend-prod
-    restart: always
     ports:
       - "80:80"
-    depends_on:
-      - backend
-    networks:
-      - iware-network
     logging:
       driver: "json-file"
       options:

@@ -31,15 +31,13 @@ services:
 
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: Dockerfile.backend
     container_name: iware-backend
     restart: unless-stopped
     ports:
       - "5000:5000"
     volumes:
-      - ./backend:/app
-      - /app/node_modules
       - ./backend/logs:/app/logs
     depends_on:
       - mysql
@@ -49,15 +47,12 @@ services:
 
   frontend:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: Dockerfile.frontend
     container_name: iware-frontend
     restart: unless-stopped
     ports:
       - "3000:3000"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
     depends_on:
       - backend
     networks:
