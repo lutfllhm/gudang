@@ -1,5 +1,6 @@
 services:
   mysql:
+    image: mysql:8.0
     ports: []
     logging:
       options:
@@ -7,6 +8,7 @@ services:
         max-file: "5"
 
   redis:
+    image: redis:7-alpine
     ports: []
     logging:
       options:
