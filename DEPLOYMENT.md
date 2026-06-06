@@ -146,7 +146,61 @@ Cek file penting ada:
 
 ---
 
-## 3) Isi `.env.production` (wajib)
+## 3) Generate JWT secret dan credential aman
+
+**Tujuan langkah ini:** membuat secret key yang kuat untuk keamanan aplikasi.
+
+### 3.1 Generate JWT_SECRET dan JWT_REFRESH_SECRET
+
+Di VPS, jalankan command berikut untuk generate 2 secret yang berbeda:
+
+```bash
+# Generate JWT_SECRET
+node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+
+# Generate JWT_REFRESH_SECRET
+node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+```
+
+**Penjelasan:** Command ini menggunakan Node.js crypto module untuk generate random string hexadecimal 128 karakter yang sangat aman.
+
+### 3.2 Generate WEBHOOK_SECRET
+
+```bash
+# Generate WEBHOOK_SECRET
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+### 3.3 Generate password untuk Database dan Redis (opsional)
+
+Jika ingin generate password baru yang aman:
+
+```bash
+# Generate random password
+openssl rand -base64 32
+```
+
+Atau menggunakan Node.js:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(24).toString('base64'))"
+```
+
+**Catatan penting:**
+- Simpan semua secret yang di-generate dengan aman
+- Jangan gunakan secret yang sama untuk JWT_SECRET dan JWT_REFRESH_SECRET
+- Secret ini akan dimasukkan ke `.env.production` di langkah berikutnya
+
+**Contoh output:**
+```
+JWT_SECRET: a1b2c3d4e5f6...128 karakter
+JWT_REFRESH_SECRET: 9z8y7x6w5v4u...128 karakter berbeda
+WEBHOOK_SECRET: f1e2d3c4b5a6...64 karakter
+```
+
+---
+
+## 4) Isi `.env.production` (wajib)
 
 **Tujuan langkah ini:** memberi semua rahasia dan konfigurasi production.
 
@@ -161,10 +215,18 @@ Pastikan nilai ini **sudah diganti**:
 
 - Database: `DB_PASSWORD`, `DB_ROOT_PASSWORD`
 - Redis: `REDIS_PASSWORD`
-- JWT: `JWT_SECRET`, `JWT_REFRESH_SECRET`
+- JWT: `JWT_SECRET`, `JWT_REFRESH_SECRET` (gunakan hasil generate dari langkah 3)
 - Domain: `CORS_ORIGIN`, `VITE_API_URL`
 - Accurate: `ACCURATE_APP_KEY`, `ACCURATE_CLIENT_ID`, `ACCURATE_CLIENT_SECRET`, `ACCURATE_SIGNATURE_SECRET`, `ACCURATE_REDIRECT_URI`
-- Webhook: `WEBHOOK_SECRET`
+- Webhook: `WEBHOOK_SECRET` (gunakan hasil generate dari langkah 3)
+
+Contoh pengisian JWT secret:
+
+```bash
+JWT_SECRET=a1b2c3d4e5f6789...hasil_generate_langkah_3
+JWT_REFRESH_SECRET=9z8y7x6w5v4u321...hasil_generate_langkah_3
+WEBHOOK_SECRET=f1e2d3c4b5a6...hasil_generate_langkah_3
+```
 
 Contoh domain:
 
@@ -172,11 +234,11 @@ Contoh domain:
 - `ACCURATE_REDIRECT_URI=https://domainanda.com/api/accurate/callback`
 - `CORS_ORIGIN=https://domainanda.com,https://www.domainanda.com`
 
-**Indikator berhasil:** tidak ada lagi placeholder seperti `GANTI_` atau `yourdomain`.
+**Indikator berhasil:** tidak ada lagi placeholder seperti `GANTI_` atau `yourdomain`, dan semua JWT secret terisi dengan string random yang panjang.
 
 ---
 
-## 4) Build dan jalankan semua container
+## 5) Build dan jalankan semua container
 
 **Tujuan langkah ini:** start seluruh service aplikasi.
 
@@ -197,11 +259,77 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml ps
 
 ---
 
-## 5) Verifikasi aplikasi
+## 6) Restore database backup (opsional)
+
+**Tujuan langkah ini:** memasukkan data backup database ke MySQL container di VPS.
+
+### 5.1 Upload file backup ke VPS
+
+Dari komputer lokal, upload file SQL backup ke VPS:
+
+```bash
+scp /path/to/backup.sql user@ip-vps:/opt/iware/backup.sql
+```
+
+Atau gunakan SFTP/WinSCP jika di Windows.
+
+### 6.2 Copy file backup ke dalam MySQL container
+
+```bash
+cd /opt/iware
+docker cp backup.sql iware-mysql:/tmp/backup.sql
+```
+
+**Penjelasan:** Command ini meng-copy file backup dari host VPS ke dalam container MySQL.
+
+### 6.3 Restore database dari backup
+
+Masuk ke MySQL container dan restore:
+
+```bash
+docker exec -i iware-mysql mysql -uroot -p$DB_ROOT_PASSWORD iware_db < backup.sql
+```
+
+Atau jika ingin restore secara interaktif:
+
+```bash
+docker exec -it iware-mysql bash
+mysql -uroot -p
+# Masukkan password root MySQL
+use iware_db;
+source /tmp/backup.sql;
+exit;
+exit
+```
+
+### 6.4 Verifikasi data berhasil di-restore
+
+```bash
+docker exec -it iware-mysql mysql -uroot -p$DB_ROOT_PASSWORD -e "USE iware_db; SELECT COUNT(*) FROM users;"
+```
+
+**Indikator berhasil:** Query menampilkan jumlah records sesuai dengan data backup.
+
+### 6.5 Hapus file backup (untuk keamanan)
+
+```bash
+docker exec iware-mysql rm /tmp/backup.sql
+rm /opt/iware/backup.sql
+```
+
+**Catatan penting:**
+- Pastikan container MySQL sudah running (`docker ps`)
+- File backup harus compatible dengan schema database yang sama
+- Jika terjadi error, cek log: `docker compose -f docker-compose.yml -f docker-compose.prod.yml logs mysql`
+- Backup harus dalam format SQL dump (`.sql`)
+
+---
+
+## 7) Verifikasi aplikasi
 
 **Tujuan langkah ini:** memastikan endpoint utama normal.
 
-### 5.1 Cek frontend lokal VPS
+### 7.1 Cek frontend lokal VPS
 
 ```bash
 curl -I http://127.0.0.1
@@ -209,7 +337,7 @@ curl -I http://127.0.0.1
 
 Harus mengembalikan status `200`.
 
-### 5.2 Cek backend health
+### 7.2 Cek backend health
 
 ```bash
 curl http://127.0.0.1:5000/health
@@ -218,7 +346,7 @@ curl http://127.0.0.1:5000/api/health
 
 Harus return JSON status sehat.
 
-### 5.3 Jika ada error, baca log per service
+### 7.3 Jika ada error, baca log per service
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.prod.yml logs backend --tail=200
@@ -229,7 +357,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml logs redis --tai
 
 ---
 
-## 6) Integrasi Accurate (wajib setelah deploy)
+## 8) Integrasi Accurate (wajib setelah deploy)
 
 **Tujuan langkah ini:** mengaktifkan OAuth dan sinkron data Accurate.
 
@@ -254,7 +382,7 @@ Catatan penting:
 
 ---
 
-## 7) Arahkan domain ke VPS
+## 9) Arahkan domain ke VPS
 
 **Tujuan langkah ini:** aplikasi bisa diakses publik.
 
@@ -267,7 +395,7 @@ Karena frontend expose port `80`, domain langsung bisa resolve ke aplikasi.
 
 ---
 
-## 8) SSL HTTPS (opsional, sangat disarankan)
+## 10) SSL HTTPS (opsional, sangat disarankan)
 
 **Tujuan langkah ini:** mengamankan akses dengan HTTPS.
 
@@ -295,7 +423,7 @@ Jika mode ini dipakai, ubah mapping port frontend agar tidak bentrok dengan host
 
 ---
 
-## 9) Operasional harian
+## 11) Operasional harian
 
 ### Update aplikasi
 
@@ -319,7 +447,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml down
 
 ---
 
-## 10) Checklist deploy berhasil
+## 12) Checklist deploy berhasil
 
 Deploy dianggap sukses jika:
 
