@@ -28,8 +28,9 @@ build/
 .vs/
 
 # Logs
-logs/
+**/logs/
 *.log
+*.log.*
 
 # Docker
 docker-compose.override.yml

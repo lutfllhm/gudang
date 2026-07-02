@@ -12,8 +12,9 @@ yarn-error.log*
 *.env
 
 # Logs
-logs/
+**/logs/
 *.log
+*.log.*
 
 # Git
 .git/
