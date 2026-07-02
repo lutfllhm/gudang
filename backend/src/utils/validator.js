@@ -126,6 +126,12 @@ const schemas = {
     password: Joi.string().min(6),
     role: Joi.string().valid('admin', 'superadmin'),
     status: Joi.string().valid('aktif', 'nonaktif')
+  }),
+
+  // Device token (FCM push notification)
+  registerDeviceToken: Joi.object({
+    fcmToken: Joi.string().min(10).max(512).required(),
+    platform: Joi.string().valid('android', 'ios').default('android')
   })
 };
 

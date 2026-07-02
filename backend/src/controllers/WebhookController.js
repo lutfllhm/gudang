@@ -1,6 +1,7 @@
 const ItemService = require('../services/ItemService');
 const SalesOrderService = require('../services/SalesOrderService');
 const WebSocketService = require('../services/WebSocketService');
+const PushNotificationService = require('../services/PushNotificationService');
 const { asyncHandler } = require('../middleware/errorHandler');
 const logger = require('../utils/logger');
 const config = require('../config');
@@ -221,8 +222,13 @@ class WebhookController {
       // Broadcast via WebSocket
       if (result && result.data) {
         WebSocketService.broadcastNewSalesOrder(result.data);
+
+        // Push notification ke mobile app (fire-and-forget, tidak boleh blok response webhook)
+        PushNotificationService.sendNewSalesOrderPush(result.data).catch((error) => {
+          logger.error('Failed to send new SO push notification', { error: error.message });
+        });
       }
-      
+
       logger.info('Sales order synced from webhook', { orderId });
     } catch (error) {
       logger.error('Failed to sync sales order from webhook', { 

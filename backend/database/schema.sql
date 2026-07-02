@@ -191,6 +191,22 @@ CREATE TABLE IF NOT EXISTS webhook_logs (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =============================================
+-- Device Tokens (FCM push notification - mobile app)
+-- =============================================
+
+CREATE TABLE IF NOT EXISTS device_tokens (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  user_id INT NOT NULL,
+  fcm_token VARCHAR(512) NOT NULL,
+  platform ENUM('android', 'ios') NOT NULL DEFAULT 'android',
+  last_active_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  UNIQUE KEY uniq_fcm_token (fcm_token(255)),
+  INDEX idx_user_id (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
 -- Insert Default Data
 -- =============================================
 

@@ -84,6 +84,7 @@ app.use('/api/users', require('./src/routes/userRoutes'));
 app.use('/api/accurate', require('./src/routes/accurateRoutes'));
 app.use('/api/sync', require('./src/routes/syncRoutes'));
 app.use('/api/tts', require('./src/routes/ttsRoutes'));
+app.use('/api/device-tokens', require('./src/routes/deviceTokenRoutes'));
 
 // 404 handler
 app.use(notFoundHandler);
@@ -139,6 +140,14 @@ const startServer = async () => {
     // Initialize WebSocket
     const WebSocketService = require('./src/services/WebSocketService');
     WebSocketService.initialize(server);
+
+    // Jadwalkan reminder SO overdue (push notification), jam sama dengan
+    // REMINDER_TIMES_WIB di frontend/src/pages/SchedulePage.jsx
+    const cron = require('node-cron');
+    const OverdueReminderService = require('./src/services/OverdueReminderService');
+    ['30 9 * * *', '0 11 * * *', '0 14 * * *'].forEach((expr) => {
+      cron.schedule(expr, () => OverdueReminderService.checkAndNotify(), { timezone: 'Asia/Jakarta' });
+    });
 
     // Graceful shutdown
     const gracefulShutdown = async (signal) => {

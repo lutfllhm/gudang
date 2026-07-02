@@ -105,6 +105,11 @@ const config = {
   // Webhook
   webhook: {
     secret: process.env.WEBHOOK_SECRET
+  },
+
+  // Firebase Cloud Messaging (push notification - mobile app)
+  firebase: {
+    serviceAccountBase64: process.env.FIREBASE_SERVICE_ACCOUNT_BASE64 || null
   }
 };
 
