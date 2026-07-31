@@ -1,6 +1,6 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+w<manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="mobile"
+        android:label="iware schedule"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
