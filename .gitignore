@@ -66,3 +66,6 @@ test-results/
 tmp/
 temp/
 *.tmp
+
+# Mobile app (not part of this deployment)
+mobile/
